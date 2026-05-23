@@ -400,6 +400,8 @@ const CreateEventContent = () => {
                     type="button"
                     onClick={() => removeMedia(index)}
                     className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remover Imagem"
+                    aria-label="Remover Imagem"
                   >
                     <X size={12} />
                   </button>
@@ -458,6 +460,8 @@ const CreateEventContent = () => {
                     "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
                     hasTickets ? "bg-primary" : "bg-primary/20"
                   )}
+                  title="Alternar venda de ingressos"
+                  aria-label="Alternar venda de ingressos"
                 >
                   <div className={cn(
                     "w-4 h-4 bg-white rounded-full transition-all shadow-sm",
@@ -496,7 +500,7 @@ const CreateEventContent = () => {
         <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm p-4 flex flex-col pt-12">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-sans font-bold text-lg text-textDark">Escolher Local</h2>
-            <button type="button" onClick={() => setShowMapModal(false)} className="bg-primary/10 p-2 rounded-full text-primary">
+            <button type="button" onClick={() => setShowMapModal(false)} className="bg-primary/10 p-2 rounded-full text-primary" title="Fechar Mapa" aria-label="Fechar Mapa">
               <X size={20} />
             </button>
           </div>
@@ -647,6 +651,8 @@ const PlaceAutocomplete = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
           <button
             onClick={() => { setInputValue(''); setPredictions([]); }}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/20 hover:text-primary transition-colors"
+            title="Limpar Pesquisa"
+            aria-label="Limpar Pesquisa"
           >
             <X size={16} />
           </button>
