@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
