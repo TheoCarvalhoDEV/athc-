@@ -23,7 +23,7 @@ const formatDate = (): string => {
   });
 };
 
-type FilterType = 'todos' | 'Aberto' | 'VIP' | 'hoje' | 'semana';
+type FilterType = 'todos' | 'Aberto' | 'hoje' | 'semana';
 
 export const Feed = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -94,17 +94,7 @@ export const Feed = () => {
           });
         }
         
-        // Filter pills
-        if (containerRef.current?.querySelectorAll('.filter-pill').length) {
-          gsap.from('.filter-pill', {
-            scale: 0.8,
-            opacity: 0,
-            duration: 0.4,
-            stagger: 0.06,
-            delay: 0.3,
-            ease: 'back.out(1.7)',
-          });
-        }
+
 
         // Event cards
         if (containerRef.current?.querySelectorAll('.event-card-anim').length) {
@@ -131,8 +121,8 @@ export const Feed = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (filter === 'Aberto' || filter === 'VIP') {
-      filtered = filtered.filter(e => e.publicType === filter);
+    if (filter === 'Aberto') {
+      filtered = filtered.filter(e => e.publicType === 'Aberto');
     } else if (filter === 'hoje') {
       filtered = filtered.filter(e => {
         const eventDate = new Date(e.date);
@@ -165,7 +155,7 @@ export const Feed = () => {
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center gap-2">
-              <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply mix-blend-multiply mix-blend-multiply" />
+              <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply mix-blend-multiply mix-blend-multiply" />
               <h1 className="font-brand text-5xl text-primary font-bold tracking-tight mt-1">Atchê</h1>
             </div>
             <p className="font-sans text-sm text-textDark/60 mt-1 flex items-center gap-1.5">
@@ -200,22 +190,33 @@ export const Feed = () => {
       </div>
 
       {/* Highlights Carousel */}
-      {highlights.length > 0 && (
-        <div className="highlights-section mt-2 mb-6">
-          <div className="flex items-center gap-2 px-5 mb-3">
-            <Flame size={16} className="text-accent" />
-            <h2 className="font-sans font-bold text-base text-textDark">Em Destaque</h2>
-          </div>
-          
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-2">
-            {highlights.map(event => (
-              <EventCard key={`hl-${event.id}`} event={event} variant="highlight" onDelete={handleDelete} />
-            ))}
-            {/* Spacer for scroll padding */}
-            <div className="min-w-[20px] shrink-0" />
-          </div>
+      <div className="highlights-section mt-2 mb-6">
+        <div className="flex items-center gap-2 px-5 mb-3">
+          <Flame size={16} className="text-accent" />
+          <h2 className="font-sans font-bold text-base text-textDark">Em Destaque</h2>
         </div>
-      )}
+        
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-2">
+          {isLoading ? (
+            [1, 2, 3].map(i => (
+              <div key={`hl-skel-${i}`} className="min-w-[280px] h-[160px] rounded-3xl bg-primary/10 animate-pulse shrink-0 border border-primary/5" />
+            ))
+          ) : highlights.length > 0 ? (
+            <>
+              {highlights.map(event => (
+                <EventCard key={`hl-${event.id}`} event={event} variant="highlight" onDelete={handleDelete} />
+              ))}
+              {/* Spacer for scroll padding */}
+              <div className="min-w-[20px] shrink-0" />
+            </>
+          ) : (
+            <div className="min-w-[280px] h-[160px] rounded-3xl bg-primary/5 border border-primary/10 flex flex-col items-center justify-center shrink-0 w-full">
+              <Flame size={24} className="text-primary/30 mb-2" />
+              <p className="font-sans text-sm text-textDark/50 font-bold">Nenhum evento em destaque</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Filter Pills */}
       <div className="flex gap-2 px-5 mb-5 overflow-x-auto scrollbar-hide pb-1">
@@ -224,7 +225,6 @@ export const Feed = () => {
           { key: 'hoje' as FilterType, label: 'Hoje', icon: Calendar },
           { key: 'semana' as FilterType, label: 'Esta Semana', icon: null },
           { key: 'Aberto' as FilterType, label: 'Aberto', icon: null },
-          { key: 'VIP' as FilterType, label: '✦ VIP', icon: null },
         ].map(f => (
           <button
             key={f.key}

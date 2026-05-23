@@ -32,7 +32,7 @@ export const EventCard = ({ event, onDelete, variant = 'default' }: EventCardPro
     setShowDeleteConfirm(false);
   };
 
-  const isVIP = event.publicType === 'VIP';
+
 
   if (variant === 'highlight') {
     return (
@@ -50,8 +50,8 @@ export const EventCard = ({ event, onDelete, variant = 'default' }: EventCardPro
 
         {/* Badge */}
         <div className="absolute top-3 left-3 flex gap-2">
-          <span className={isVIP ? 'badge-vip' : 'badge-open'}>
-            {isVIP ? '✦ VIP' : 'Aberto'}
+          <span className="badge-open">
+            Aberto
           </span>
           {event.mediaUrls && event.mediaUrls.length > 1 && (
             <span className="bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1 border border-white/10 shadow-md">
@@ -82,7 +82,7 @@ export const EventCard = ({ event, onDelete, variant = 'default' }: EventCardPro
 
   return (
     <>
-      <div className={`bg-background border rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col press-effect ${isVIP ? 'border-accent/40' : 'border-primary/15'}`}>
+      <div className="bg-background border border-primary/15 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col press-effect">
         {/* Image Section */}
         <div className="h-44 relative overflow-hidden cursor-pointer" onClick={() => navigate(`/event/${event.id}`)}>
           {event.mediaUrls && event.mediaUrls.length > 0 ? (
@@ -100,8 +100,8 @@ export const EventCard = ({ event, onDelete, variant = 'default' }: EventCardPro
 
           {/* Badge */}
           <div className="absolute top-3 left-3 flex gap-2">
-            <span className={isVIP ? 'badge-vip' : 'badge-open'}>
-              {isVIP ? '✦ VIP' : 'Aberto'}
+            <span className="badge-open">
+              Aberto
             </span>
             {event.mediaUrls && event.mediaUrls.length > 1 && (
               <span className="bg-background/80 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-bold text-primary border border-primary/10 flex items-center gap-1 shadow-sm">

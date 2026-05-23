@@ -275,7 +275,7 @@ export const Profile = () => {
       <div className="px-5 pt-8 pb-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply mix-blend-multiply mix-blend-multiply" />
+            <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply mix-blend-multiply mix-blend-multiply" />
             <h1 className="font-brand text-5xl text-primary font-bold tracking-tight mt-1">Atchê</h1>
           </div>
           {user && userRole !== 'user' && (
@@ -415,8 +415,8 @@ export const Profile = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className={event.publicType === 'VIP' ? 'badge-vip' : 'badge-open'}>
-                          {event.publicType === 'VIP' ? '✦ VIP' : 'Aberto'}
+                        <span className="badge-open">
+                          Aberto
                         </span>
                       </div>
                       <h3 className="font-sans font-bold text-lg text-textDark leading-tight">{event.title}</h3>

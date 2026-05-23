@@ -9,24 +9,31 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      includeAssets: ['favicon.svg', 'icons.svg', 'logo.png'],
       manifest: {
-        name: 'Atchê',
+        name: 'Atchê - A cena acontece aqui',
         short_name: 'Atchê',
-        description: 'Os melhores eventos e festas na sua região',
-        theme_color: '#FF4B2B',
-        background_color: '#0D0D0D',
+        description: 'Descubra e crie os melhores eventos, festas e encontros na sua região.',
+        theme_color: '#6B1D1D',
+        background_color: '#F5EDE3',
         display: 'standalone',
+        start_url: '/',
         icons: [
           {
-            src: 'vite.svg',
+            src: 'apple-touch-icon.png',
             sizes: '192x192',
-            type: 'image/svg+xml'
+            type: 'image/png'
           },
           {
-            src: 'vite.svg',
+            src: 'apple-touch-icon.png',
             sizes: '512x512',
-            type: 'image/svg+xml'
+            type: 'image/png'
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       }

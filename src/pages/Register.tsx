@@ -52,7 +52,7 @@ export const Register = () => {
     <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6 py-12">
       <div className="w-full max-w-sm flex flex-col items-center">
         <div className="flex flex-col items-center gap-2 stagger-el mb-8">
-          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply" />
+          <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply" />
         </div>
 
         <form onSubmit={handleRegister} className="w-full space-y-4">

@@ -385,15 +385,7 @@ const CreateEventContent = () => {
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/60" size={18} />
           </div>
 
-          <div className="form-el">
-            <select
-              className="flex h-12 w-full rounded-full border border-primary/20 bg-background px-4 py-2 text-sm text-textDark transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
-              {...register('publicType')}
-            >
-              <option value="Aberto">Público - Aberto</option>
-              <option value="VIP">Privado - VIP</option>
-            </select>
-          </div>
+
 
           <div className="form-el">
             <div className="grid grid-cols-3 gap-3 mb-3">

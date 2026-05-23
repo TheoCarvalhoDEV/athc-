@@ -361,7 +361,7 @@ export const EventDetails = () => {
             <div className="flex flex-col pl-4">
               <span className="text-[9px] font-bold text-primary/60 uppercase tracking-widest">Ingresso</span>
               <span className="text-2xl font-sans font-bold text-primary tracking-tight">
-                {event.publicType === 'VIP' ? 'Lista VIP' : 'Gratuito'}
+                Gratuito
               </span>
               <span className="text-[8px] text-textDark/40 font-mono">1º Lote Disponível</span>
             </div>

@@ -53,7 +53,7 @@ export type EventItem = {
   location: string;
   address?: string;
   mediaUrls?: string[];
-  publicType: 'VIP' | 'Geral' | 'Universitário';
+  publicType: 'Aberto' | 'Geral' | 'Universitário';
   description: string;
   creatorId: string;
   hasTickets?: boolean;
