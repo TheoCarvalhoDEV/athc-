@@ -1,12 +1,12 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Search, PlusSquare, User, Settings } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { storage } from '../lib/storage';
+import { useAuth } from '../contexts/AuthContext';
 
 export const BottomNav = () => {
   // useLocation forces re-render on every route change, so user role is always fresh
   useLocation();
-  const user = storage.getCurrentUser();
+  const { user } = useAuth();
   const isPartner = user?.role === 'partner' || user?.role === 'admin';
   const isAdmin = user?.role === 'admin';
 
