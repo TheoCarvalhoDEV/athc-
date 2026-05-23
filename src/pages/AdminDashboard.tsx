@@ -263,6 +263,8 @@ export const AdminDashboard = () => {
                     <button 
                       onClick={() => handleDelete(event.id)}
                       className="px-3 text-textDark/40 hover:text-red-500 transition-colors"
+                      title="Excluir Evento"
+                      aria-label="Excluir Evento"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -291,7 +293,7 @@ export const AdminDashboard = () => {
             {filteredProfiles.map(profile => (
               <div key={profile.id} className="bg-background border border-primary/10 p-4 rounded-2xl flex items-center gap-4 admin-anim shadow-sm">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden shrink-0">
-                  {profile.imageUrl ? <img src={profile.imageUrl} className="w-full h-full object-cover" /> : <Building2 size={24} />}
+                  {profile.imageUrl ? <img src={profile.imageUrl} alt={`Foto de ${profile.name}`} className="w-full h-full object-cover" /> : <Building2 size={24} />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-textDark truncate">{profile.name}</h3>
@@ -326,7 +328,7 @@ export const AdminDashboard = () => {
       {showPartnerModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
           <div className="bg-background border border-primary/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative">
-            <button onClick={() => setShowPartnerModal(false)} className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full">
+            <button aria-label="Fechar Modal" title="Fechar Modal" onClick={() => setShowPartnerModal(false)} className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full">
               <X size={20} />
             </button>
 
@@ -351,8 +353,9 @@ export const AdminDashboard = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-primary uppercase ml-2">Tipo</label>
+                  <label htmlFor="partner-type" className="text-[10px] font-bold text-primary uppercase ml-2">Tipo</label>
                   <select 
+                    id="partner-type"
                     className="w-full h-12 bg-primary/5 border border-primary/10 rounded-2xl px-4 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/20"
                     value={newPartner.type}
                     onChange={e => setNewPartner(prev => ({ ...prev, type: e.target.value as any }))}
