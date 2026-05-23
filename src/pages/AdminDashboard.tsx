@@ -118,29 +118,41 @@ export const AdminDashboard = () => {
 
   const handleAddPartner = async (e: React.FormEvent) => {
     e.preventDefault();
-    const id = `p${Date.now()}`;
     const email = `${newPartner.name.toLowerCase().replace(/\s+/g, '')}@atche.com.br`;
     const password = Math.random().toString(36).slice(-8);
 
-    const profile: AppProfile = {
-      id,
-      ...newPartner,
-      email,
-      password,
-      mustChangePassword: true
-    };
-
     try {
+      // 1. Criar usuário no Firebase Auth usando instância secundária para não deslogar o Admin
+      const { initializeApp } = await import('firebase/app');
+      const { getAuth, createUserWithEmailAndPassword, signOut } = await import('firebase/auth');
+      const { firebaseConfig } = await import('../lib/firebase');
+      
+      const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
+      const secondaryAuth = getAuth(secondaryApp);
+      
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      const uid = userCredential.user.uid;
+      
+      await signOut(secondaryAuth); // Finaliza a sessão temporária
+
+      // 2. Salvar o perfil no Firestore usando o UID real
+      const profile: AppProfile = {
+        id: uid,
+        ...newPartner,
+        email,
+        mustChangePassword: true
+      };
+
       await storage.saveProfile(profile);
       const allProfiles = await storage.getProfiles();
       setProfiles(allProfiles);
-      setLastGenerated({ email, pass: password });
+      setLastGenerated({ email, pass: password }); // A senha fica só na tela, nunca no banco
       
       // Reset form but keep last generated for the success state
       setNewPartner({ name: '', type: 'estabelecimento', description: '', imageUrl: '' });
     } catch (error) {
       console.error("Erro ao adicionar parceiro:", error);
-      alert("Erro ao salvar parceiro no banco de dados.");
+      alert("Erro ao criar parceiro no Firebase. Verifique o console.");
     }
   };
 

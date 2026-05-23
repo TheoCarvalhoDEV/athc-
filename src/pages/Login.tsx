@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { storage } from '../lib/storage';
+import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import gsap from 'gsap';
@@ -35,14 +36,15 @@ export const Login = () => {
         if (user.mustChangePassword) {
           navigate('/change-password');
         } else {
+          toast.success('Bem-vindo de volta!');
           navigate('/feed');
         }
       } else {
-        alert('Credenciais inválidas!');
+        toast.error('Credenciais inválidas!');
       }
     } catch (error) {
       console.error("Erro no login:", error);
-      alert('Ocorreu um erro ao tentar fazer login.');
+      toast.error('Ocorreu um erro ao tentar fazer login.');
     } finally {
       setIsLoading(false);
     }
@@ -62,9 +64,10 @@ export const Login = () => {
 
         <form onSubmit={handleLogin} className="w-full space-y-6">
           <div className="stagger-el space-y-2">
-            <label className="text-sm font-sans text-textDark ml-4">E-mail ou Usuário</label>
+            <label className="text-sm font-sans text-textDark ml-4">E-mail</label>
             <Input 
-              placeholder="Seu usuário" 
+              type="email"
+              placeholder="Seu e-mail" 
               required 
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -92,10 +95,6 @@ export const Login = () => {
             </Button>
           </div>
         </form>
-
-        <p className="stagger-el mt-8 text-sm text-textDark/70 font-mono">
-          Não tem uma conta? <Link to="/register" className="text-primary font-bold hover:underline">Crie uma conta agora!</Link>
-        </p>
       </div>
     </div>
   );

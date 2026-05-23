@@ -17,7 +17,8 @@ import {
 } from 'firebase/firestore';
 import {
   signInWithEmailAndPassword,
-  signOut
+  signOut,
+  createUserWithEmailAndPassword
 } from 'firebase/auth';
 
 export type ProfileType = 'user' | 'estabelecimento' | 'atletica';
@@ -104,13 +105,10 @@ export const storage = {
   },
 
   getPaginatedEvents: async (lastVisibleDoc: any = null, pageSize: number = 10) => {
-    let q;
-    // Paginamos ordenando por 'date' crescente
-    if (lastVisibleDoc) {
-      q = query(collection(db, 'events'), orderBy('date', 'asc'), startAfter(lastVisibleDoc), limit(pageSize));
-    } else {
-      q = query(collection(db, 'events'), orderBy('date', 'asc'), limit(pageSize));
-    }
+    const eventsRef = collection(db, 'events');
+    const q = lastVisibleDoc
+      ? query(eventsRef, orderBy('date', 'asc'), startAfter(lastVisibleDoc), limit(pageSize))
+      : query(eventsRef, orderBy('date', 'asc'), limit(pageSize));
     
     const querySnapshot = await getDocs(q);
     const events = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EventItem));
@@ -145,6 +143,33 @@ export const storage = {
     const user = JSON.parse(data);
     if (!user.role) user.role = 'user';
     return user;
+  },
+
+  register: async (email: string, password: string, name: string): Promise<User | null> => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const fbUser = userCredential.user;
+      
+      const user: User = {
+        id: fbUser.uid,
+        name: name,
+        username: email,
+        role: 'user',
+        mustChangePassword: false,
+      };
+
+      await addDoc(collection(db, 'profiles'), {
+        name,
+        email,
+        type: 'user'
+      });
+
+      localStorage.setItem('@atche:user', JSON.stringify(user));
+      return user;
+    } catch (error) {
+      console.error("Erro no registro:", error);
+      throw error;
+    }
   },
 
   login: async (email: string, password?: string): Promise<User | null> => {
