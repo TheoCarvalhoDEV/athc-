@@ -26,7 +26,7 @@ export type ProfileType = 'user' | 'estabelecimento' | 'atletica';
 export interface AppProfile {
   id: string;
   name: string;
-  type: 'atletica' | 'estabelecimento';
+  type: 'atletica' | 'estabelecimento' | 'admin';
   description: string;
   imageUrl?: string;
   email?: string;
@@ -194,11 +194,13 @@ export const storage = {
         }
       }
 
+      const isAdminEmail = email.toLowerCase() === 'admin@atche.com.br';
+
       const user: User = {
         id: fbUser.uid,
-        name: profile?.name || fbUser.displayName || 'Usuário',
+        name: isAdminEmail ? 'Administrador' : (profile?.name || fbUser.displayName || 'Usuário'),
         username: email,
-        role: profile ? 'partner' : 'user',
+        role: isAdminEmail ? 'admin' : (profile ? (profile.type === 'admin' ? 'admin' : 'partner') : 'user'),
         mustChangePassword: profile?.mustChangePassword ?? false,
         imageUrl: profile?.imageUrl || '',
         profileId: profile?.id
