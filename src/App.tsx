@@ -1,0 +1,62 @@
+import { HashRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { Feed } from './pages/Feed';
+import { Search } from './pages/Search';
+import { CreateEvent } from './pages/CreateEvent';
+import { EventDetails } from './pages/EventDetails';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { Profile } from './pages/Profile';
+import { Agenda } from './pages/Agenda';
+import { ChangePassword } from './pages/ChangePassword';
+import { AuthProvider } from './contexts/AuthContext';
+import { PrivateRoute } from './components/PrivateRoute';
+import { BottomNav } from './components/BottomNav';
+import { Toaster } from 'react-hot-toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+// MainLayout agora é apenas para rotas que têm Nav Bar mas não são necessariamente protegidas
+const MainLayout = () => {
+  return (
+    <div className="relative min-h-screen bg-background">
+      <Outlet />
+      <BottomNav />
+    </div>
+  );
+};
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <Toaster position="top-center" toastOptions={{ duration: 4000, style: { borderRadius: '20px', background: '#333', color: '#fff' } }} />
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/event/:id" element={<EventDetails />} />
+            
+            {/* Rotas Públicas com Nav */}
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Feed />} />
+              <Route path="/feed" element={<Navigate to="/" replace />} />
+              <Route path="/search" element={<Search />} />
+            </Route>
+
+            {/* Rotas Protegidas (Exigem Login e têm Nav) */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/create" element={<CreateEvent />} />
+              <Route path="/edit/:id" element={<CreateEvent />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/agenda/:id" element={<Agenda />} />
+            </Route>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default App;

@@ -1,0 +1,214 @@
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-textDark font-sans antialiased;
+    margin: 0;
+    overflow-x: hidden;
+  }
+}
+
+/* Global Noise Overlay from GEMINI.md */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+}
+
+/* Base custom classes for Premium feel */
+@layer utilities {
+  .beat-hover {
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .beat-hover:hover {
+    transform: scale(1.05);
+  }
+
+  .inner-glow {
+    box-shadow: inset 0 0 0 transparent;
+    transition: box-shadow 0.3s ease;
+  }
+
+  .inner-glow:hover {
+    box-shadow: inset 0 0 10px rgba(106, 19, 36, 0.3);
+    /* Burgundy glow */
+  }
+
+  /* Scrollbar hide for horizontal scrolls */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Glassmorphism card */
+  .glass-card {
+    background: rgba(245, 236, 225, 0.6);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(106, 19, 36, 0.1);
+  }
+
+  /* Shimmer animation for highlights */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(212, 175, 55, 0.08),
+        transparent);
+    animation: shimmer-slide 3s infinite;
+  }
+
+  @keyframes shimmer-slide {
+    0% {
+      left: -100%;
+    }
+
+    100% {
+      left: 200%;
+    }
+  }
+
+  /* Gradient text utility */
+  .gradient-text {
+    background: linear-gradient(135deg, #6A1324, #8A1C30, #D4AF37);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Pulse dot for live indicators */
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #D4AF37;
+    animation: pulse-ring 1.5s infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.5);
+    }
+
+    70% {
+      box-shadow: 0 0 0 8px rgba(212, 175, 55, 0);
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+    }
+  }
+
+  /* Smooth expand animation */
+  .expand-enter {
+    animation: expand-in 0.3s ease-out forwards;
+  }
+
+  @keyframes expand-in {
+    from {
+      opacity: 0;
+      max-height: 0;
+      transform: translateY(-8px);
+    }
+
+    to {
+      opacity: 1;
+      max-height: 500px;
+      transform: translateY(0);
+    }
+  }
+
+  /* Delete button shake */
+  .shake {
+    animation: shake-anim 0.4s ease-in-out;
+  }
+
+  @keyframes shake-anim {
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    20% {
+      transform: translateX(-4px);
+    }
+
+    40% {
+      transform: translateX(4px);
+    }
+
+    60% {
+      transform: translateX(-4px);
+    }
+
+    80% {
+      transform: translateX(4px);
+    }
+  }
+
+  /* Card press effect */
+  .press-effect {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .press-effect:active {
+    transform: scale(0.98);
+  }
+
+  /* Floating badge */
+  .badge-vip {
+    background: linear-gradient(135deg, #D4AF37, #B8941F);
+    color: #2A1F1D;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
+  }
+
+  .badge-open {
+    background: rgba(106, 19, 36, 0.15);
+    color: #6A1324;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    border-radius: 9999px;
+  }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    background: rgba(42, 31, 29, 0.6);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+}

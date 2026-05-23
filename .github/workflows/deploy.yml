@@ -1,0 +1,46 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_GOOGLE_MAPS_API_KEY: "AIzaSyBVLiY_nGsF-n8TUApDZqeIwkFDcz9XsYc"
+          VITE_FIREBASE_API_KEY: "AIzaSyAvL3s-xMAojUAfZleIf0W1AuhrLKvDmQs"
+          VITE_FIREBASE_AUTH_DOMAIN: "atche-sistemas.firebaseapp.com"
+          VITE_FIREBASE_PROJECT_ID: "atche-sistemas"
+          VITE_FIREBASE_STORAGE_BUCKET: "atche-sistemas.firebasestorage.app"
+          VITE_FIREBASE_MESSAGING_SENDER_ID: "100147993325"
+          VITE_FIREBASE_APP_ID: "1:100147993325:web:e95cb2a1ad90579515cae4"
+        run: |
+          npm run build
+          cp README.md dist/
+
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages

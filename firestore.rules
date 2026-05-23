@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar autenticação básica
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    match /profiles/{profileId} {
+      // Perfis são públicos para visualização
+      allow read: if true;
+      // Permite escrita apenas para usuários autenticados no momento
+      // (Em um ambiente com a Fase 1 completa, restringiríamos por UID: request.auth.uid == profileId)
+      allow write: if isAuthed();
+    }
+
+    match /events/{eventId} {
+      // Eventos são públicos
+      allow read: if true;
+      // Somente usuários logados podem criar/editar eventos
+      allow write: if isAuthed();
+    }
+
+    match /registrations/{registrationId} {
+      // Qualquer um logado pode ler ou escrever inscrições
+      allow read, write: if isAuthed();
+    }
+  }
+}
