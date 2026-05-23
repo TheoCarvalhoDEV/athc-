@@ -18,6 +18,7 @@ export default {
         sans: ['Inter', 'sans-serif'],
         serif: ['Cormorant Garamond', 'serif'],
         mono: ['JetBrains Mono', 'monospace'],
+        brand: ['Outfit', 'sans-serif'],
       },
     },
   },

@@ -53,14 +53,10 @@ export const Login = () => {
   return (
     <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-sm flex flex-col items-center">
-        {/* Logo Icon */}
-        <div className="stagger-el mb-6 w-24 h-24 border-4 border-primary rounded-full flex flex-col items-center justify-center bg-primary/5 shadow-lg">
-           <div className="w-12 h-2 bg-primary rounded-full mb-1"></div>
-           <div className="w-2 h-8 bg-primary"></div>
-           <div className="w-8 h-2 bg-primary rounded-full mt-1"></div>
+
+        <div className="flex flex-col items-center gap-3 stagger-el mb-12">
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply" />
         </div>
-        
-        <h1 className="stagger-el font-serif text-5xl italic text-primary mb-12">Atchê</h1>
 
         <form onSubmit={handleLogin} className="w-full space-y-6">
           <div className="stagger-el space-y-2">

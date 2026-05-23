@@ -58,6 +58,8 @@ export type EventItem = {
   creatorId: string;
   hasTickets?: boolean;
   whatsappNumber?: string;
+  whatsappName?: string;
+  whatsappContacts?: { name: string; phone: string }[];
 };
 
 export type Registration = {
@@ -98,6 +100,9 @@ export const storage = {
     await deleteDoc(doc(db, 'profiles', id));
   },
 
+  updateProfile: async (id: string, data: Partial<AppProfile>) => {
+    await updateDoc(doc(db, 'profiles', id), data);
+  },
   // Events
   getEvents: async (): Promise<EventItem[]> => {
     const querySnapshot = await getDocs(collection(db, 'events'));

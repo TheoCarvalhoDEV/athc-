@@ -164,9 +164,10 @@ export const Feed = () => {
       <div className="feed-header px-5 pt-8 pb-4">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="font-serif text-4xl italic font-bold gradient-text leading-tight">
-              Atchê
-            </h1>
+            <div className="flex items-center gap-2">
+              <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply mix-blend-multiply mix-blend-multiply" />
+              <h1 className="font-brand text-5xl text-primary font-bold tracking-tight mt-1">Atchê</h1>
+            </div>
             <p className="font-sans text-sm text-textDark/60 mt-1 flex items-center gap-1.5">
               <Calendar size={13} className="text-primary/50" />
               {formatDate()}

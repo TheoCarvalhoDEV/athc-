@@ -26,6 +26,7 @@ export const AdminDashboard = () => {
     imageUrl: ''
   });
   const [lastGenerated, setLastGenerated] = useState<{ email: string; pass: string } | null>(null);
+  const [editingPartner, setEditingPartner] = useState<AppProfile | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
@@ -153,6 +154,27 @@ export const AdminDashboard = () => {
     } catch (error) {
       console.error("Erro ao adicionar parceiro:", error);
       alert("Erro ao criar parceiro no Firebase. Verifique o console.");
+    }
+  };
+
+  const handleEditPartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPartner) return;
+    try {
+      await storage.updateProfile(editingPartner.id, {
+        name: editingPartner.name,
+        type: editingPartner.type,
+        description: editingPartner.description,
+        password: editingPartner.password,
+        mustChangePassword: editingPartner.mustChangePassword
+      });
+      const allProfiles = await storage.getProfiles();
+      setProfiles(allProfiles);
+      setEditingPartner(null);
+      alert('Perfil atualizado com sucesso!');
+    } catch (error) {
+      console.error("Erro ao atualizar parceiro:", error);
+      alert("Erro ao atualizar parceiro no banco de dados.");
     }
   };
 
@@ -300,17 +322,26 @@ export const AdminDashboard = () => {
                   <p className="text-[10px] text-textDark/40 uppercase tracking-widest font-bold">{profile.type}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-1 text-[10px] text-primary font-mono bg-primary/5 px-2 py-0.5 rounded">
+                  <div className="flex items-center gap-1 text-[10px] text-primary font-mono bg-primary/5 px-2 py-0.5 rounded mb-1">
                     <Mail size={10} />
                     {profile.email || 'N/A'}
                   </div>
-                  <button 
-                    onClick={() => handleDeleteProfile(profile.id)}
-                    className="p-1.5 text-textDark/40 hover:text-red-500 transition-colors"
-                    title="Excluir Parceiro"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => setEditingPartner(profile)}
+                      className="p-1.5 text-textDark/40 hover:text-primary transition-colors bg-textDark/5 rounded-full"
+                      title="Editar Parceiro"
+                    >
+                      <Settings size={14} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteProfile(profile.id)}
+                      className="p-1.5 text-textDark/40 hover:text-red-500 transition-colors bg-textDark/5 rounded-full"
+                      title="Excluir Parceiro"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -322,6 +353,74 @@ export const AdminDashboard = () => {
             )}
           </div>
         </>
+      )}
+
+      {/* Modal Editar Parceiro */}
+      {editingPartner && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+          <div className="bg-background border border-primary/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setEditingPartner(null)} className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full">
+              <X size={20} />
+            </button>
+
+            <form onSubmit={handleEditPartner} className="space-y-4 mt-2">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
+                  <Settings size={32} />
+                </div>
+                <h3 className="font-serif text-2xl font-bold text-textDark">Editar Parceiro</h3>
+                <p className="text-xs text-textDark/50">Modifique as informações e acessos</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-primary uppercase ml-2">Nome do Parceiro</label>
+                <Input 
+                  required 
+                  value={editingPartner.name}
+                  onChange={e => setEditingPartner(prev => prev ? ({ ...prev, name: e.target.value }) : null)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-primary uppercase ml-2">Tipo</label>
+                <select 
+                  className="w-full h-12 bg-primary/5 border border-primary/10 rounded-2xl px-4 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  value={editingPartner.type}
+                  onChange={e => setEditingPartner(prev => prev ? ({ ...prev, type: e.target.value as any }) : null)}
+                >
+                  <option value="estabelecimento">Estabelecimento</option>
+                  <option value="atletica">Atlética</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-primary uppercase ml-2">Nova Senha (Opcional)</label>
+                <Input 
+                  placeholder="Digite para alterar" 
+                  value={editingPartner.password || ''}
+                  onChange={e => setEditingPartner(prev => prev ? ({ ...prev, password: e.target.value }) : null)}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 mt-4 px-2">
+                <input 
+                  type="checkbox" 
+                  id="mustChangePassword"
+                  checked={editingPartner.mustChangePassword}
+                  onChange={e => setEditingPartner(prev => prev ? ({ ...prev, mustChangePassword: e.target.checked }) : null)}
+                  className="accent-primary w-4 h-4"
+                />
+                <label htmlFor="mustChangePassword" className="text-xs text-textDark/80">
+                  Obrigar usuário a redefinir a senha ao logar
+                </label>
+              </div>
+
+              <Button type="submit" className="w-full rounded-full py-4 mt-6">
+                Salvar Alterações
+              </Button>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Modal Novo Parceiro */}

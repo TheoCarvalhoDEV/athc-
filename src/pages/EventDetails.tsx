@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration, AppProfile } from '../lib/storage';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight } from 'lucide-react';
 import gsap from 'gsap';
 
@@ -15,6 +16,7 @@ export const EventDetails = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const currentUser = storage.getCurrentUser();
   const userId = currentUser?.id;
+  const [showContactsModal, setShowContactsModal] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [organizer, setOrganizer] = useState<AppProfile | null>(null);
@@ -384,19 +386,38 @@ export const EventDetails = () => {
                 )}
               </button>
 
-              {event.hasTickets && (
-                <button
-                  onClick={() => {
-                    const cleanPhone = event.whatsappNumber?.replace(/\D/g, '') || '5565996097252';
-                    const message = `Olá! Tenho interesse no ingresso para o evento *${event.title}*`;
-                    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                  }}
-                  className="rounded-2xl px-5 py-3.5 shadow-md flex items-center gap-2 transition-all duration-300 font-sans font-extrabold text-xs h-auto bg-green-500 hover:bg-green-600 text-white cursor-pointer hover:scale-105 active:scale-95"
-                >
-                  <Ticket size={15} />
-                  <span>Ingresso</span>
-                </button>
-              )}
+              {event.hasTickets && (() => {
+                const contacts = event.whatsappContacts && event.whatsappContacts.length > 0 
+                  ? event.whatsappContacts 
+                  : (event.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : []);
+                  
+                return (
+                  <button
+                    onClick={() => {
+                      if (contacts.length > 1) {
+                        setShowContactsModal(true);
+                      } else if (contacts.length === 1) {
+                        const contact = contacts[0];
+                        const cleanPhone = contact.phone.replace(/\D/g, '');
+                        const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event.title}*`;
+                        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                      }
+                    }}
+                    className="rounded-2xl px-5 py-3.5 shadow-md flex items-center gap-2 transition-all duration-300 font-sans font-extrabold text-xs h-auto bg-green-500 hover:bg-green-600 text-white cursor-pointer hover:scale-105 active:scale-95 flex-col !items-start"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Ticket size={15} />
+                      <span>Comprar Ingresso</span>
+                    </div>
+                    {contacts.length === 1 && contacts[0].name && (
+                      <span className="text-[9px] font-medium opacity-90 block mt-0.5">Tratar com: {contacts[0].name}</span>
+                    )}
+                    {contacts.length > 1 && (
+                      <span className="text-[9px] font-medium opacity-90 block mt-0.5">{contacts.length} Promoters Disponíveis</span>
+                    )}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -416,6 +437,42 @@ export const EventDetails = () => {
             </p>
             <Button onClick={() => setShowModal(false)} className="w-full rounded-full">
               Entendido
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Contacts Modal */}
+      {showContactsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-background p-6 rounded-[2rem] border border-primary/20 shadow-2xl max-w-sm w-full text-center max-h-[80vh] flex flex-col">
+            <h3 className="font-serif text-2xl font-bold text-textDark mb-2">Comprar Ingresso</h3>
+            <p className="text-xs text-textDark/70 mb-6">
+              Escolha com qual promoter você deseja falar para garantir sua vaga:
+            </p>
+            <div className="space-y-3 overflow-y-auto pr-2 pb-4">
+              {(event?.whatsappContacts && event.whatsappContacts.length > 0 
+                ? event.whatsappContacts 
+                : (event?.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : [])).map((contact, i) => (
+                <button 
+                  key={i}
+                  onClick={() => {
+                    const cleanPhone = contact.phone.replace(/\D/g, '');
+                    const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event?.title}*`;
+                    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                  }}
+                  className="w-full bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-2xl p-4 flex items-center justify-between transition-colors group"
+                >
+                  <div className="flex flex-col items-start">
+                    <span className="font-bold text-sm text-textDark group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
+                    <span className="text-[10px] text-textDark/50 font-mono mt-0.5">{contact.phone}</span>
+                  </div>
+                  <Ticket className="text-primary/40 group-hover:text-primary transition-colors" size={18} />
+                </button>
+              ))}
+            </div>
+            <Button onClick={() => setShowContactsModal(false)} variant="outline" className="w-full rounded-full mt-2">
+              Cancelar
             </Button>
           </div>
         </div>

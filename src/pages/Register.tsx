@@ -51,14 +51,9 @@ export const Register = () => {
   return (
     <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6 py-12">
       <div className="w-full max-w-sm flex flex-col items-center">
-        {/* Logo Icon */}
-        <div className="stagger-el mb-4 w-16 h-16 border-2 border-primary rounded-full flex flex-col items-center justify-center bg-primary/5">
-           <div className="w-8 h-1 bg-primary rounded-full mb-1"></div>
-           <div className="w-1 h-5 bg-primary"></div>
-           <div className="w-5 h-1 bg-primary rounded-full mt-1"></div>
+        <div className="flex flex-col items-center gap-2 stagger-el mb-8">
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply" />
         </div>
-        
-        <h1 className="stagger-el font-serif text-3xl italic text-primary mb-8">Atchê</h1>
 
         <form onSubmit={handleRegister} className="w-full space-y-4">
           <div className="stagger-el space-y-1">
