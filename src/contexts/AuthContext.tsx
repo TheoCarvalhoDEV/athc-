@@ -30,9 +30,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (localUser && localUser.id === firebaseUser.uid) {
           setUser(localUser);
         } else {
-          // Se não tem no localStorage ou o id não bate, força login novamente
-          setUser(null);
-          localStorage.removeItem('@atche:user');
+          // Se não tem no localStorage ou o id não bate (acontece no exato momento do login), 
+          // não desloga! Busca o perfil novamente para restaurar a sessão.
+          const email = firebaseUser.email || '';
+          const profile = await storage.getProfileById(firebaseUser.uid);
+          
+          const newUser: User = {
+            id: firebaseUser.uid,
+            name: profile?.name || firebaseUser.displayName || 'Usuário',
+            username: email,
+            role: email.toLowerCase() === 'admin@atche.com.br' ? 'admin' : (profile?.type === 'atletica' || profile?.type === 'estabelecimento' ? 'partner' : 'user'),
+            mustChangePassword: profile?.mustChangePassword ?? false,
+            imageUrl: profile?.imageUrl || '',
+            profileId: profile?.id
+          };
+          
+          setUser(newUser);
+          localStorage.setItem('@atche:user', JSON.stringify(newUser));
         }
       } else {
         setUser(null);
