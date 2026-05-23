@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration, AppProfile } from '../lib/storage';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight } from 'lucide-react';
 import gsap from 'gsap';
 
