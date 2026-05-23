@@ -307,7 +307,7 @@ export const Profile = () => {
                       onError={() => setImgFailed(true)}
                     />
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-white/10 to-white/30 flex items-center justify-center text-textLight font-serif font-bold text-2xl italic">
+                    <div className="w-full h-full bg-gradient-to-br from-white/10 to-white/30 flex items-center justify-center text-textLight font-sans font-bold text-2xl italic">
                       {user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : <User size={36} />}
                     </div>
                   )}
@@ -570,7 +570,7 @@ export const Profile = () => {
               <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-2">
                 <Edit2 size={24} />
               </div>
-              <h3 className="font-serif text-2xl font-bold text-textDark">Editar Perfil</h3>
+              <h3 className="font-sans text-2xl font-bold text-textDark">Editar Perfil</h3>
               <p className="text-xs text-textDark/50 mt-1">Atualize as informações públicas da sua marca</p>
             </div>
 
@@ -691,7 +691,7 @@ export const Profile = () => {
               <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
                 <Users size={28} />
               </div>
-              <h3 className="font-serif text-2xl font-bold text-textDark truncate px-4">{selectedEventForParticipants.title}</h3>
+              <h3 className="font-sans text-2xl font-bold text-textDark truncate px-4">{selectedEventForParticipants.title}</h3>
               <p className="text-xs text-textDark/50 mt-1">Lista de Presenças Confirmadas</p>
             </div>
 

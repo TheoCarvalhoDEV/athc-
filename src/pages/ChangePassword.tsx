@@ -66,7 +66,7 @@ export const ChangePassword = () => {
           <ShieldCheck size={40} className="text-primary" />
         </div>
 
-        <h1 className="stagger-el font-serif text-3xl italic text-primary mb-2">Primeiro Acesso</h1>
+        <h1 className="stagger-el font-sans text-3xl italic text-primary mb-2">Primeiro Acesso</h1>
         <p className="stagger-el text-sm text-textDark/60 text-center mb-8">
           Defina uma nova senha para a sua conta.<br />
           A senha temporária não poderá mais ser usada.

@@ -192,7 +192,7 @@ export const AdminDashboard = () => {
           <Settings size={24} />
         </div>
         <div>
-          <h1 className="font-serif text-2xl font-bold text-textDark">Painel de Controle</h1>
+          <h1 className="font-sans text-2xl font-bold text-textDark">Painel de Controle</h1>
           <p className="text-sm text-textDark/60">Gerencie seus eventos e inscrições</p>
         </div>
       </div>
@@ -204,14 +204,14 @@ export const AdminDashboard = () => {
             <Calendar size={18} />
             <span className="font-bold text-sm">Total Eventos</span>
           </div>
-          <span className="font-serif text-3xl font-bold text-textDark">{events.length}</span>
+          <span className="font-sans text-3xl font-bold text-textDark">{events.length}</span>
         </div>
         <div className="bg-background border border-primary/10 rounded-[1.5rem] p-4 shadow-sm">
           <div className="flex items-center gap-2 text-primary mb-2">
             <Users size={18} />
             <span className="font-bold text-sm">Inscrições</span>
           </div>
-          <span className="font-serif text-3xl font-bold text-textDark">{totalRegistrations}</span>
+          <span className="font-sans text-3xl font-bold text-textDark">{totalRegistrations}</span>
         </div>
       </div>
 
@@ -368,7 +368,7 @@ export const AdminDashboard = () => {
                 <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
                   <Settings size={32} />
                 </div>
-                <h3 className="font-serif text-2xl font-bold text-textDark">Editar Parceiro</h3>
+                <h3 className="font-sans text-2xl font-bold text-textDark">Editar Parceiro</h3>
                 <p className="text-xs text-textDark/50">Modifique as informações e acessos</p>
               </div>
 
@@ -437,7 +437,7 @@ export const AdminDashboard = () => {
                   <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
                     <UserPlus size={32} />
                   </div>
-                  <h3 className="font-serif text-2xl font-bold text-textDark">Cadastrar Parceiro</h3>
+                  <h3 className="font-sans text-2xl font-bold text-textDark">Cadastrar Parceiro</h3>
                   <p className="text-xs text-textDark/50">Crie acesso para novos estabelecimentos</p>
                 </div>
 
@@ -492,7 +492,7 @@ export const AdminDashboard = () => {
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <ShieldCheck size={32} />
                 </div>
-                <h3 className="font-serif text-2xl font-bold text-textDark mb-2">Parceiro Criado!</h3>
+                <h3 className="font-sans text-2xl font-bold text-textDark mb-2">Parceiro Criado!</h3>
                 <p className="text-sm text-textDark/60 mb-6">Salve os dados de acesso abaixo:</p>
                 
                 <div className="bg-primary/5 p-4 rounded-2xl space-y-3 text-left border border-primary/10 mb-8">
@@ -536,7 +536,7 @@ export const AdminDashboard = () => {
             )}>
               <Trash2 size={32} />
             </div>
-            <h3 className="font-serif text-2xl font-bold text-textDark mb-3">{confirmModal.title}</h3>
+            <h3 className="font-sans text-2xl font-bold text-textDark mb-3">{confirmModal.title}</h3>
             <p className="text-sm text-textDark/60 mb-8 leading-relaxed">
               {confirmModal.message}
             </p>

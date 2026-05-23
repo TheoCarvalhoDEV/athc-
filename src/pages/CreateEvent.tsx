@@ -23,6 +23,7 @@ const eventSchema = z.object({
   publicType: z.string(),
   description: z.string().min(10, "A descrição deve ter no mínimo 10 caracteres"),
   hasTickets: z.boolean(),
+  whatsappContacts: z.array(z.object({ name: z.string(), phone: z.string() })).optional(),
   whatsappNumber: z.string().optional(),
   mediaUrls: z.array(z.string())
 }).refine(data => !data.hasTickets || (data.whatsappNumber && data.whatsappNumber.length >= 10), {
@@ -59,6 +60,7 @@ const CreateEventContent = () => {
       address: '',
       mediaUrls: [],
       hasTickets: false,
+      whatsappContacts: [{ name: '', phone: '' }],
       whatsappNumber: ''
     }
   });
@@ -103,6 +105,7 @@ const CreateEventContent = () => {
               address: ev.address || '',
               mediaUrls: ev.mediaUrls || [],
               hasTickets: ev.hasTickets || false,
+              whatsappContacts: ev.whatsappContacts || (ev.whatsappNumber ? [{ name: ev.whatsappName || '', phone: ev.whatsappNumber }] : [{ name: '', phone: '' }]),
               whatsappNumber: ev.whatsappNumber || ''
             });
             setOriginalCreatorId(ev.creatorId);
@@ -150,6 +153,7 @@ const CreateEventContent = () => {
     const eventData = {
       id: id || Date.now().toString(),
       ...data,
+      whatsappContacts: data.whatsappContacts?.filter(c => c.phone.trim() !== '') || [],
       publicType: data.publicType as any,
       creatorId: id ? (originalCreatorId || targetCreatorId) : targetCreatorId,
     };
@@ -255,7 +259,7 @@ const CreateEventContent = () => {
   };
 
   const removeMedia = (index: number) => {
-    setValue('mediaUrls', mediaUrls.filter((_, i) => i !== index), { shouldValidate: true });
+    setValue('mediaUrls', mediaUrls.filter((_: string, i: number) => i !== index), { shouldValidate: true });
   };
 
   const selectMockLocation = (loc: string, addr: string) => {
@@ -312,7 +316,7 @@ const CreateEventContent = () => {
     <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-8 px-2">
-        <h1 className="font-serif text-4xl italic text-primary font-bold">Atchê</h1>
+        <h1 className="font-sans text-4xl italic text-primary font-bold">Atchê</h1>
         <div className="w-10 h-10 rounded-xl bg-primary text-textLight flex items-center justify-center shadow-lg overflow-hidden">
           {user?.imageUrl ? (
             <img src={user.imageUrl} className="w-full h-full object-cover" alt={user.name} />
@@ -393,7 +397,7 @@ const CreateEventContent = () => {
 
           <div className="form-el">
             <div className="grid grid-cols-3 gap-3 mb-3">
-              {mediaUrls.map((url, index) => (
+              {mediaUrls.map((url: string, index: number) => (
                 <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-primary/20 shadow-sm group">
                   <img src={url} alt="Upload" className="w-full h-full object-cover" />
                   <button
@@ -470,18 +474,68 @@ const CreateEventContent = () => {
                 </button>
               </div>
 
-              {hasTickets && (
-                <div className="pt-2 animate-in fade-in slide-in-from-top-2">
-                  <div className="relative">
-                    <Input
-                      type="tel"
-                      placeholder="WhatsApp para vendas (com DDD)"
-                      className="pl-4"
-                      {...register('whatsappNumber')}
-                    />
+                {hasTickets && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {(watch('whatsappContacts') || [{name: '', phone: ''}]).map((contact: {name: string, phone: string}, idx: number) => (
+                      <div key={idx} className="p-4 border border-primary/10 rounded-[1.5rem] bg-primary/5 relative">
+                        {(watch('whatsappContacts') || []).length > 1 && (
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const current = watch('whatsappContacts') || [];
+                              setValue('whatsappContacts', current.filter((_: {name: string, phone: string}, i: number) => i !== idx));
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 z-10"
+                          >
+                            <X size={12} />
+                          </button>
+                        )}
+                        <div className="space-y-2 mb-3">
+                          <label className="text-xs font-bold text-primary uppercase ml-4">Número do WhatsApp</label>
+                          <Input
+                            type="tel"
+                            placeholder="65 99999-9999"
+                            value={contact.phone}
+                            onChange={e => {
+                              const current = [...(watch('whatsappContacts') || [])];
+                              if (!current[idx]) current[idx] = { name: '', phone: '' };
+                              current[idx].phone = e.target.value;
+                              setValue('whatsappContacts', current);
+                            }}
+                            className="rounded-[1.5rem] bg-background"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-primary uppercase ml-4">Tratar com (Nome)</label>
+                          <Input
+                            placeholder="Ex: João Silva ou Diretoria"
+                            value={contact.name}
+                            onChange={e => {
+                              const current = [...(watch('whatsappContacts') || [])];
+                              if (!current[idx]) current[idx] = { name: '', phone: '' };
+                              current[idx].name = e.target.value;
+                              setValue('whatsappContacts', current);
+                            }}
+                            className="rounded-[1.5rem] bg-background"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {(watch('whatsappContacts') || []).length < 5 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = watch('whatsappContacts') || [];
+                          setValue('whatsappContacts', [...current, { name: '', phone: '' }]);
+                        }}
+                        className="w-full py-3 rounded-full border-2 border-dashed border-primary/20 text-primary font-bold text-xs hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Plus size={16} /> Adicionar outro número
+                      </button>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </div>
 

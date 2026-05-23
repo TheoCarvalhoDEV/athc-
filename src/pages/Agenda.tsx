@@ -69,7 +69,7 @@ export const Agenda = () => {
           )}
         </div>
         
-        <h1 className="font-serif text-3xl font-bold mb-1 leading-tight z-10">{profile.name}</h1>
+        <h1 className="font-sans text-3xl font-bold mb-1 leading-tight z-10">{profile.name}</h1>
         <p className="font-mono text-xs opacity-75 uppercase tracking-wider mb-3 z-10 px-3 py-1 bg-white/10 rounded-full border border-white/5">
           {profile.type === 'atletica' ? 'Atlética' : 'Estabelecimento'}
         </p>

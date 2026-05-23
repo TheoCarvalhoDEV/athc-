@@ -245,7 +245,7 @@ export const EventDetails = () => {
 
         <div className="relative z-10 px-5 pt-7 pb-40">
           {/* Título com estilo premium e gradiente refinado */}
-          <h1 className="font-serif text-4xl font-extrabold text-textDark leading-tight mb-3 anim-up tracking-tight bg-gradient-to-r from-textDark via-primary to-accent bg-clip-text text-transparent">
+          <h1 className="font-sans text-4xl font-extrabold text-textDark leading-tight mb-3 anim-up tracking-tight bg-gradient-to-r from-textDark via-primary to-accent bg-clip-text text-transparent">
             {event.title}
           </h1>
           <div className="w-16 h-1.5 bg-gradient-to-r from-primary to-accent rounded-full mb-8 anim-up" />
@@ -292,7 +292,7 @@ export const EventDetails = () => {
                 </div>
                 <div>
                   <p className="text-[9px] font-bold text-primary/50 uppercase tracking-widest">Organizado por</p>
-                  <p className="font-serif font-bold text-base text-textDark mt-0.5">{organizer.name}</p>
+                  <p className="font-sans font-bold text-base text-textDark mt-0.5">{organizer.name}</p>
                   <p className="text-[10px] text-textDark/40 font-mono">Parceiro Oficial Athê</p>
                 </div>
               </div>
@@ -314,7 +314,7 @@ export const EventDetails = () => {
             </div>
             <div className="relative overflow-hidden bg-gradient-to-b from-[#FCFAF7] to-[#F8F3EA] p-6 rounded-[2.5rem] border border-primary/8 shadow-sm">
               {/* Aspa de fundo decorativa */}
-              <div className="absolute -top-6 -right-6 text-9xl font-serif text-primary/5 pointer-events-none select-none">
+              <div className="absolute -top-6 -right-6 text-9xl font-sans text-primary/5 pointer-events-none select-none">
                 ”
               </div>
               <p className="text-textDark/80 text-sm leading-relaxed whitespace-pre-wrap font-sans relative z-10">
@@ -360,7 +360,7 @@ export const EventDetails = () => {
           <div className="bg-gradient-to-r from-[#FCFAF7]/90 to-[#FAF5EC]/90 backdrop-blur-3xl p-4 rounded-[2.5rem] shadow-[0_20px_40px_rgba(43,24,16,0.12)] border border-primary/20 flex items-center justify-between">
             <div className="flex flex-col pl-4">
               <span className="text-[9px] font-bold text-primary/60 uppercase tracking-widest">Ingresso</span>
-              <span className="text-2xl font-serif font-bold text-primary tracking-tight">
+              <span className="text-2xl font-sans font-bold text-primary tracking-tight">
                 {event.publicType === 'VIP' ? 'Lista VIP' : 'Gratuito'}
               </span>
               <span className="text-[8px] text-textDark/40 font-mono">1º Lote Disponível</span>
@@ -430,7 +430,7 @@ export const EventDetails = () => {
             <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 size={32} />
             </div>
-            <h3 className="font-serif text-2xl font-bold text-textDark mb-2">Presença Confirmada!</h3>
+            <h3 className="font-sans text-2xl font-bold text-textDark mb-2">Presença Confirmada!</h3>
             <p className="text-sm text-textDark/70 mb-6">
               Sua vaga para {event.title} foi garantida. Aproveite o evento!
             </p>
@@ -445,7 +445,7 @@ export const EventDetails = () => {
       {showContactsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
           <div className="bg-background p-6 rounded-[2rem] border border-primary/20 shadow-2xl max-w-sm w-full text-center max-h-[80vh] flex flex-col">
-            <h3 className="font-serif text-2xl font-bold text-textDark mb-2">Comprar Ingresso</h3>
+            <h3 className="font-sans text-2xl font-bold text-textDark mb-2">Comprar Ingresso</h3>
             <p className="text-xs text-textDark/70 mb-6">
               Escolha com qual promoter você deseja falar para garantir sua vaga:
             </p>
