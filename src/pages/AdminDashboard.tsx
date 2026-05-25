@@ -150,11 +150,14 @@ export const AdminDashboard = () => {
       setProfiles(allProfiles);
       setLastGenerated({ email, pass: password }); // A senha fica só na tela, nunca no banco
       
-      // Reset form but keep last generated for the success state
       setNewPartner({ name: '', type: 'estabelecimento', description: '', imageUrl: '' });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao adicionar parceiro:", error);
-      alert("Erro ao criar parceiro no Firebase. Verifique o console.");
+      if (error?.code === 'auth/email-already-in-use') {
+        alert("Este parceiro já existe! Tente adicionar um número ou sobrenome no nome para gerar um e-mail diferente.");
+      } else {
+        alert("Erro ao criar parceiro no Firebase. Verifique o console.");
+      }
     }
   };
 

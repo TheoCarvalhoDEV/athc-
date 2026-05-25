@@ -327,7 +327,7 @@ export const Profile = () => {
                     </div>
                   )}
                 </div>
-                {userRole === 'partner' && (
+                {userRole !== 'user' && (
                   <button 
                     onClick={() => setShowEditModal(true)}
                     className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-textLight text-primary flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all cursor-pointer"
@@ -371,7 +371,7 @@ export const Profile = () => {
                   </span>
                 </div>
                 
-                {userRole === 'partner' && (
+                {userRole !== 'user' && (
                   <button 
                     onClick={() => setShowEditModal(true)}
                     className="flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full font-mono text-[10px] text-textLight transition-colors cursor-pointer uppercase tracking-wider"
