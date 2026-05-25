@@ -128,6 +128,7 @@ const CreateEventContent = () => {
   
   const mediaUrls = watch('mediaUrls');
   const hasTickets = watch('hasTickets');
+  const hasPixTickets = watch('hasPixTickets');
   const location = watch('location');
   const address = watch('address');
   const [showMapModal, setShowMapModal] = useState(false);
@@ -616,6 +617,47 @@ const CreateEventContent = () => {
                   </div>
                 )}
             </div>
+            
+            {/* Venda Pix */}
+            <div className="space-y-4 pt-4 border-t border-primary/10 form-el">
+                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-[1.5rem] border border-emerald-100">
+                  <div>
+                    <p className="font-bold text-emerald-800 text-sm">Venda Automática via Pix</p>
+                    <p className="text-[10px] text-emerald-600/70">Ativar checkout de pagamento no app</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setValue('hasPixTickets', !hasPixTickets, { shouldValidate: true })}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
+                      hasPixTickets ? "bg-emerald-500" : "bg-emerald-200"
+                    )}
+                    title="Alternar venda via Pix"
+                    aria-label="Alternar venda via Pix"
+                  >
+                    <div className={cn(
+                      "w-4 h-4 bg-white rounded-full transition-all shadow-sm",
+                      hasPixTickets ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+
+                {hasPixTickets && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 p-4 border border-emerald-100 rounded-[1.5rem] bg-emerald-50/50">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-emerald-700 uppercase ml-4">Valor do Ingresso (R$)</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ex: 50.00"
+                        {...register('pixTicketPrice')}
+                        className="rounded-[1.5rem] bg-white border-emerald-200 focus:border-emerald-500 focus:ring-emerald-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
 
           <Button type="submit" disabled={isSubmitting} className="w-full mt-4 rounded-full py-4 shadow-lg text-lg">

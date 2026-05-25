@@ -24,8 +24,12 @@ service cloud.firestore {
     }
 
     match /registrations/{registrationId} {
-      // Qualquer um logado pode ler ou escrever inscrições
-      allow read, write: if isAuthed();
+      // Qualquer um pode ler ou escrever inscrições (incluindo Visitantes)
+      allow read, write: if true;
+    }
+
+    match /pedidos/{pedidoId} {
+      allow read, write: if true;
     }
   }
 }

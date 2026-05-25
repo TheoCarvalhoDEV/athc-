@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration, AppProfile } from '../lib/storage';
 import { Button } from '../components/ui/Button';
-import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode } from 'lucide-react';
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import gsap from 'gsap';
 
 export const EventDetails = () => {
@@ -22,6 +24,92 @@ export const EventDetails = () => {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
+
+  // PIX STATES
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [loadingPix, setLoadingPix] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<{ qr_code: string, qr_code_base64: string } | null>(null);
+  const [pedidoId, setPedidoId] = useState('');
+  
+  // GUEST STATES
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+
+  // Firebase Instances
+  const functions = getFunctions();
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      try {
+          connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+      } catch (e) {
+          // Ignore
+      }
+  }
+  const db = getFirestore();
+
+  useEffect(() => {
+    if (!qrCodeData || !pedidoId) return; 
+    
+    const docRef = doc(db, 'pedidos', pedidoId);
+    const unsubscribe = onSnapshot(docRef, async (docSnap) => {
+        if (docSnap.exists()) {
+            const dados = docSnap.data();
+            if (dados.status === 'pago') {
+                // Fechar modal Pix e garantir vaga
+                setShowPixModal(false);
+                await handleRegister();
+                // O handleRegister já abre o showModal (Success Modal)
+            }
+        }
+    });
+
+    return () => unsubscribe();
+  }, [qrCodeData, pedidoId]);
+
+  const handlePagarPix = async () => {
+    if (!event) return;
+    
+    if (!currentUser && (!guestName || !guestEmail)) {
+        alert("Por favor, preencha nome e email para continuar.");
+        return;
+    }
+    
+    setLoadingPix(true);
+    const buyerId = currentUser ? currentUser.id : `guest-${Date.now()}`;
+    const buyerEmail = currentUser ? (currentUser.username || 'comprador@atche.com') : guestEmail;
+
+    const novoPedidoId = `PIX-${event.id}-${buyerId}-${Date.now()}`;
+    setPedidoId(novoPedidoId);
+    
+    const pedido = {
+        pedidoId: novoPedidoId,
+        valor: Number(event.pixTicketPrice || 0),
+        cpf: '12345678909', // Placeholder temporário
+        email: buyerEmail
+    };
+
+    try {
+        const criarCobrancaPix = httpsCallable(functions, 'criarCobrancaPix');
+        const result = await criarCobrancaPix(pedido);
+        const data = result.data as any;
+        
+        setQrCodeData({
+            qr_code: data.qr_code,
+            qr_code_base64: data.qr_code_base64
+        });
+    } catch (error: any) {
+        console.error("Erro ao gerar Pix:", error);
+        alert("Erro ao processar: " + (error.message || "Verifique o console"));
+    } finally {
+        setLoadingPix(false);
+    }
+  };
+
+  const copiarCodigo = () => {
+    if (qrCodeData?.qr_code) {
+        navigator.clipboard.writeText(qrCodeData.qr_code);
+        alert("Código Pix copiado com sucesso!");
+    }
+  };
 
   const loadEvent = useCallback(async () => {
     if (id) {
@@ -87,18 +175,22 @@ export const EventDetails = () => {
   }
 
   const handleRegister = async () => {
-    if (!currentUser) {
+    // Se não tiver logado e não for visitante com dados preenchidos, não pode registrar ingresso grátis (Garantir Vaga)
+    if (!currentUser && (!guestName || !guestEmail)) {
       navigate('/login');
       return;
     }
 
     if (!event) return;
 
+    const buyerId = currentUser ? currentUser.id : `guest-${Date.now()}`;
+    const buyerName = currentUser ? currentUser.name : guestName;
+
     const registration: Registration = {
       id: Date.now().toString(),
       eventId: event.id,
-      userId: currentUser.id,
-      userName: currentUser.name,
+      userId: buyerId,
+      userName: buyerName,
       timestamp: new Date().toISOString()
     };
 
@@ -404,7 +496,30 @@ export const EventDetails = () => {
               </button>
               */}
 
-              {event.hasTickets && (() => {
+              {event.hasPixTickets ? (
+                <button
+                  onClick={() => {
+                      if (!isRegistered) setShowPixModal(true);
+                  }}
+                  disabled={isRegistered}
+                  className={`rounded-2xl px-5 py-3.5 shadow-md flex items-center gap-2 transition-all duration-300 font-sans font-extrabold text-xs h-auto cursor-pointer ${isRegistered
+                      ? 'bg-green-600 text-white shadow-green-600/10 scale-100'
+                      : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20 hover:scale-105 active:scale-95'
+                    }`}
+                >
+                  {isRegistered ? (
+                    <>
+                      <CheckCircle2 size={15} />
+                      <span>Pago & Confirmado</span>
+                    </>
+                  ) : (
+                    <>
+                      <QrCode size={18} />
+                      <span>Comprar Pix</span>
+                    </>
+                  )}
+                </button>
+              ) : event.hasTickets ? (() => {
                 const contacts = event.whatsappContacts && event.whatsappContacts.length > 0 
                   ? event.whatsappContacts 
                   : (event.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : []);
@@ -432,7 +547,7 @@ export const EventDetails = () => {
                     </div>
                   </button>
                 );
-              })()}
+              })() : null}
             </div>
           </div>
         </div>
@@ -489,6 +604,82 @@ export const EventDetails = () => {
             <Button onClick={() => setShowContactsModal(false)} variant="outline" className="w-full rounded-full mt-2">
               Cancelar
             </Button>
+          </div>
+        </div>
+      )}
+      {/* Pix Modal */}
+      {showPixModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-[2rem] border border-emerald-100 shadow-2xl max-w-sm w-full text-center relative">
+            <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
+              <span className="sr-only">Fechar</span>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 className="font-sans text-xl font-bold text-gray-800 mb-1">Pagamento via Pix</h3>
+            <p className="text-xs text-gray-500 mb-4">Total: R$ {Number(event?.pixTicketPrice || 0).toFixed(2).replace('.', ',')}</p>
+            
+            {!qrCodeData ? (
+              <div className="flex flex-col gap-4">
+                {!currentUser && (
+                  <div className="text-left space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
+                    <p className="text-xs font-bold text-gray-700">Seus Dados (Visitante)</p>
+                    <input 
+                      type="text" 
+                      placeholder="Nome Completo" 
+                      value={guestName}
+                      onChange={e => setGuestName(e.target.value)}
+                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                    />
+                    <input 
+                      type="email" 
+                      placeholder="Seu melhor email" 
+                      value={guestEmail}
+                      onChange={e => setGuestEmail(e.target.value)}
+                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
+                )}
+                
+                <button 
+                    onClick={handlePagarPix}
+                    disabled={loadingPix || (!currentUser && (!guestName || !guestEmail))}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-md disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    {loadingPix ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <QrCode size={18} />}
+                    {loadingPix ? 'Gerando QR Code...' : 'Gerar QR Code Pix'}
+                </button>
+              </div>
+            ) : (
+                <div className="flex flex-col items-center">
+                    <div className="p-3 bg-white border-2 border-emerald-50 rounded-2xl shadow-sm mb-4 w-full flex justify-center">
+                        {qrCodeData.qr_code_base64 ? (
+                            <img 
+                                src={`data:image/jpeg;base64,${qrCodeData.qr_code_base64}`} 
+                                alt="QR Code Pix" 
+                                className="w-48 h-48 rounded-lg object-contain"
+                            />
+                        ) : (
+                            <div className="w-48 h-48 flex items-center justify-center text-gray-400 bg-gray-50 rounded-lg text-sm">Indisponível</div>
+                        )}
+                    </div>
+                    
+                    <button 
+                        onClick={copiarCodigo}
+                        className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl mb-4 transition-colors border border-gray-200 flex items-center justify-center gap-2 text-sm"
+                    >
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        Copiar Pix Copia e Cola
+                    </button>
+
+                    <div className="flex items-center justify-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 py-2 px-4 rounded-full w-full">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        Aguardando pagamento...
+                    </div>
+                </div>
+            )}
           </div>
         </div>
       )}
