@@ -275,9 +275,9 @@ export const EventDetails = () => {
 
           {/* Seção do Organizador VIP */}
           {organizer && (
-            <div className="bg-gradient-to-r from-primary/5 via-primary/2 to-transparent border border-primary/10 p-5 rounded-[2.2rem] mb-8 flex items-center justify-between anim-up shadow-sm hover:border-primary/20 transition-all duration-300">
-              <div className="flex items-center gap-3.5">
-                <div className="relative">
+            <div className="bg-gradient-to-r from-primary/5 via-primary/2 to-transparent border border-primary/10 p-5 rounded-[2.2rem] mb-8 flex items-center justify-between gap-3 anim-up shadow-sm hover:border-primary/20 transition-all duration-300">
+              <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                <div className="relative shrink-0">
                   <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden border-2 border-white shadow-md">
                     {organizer.imageUrl ? (
                       <img src={organizer.imageUrl} className="w-full h-full object-cover" alt={organizer.name} />
@@ -290,16 +290,16 @@ export const EventDetails = () => {
                     ✓
                   </div>
                 </div>
-                <div>
-                  <p className="text-[9px] font-bold text-primary/50 uppercase tracking-widest">Organizado por</p>
-                  <p className="font-sans font-bold text-base text-textDark mt-0.5">{organizer.name}</p>
-                  <p className="text-[10px] text-textDark/40 font-mono">Parceiro Oficial Athê</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] font-bold text-primary/50 uppercase tracking-widest truncate">Organizado por</p>
+                  <p className="font-sans font-bold text-base text-textDark mt-0.5 truncate">{organizer.name}</p>
+                  <p className="text-[10px] text-textDark/40 font-mono truncate">Parceiro Oficial Atchê</p>
                 </div>
               </div>
 
               <button
                 onClick={() => navigate(`/agenda/${organizer.id}`)}
-                className="bg-primary text-textLight font-sans font-bold text-xs px-4 py-2.5 rounded-full shadow-md hover:bg-primary/95 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                className="bg-primary text-textLight font-sans font-bold text-xs px-4 py-2.5 rounded-full shadow-md hover:bg-primary/95 hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
               >
                 Ver Perfil
               </button>
@@ -357,33 +357,52 @@ export const EventDetails = () => {
 
         {/* Floating Action Button for Registration - Pílula Ultra Premium */}
         <div className="fixed bottom-6 left-0 right-0 px-5 z-40 anim-up max-w-2xl mx-auto">
-          <div className="bg-gradient-to-r from-[#FCFAF7]/90 to-[#FAF5EC]/90 backdrop-blur-3xl p-4 rounded-[2.5rem] shadow-[0_20px_40px_rgba(43,24,16,0.12)] border border-primary/20 flex items-center justify-between">
-            <div className="flex flex-col pl-4">
-              <span className="text-[9px] font-bold text-primary/60 uppercase tracking-widest">Ingresso</span>
-              <span className="text-2xl font-sans font-bold text-primary tracking-tight">
-                Gratuito
+          <div className="bg-gradient-to-b from-[#FCFAF7]/95 to-[#FAF5EC]/95 backdrop-blur-3xl p-5 rounded-[2rem] shadow-[0_20px_40px_rgba(43,24,16,0.12)] border border-primary/20 flex flex-col gap-4">
+            
+            {/* Info do Ingresso */}
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-0.5">Ingresso</span>
+                <span className="text-xl font-sans font-bold text-primary tracking-tight leading-none truncate max-w-[140px]" title={event.hasTickets && event.ticketPrice ? event.ticketPrice : (event.hasTickets ? 'Consulte' : 'Gratuito')}>
+                  {(() => {
+                    if (!event.hasTickets) return 'Gratuito';
+                    if (!event.ticketPrice) return 'Consulte';
+                    const price = event.ticketPrice.trim();
+                    if (price.toUpperCase().includes('R$') || price.includes('$')) return price;
+                    if (/^[\d.,]+$/.test(price)) {
+                      if (!price.includes(',') && !price.includes('.')) return `R$ ${price},00`;
+                      return `R$ ${price}`;
+                    }
+                    return price;
+                  })()}
+                </span>
+              </div>
+              <span className="bg-primary/5 text-primary text-[10px] font-mono px-3 py-1.5 rounded-full border border-primary/10">
+                1º Lote Disponível
               </span>
-              <span className="text-[8px] text-textDark/40 font-mono">1º Lote Disponível</span>
             </div>
 
-            <div className="flex gap-2">
+            {/* Ações (Grid dinâmico dependendo de quantos botões temos) */}
+            <div className="flex flex-col gap-2">
+              {/* Botão Temporariamente Oculto a pedido
               <button
                 onClick={handleRegister}
                 disabled={isRegistered}
-                className={`rounded-2xl px-5 py-3.5 shadow-md flex items-center gap-2 transition-all duration-300 font-sans font-extrabold text-xs h-auto cursor-pointer ${isRegistered
-                    ? 'bg-green-600 text-white shadow-green-600/10 scale-100'
-                    : 'bg-primary text-textLight hover:bg-primary/95 shadow-primary/20 hover:scale-105 active:scale-95'
+                className={`w-full rounded-xl py-3.5 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-sans font-bold text-sm cursor-pointer ${isRegistered
+                    ? 'bg-primary/10 text-primary border border-primary/20 shadow-none scale-100'
+                    : 'bg-primary text-textLight hover:bg-primary/95 shadow-primary/20 hover:scale-[1.01] active:scale-95'
                   }`}
               >
                 {isRegistered ? (
                   <>
-                    <CheckCircle2 size={15} />
-                    <span>Confirmado</span>
+                    <CheckCircle2 size={18} />
+                    <span>Presença Confirmada</span>
                   </>
                 ) : (
                   <span>Garantir Vaga</span>
                 )}
               </button>
+              */}
 
               {event.hasTickets && (() => {
                 const contacts = event.whatsappContacts && event.whatsappContacts.length > 0 
@@ -402,18 +421,15 @@ export const EventDetails = () => {
                         window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
                       }
                     }}
-                    className="rounded-2xl px-5 py-3.5 shadow-md flex items-center gap-2 transition-all duration-300 font-sans font-extrabold text-xs h-auto bg-green-500 hover:bg-green-600 text-white cursor-pointer hover:scale-105 active:scale-95 flex-col !items-start"
+                    className="w-full rounded-xl py-3.5 shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all duration-300 font-sans font-bold text-sm bg-gradient-to-r from-green-600 to-green-500 text-white cursor-pointer hover:scale-[1.02] active:scale-95"
                   >
-                    <div className="flex items-center gap-2">
-                      <Ticket size={15} />
+                    <Ticket size={18} />
+                    <div className="flex flex-col items-start leading-none text-left">
                       <span>Comprar Ingresso</span>
+                      <span className="text-[10px] font-medium opacity-90 mt-1 font-mono">
+                        {contacts.length === 1 && contacts[0].name ? `Tratar com: ${contacts[0].name}` : contacts.length > 1 ? `${contacts.length} Promoters Disponíveis` : 'Via WhatsApp'}
+                      </span>
                     </div>
-                    {contacts.length === 1 && contacts[0].name && (
-                      <span className="text-[9px] font-medium opacity-90 block mt-0.5">Tratar com: {contacts[0].name}</span>
-                    )}
-                    {contacts.length > 1 && (
-                      <span className="text-[9px] font-medium opacity-90 block mt-0.5">{contacts.length} Promoters Disponíveis</span>
-                    )}
                   </button>
                 );
               })()}

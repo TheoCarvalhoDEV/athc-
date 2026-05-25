@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import gsap from 'gsap';
+import { ArrowLeft } from 'lucide-react';
 
 export const Login = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,7 +52,14 @@ export const Login = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+    <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
+      <button 
+        onClick={() => navigate(-1)} 
+        className="absolute top-8 left-6 p-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-95 cursor-pointer z-10"
+        title="Voltar"
+      >
+        <ArrowLeft size={24} />
+      </button>
       <div className="w-full max-w-sm flex flex-col items-center">
 
         <div className="flex flex-col items-center gap-3 stagger-el mb-12">

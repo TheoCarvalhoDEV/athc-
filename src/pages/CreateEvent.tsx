@@ -13,6 +13,55 @@ import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Cropper from 'react-easy-crop';
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.setAttribute('crossOrigin', 'anonymous');
+    image.src = url;
+  });
+
+async function getCroppedImg(
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number },
+  fileName: string
+): Promise<File> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Canvas is empty'));
+        return;
+      }
+      resolve(new File([blob], fileName, { type: 'image/jpeg' }));
+    }, 'image/jpeg', 0.9);
+  });
+}
 
 const eventSchema = z.object({
   title: z.string().min(3, "Mínimo 3 caracteres"),
@@ -23,12 +72,23 @@ const eventSchema = z.object({
   publicType: z.string(),
   description: z.string().min(10, "A descrição deve ter no mínimo 10 caracteres"),
   hasTickets: z.boolean(),
+  ticketPrice: z.string().optional(),
   whatsappContacts: z.array(z.object({ name: z.string(), phone: z.string() })).optional(),
   whatsappNumber: z.string().optional(),
   mediaUrls: z.array(z.string())
-}).refine(data => !data.hasTickets || (data.whatsappNumber && data.whatsappNumber.length >= 10), {
+}).refine(data => {
+  if (!data.hasTickets) return true;
+  if (data.whatsappContacts && data.whatsappContacts.length > 0) {
+    const firstPhone = data.whatsappContacts[0].phone.replace(/\D/g, '');
+    return firstPhone.length >= 10;
+  }
+  if (data.whatsappNumber) {
+    return data.whatsappNumber.replace(/\D/g, '').length >= 10;
+  }
+  return false;
+}, {
   message: "WhatsApp obrigatório para vendas (mín. 10 digitos)",
-  path: ["whatsappNumber"]
+  path: ["whatsappContacts"]
 });
 
 type EventFormValues = z.infer<typeof eventSchema>;
@@ -60,6 +120,7 @@ const CreateEventContent = () => {
       address: '',
       mediaUrls: [],
       hasTickets: false,
+      ticketPrice: '',
       whatsappContacts: [{ name: '', phone: '' }],
       whatsappNumber: ''
     }
@@ -74,6 +135,15 @@ const CreateEventContent = () => {
   const [selectedPos, setSelectedPos] = useState<[number, number] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Crop States
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string>('');
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
   const { user } = useAuth();
   const userId = user?.id;
   const userRole = user?.role;
@@ -105,6 +175,7 @@ const CreateEventContent = () => {
               address: ev.address || '',
               mediaUrls: ev.mediaUrls || [],
               hasTickets: ev.hasTickets || false,
+              ticketPrice: ev.ticketPrice || '',
               whatsappContacts: ev.whatsappContacts || (ev.whatsappNumber ? [{ name: ev.whatsappName || '', phone: ev.whatsappNumber }] : [{ name: '', phone: '' }]),
               whatsappNumber: ev.whatsappNumber || ''
             });
@@ -216,45 +287,56 @@ const CreateEventContent = () => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      setIsUploading(true);
-      const toastId = toast.loading('Fazendo upload das imagens...');
-      const newUrls: string[] = [];
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('video/')) {
+        toast.error("Apenas imagens são suportadas.");
+        return;
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error(`A imagem é muito grande (máx 15MB).`);
+        return;
+      }
       
-      for (const file of Array.from(files)) {
-        if (file.type.startsWith('video/')) {
-          toast.error("Desculpe, arquivos de vídeo não são suportados. Envie apenas imagens.");
-          continue;
-        }
-        if (file.size > 15 * 1024 * 1024) { // 15MB
-          toast.error(`A imagem ${file.name} é maior que o limite de 15MB.`);
-          continue;
-        }
-        try {
-          // Comprimir a imagem (max 1080p)
-          const compressedBase64 = await compressImage(file, 1080, 1080, 0.7);
-          
-          // Converter Base64 gerado de volta para Arquivo (File/Blob)
-          const res = await fetch(compressedBase64);
-          const blob = await res.blob();
-          const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageSrc(reader.result as string);
+        setCurrentFile(file);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setCropModalOpen(true);
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reseta o input para permitir selecionar a mesma imagem se o modal for fechado
+    e.target.value = '';
+  };
 
-          // Faz o upload direto para o Firebase Storage usando o arquivo já comprimido
-          const url = await storage.uploadFile(compressedFile, 'events');
-          newUrls.push(url);
-        } catch (error) {
-          console.error("Erro no upload:", error);
-          toast.error(`Falha ao fazer upload de ${file.name}.`);
-        }
-      }
+  const handleCropConfirm = async () => {
+    if (!imageSrc || !croppedAreaPixels || !currentFile) return;
+    setCropModalOpen(false);
+    setIsUploading(true);
+    const toastId = toast.loading('Processando imagem e fazendo upload...');
+
+    try {
+      const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels, currentFile.name);
+      const compressedBase64 = await compressImage(croppedFile, 1080, 1080, 0.7);
       
+      const res = await fetch(compressedBase64);
+      const blob = await res.blob();
+      const finalFile = new File([blob], currentFile.name, { type: 'image/jpeg' });
+
+      const url = await storage.uploadFile(finalFile, 'events');
+      setValue('mediaUrls', [...mediaUrls, url], { shouldValidate: true });
+      toast.success('Upload concluído!');
+    } catch (error) {
+      console.error("Erro no recorte/upload:", error);
+      toast.error('Falha ao processar imagem.');
+    } finally {
       setIsUploading(false);
+      setImageSrc('');
+      setCurrentFile(null);
       toast.dismiss(toastId);
-      
-      if (newUrls.length > 0) {
-        toast.success('Upload concluído!');
-        setValue('mediaUrls', [...mediaUrls, ...newUrls], { shouldValidate: true });
-      }
     }
   };
 
@@ -316,12 +398,19 @@ const CreateEventContent = () => {
     <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-8 px-2">
-        <h1 className="font-sans text-4xl italic text-primary font-bold">Atchê</h1>
-        <div className="w-10 h-10 rounded-xl bg-primary text-textLight flex items-center justify-center shadow-lg overflow-hidden">
+        <div className="flex items-center gap-3">
+          <img 
+            src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
+            alt="Atchê" 
+            className="w-12 h-12 object-contain mix-blend-multiply" 
+          />
+          <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
+        </div>
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden">
           {user?.imageUrl ? (
             <img src={user.imageUrl} className="w-full h-full object-cover" alt={user.name} />
           ) : (
-            <User size={24} />
+            user?.name?.charAt(0).toUpperCase() || 'U'
           )}
         </div>
       </div>
@@ -411,7 +500,7 @@ const CreateEventContent = () => {
                     <Plus className="text-primary/60" size={24} />
                   )}
                   <span className="text-[10px] font-bold text-primary/60 mt-1">{isUploading ? '...' : 'Add'}</span>
-                  <input type="file" className="hidden" accept="image/*" disabled={isUploading} multiple onChange={handleFileChange} />
+                  <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={handleFileChange} />
                 </label>
               )}
             </div>
@@ -426,9 +515,9 @@ const CreateEventContent = () => {
                   <p className="text-sm text-textDark/70">
                     <span className="font-bold">{isUploading ? 'Enviando...' : 'Clique para enviar'}</span> {isUploading ? 'suas imagens' : 'fotos'}
                   </p>
-                  <p className="text-[10px] text-textDark/40">Selecione até 6 imagens (máx. 15MB cada)</p>
+                  <p className="text-[10px] text-textDark/40">Recorte de foto disponível. Máximo 6 imagens.</p>
                 </div>
-                <input type="file" className="hidden" accept="image/*" disabled={isUploading} multiple onChange={handleFileChange} />
+                <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={handleFileChange} />
               </label>
             )}
           </div>
@@ -468,6 +557,16 @@ const CreateEventContent = () => {
 
                 {hasTickets && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="p-4 border border-primary/10 rounded-[1.5rem] bg-primary/5">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-primary uppercase ml-4">Preço do Ingresso (Opcional)</label>
+                        <Input
+                          placeholder="Ex: R$ 30,00 ou Lote 1 - 40,00"
+                          {...register('ticketPrice')}
+                          className="rounded-[1.5rem] bg-background"
+                        />
+                      </div>
+                    </div>
                     {(watch('whatsappContacts') || [{name: '', phone: ''}]).map((contact: {name: string, phone: string}, idx: number) => (
                       <div key={idx} className="p-4 border border-primary/10 rounded-[1.5rem] bg-primary/5 relative">
                         {(watch('whatsappContacts') || []).length > 1 && (
@@ -487,13 +586,7 @@ const CreateEventContent = () => {
                           <Input
                             type="tel"
                             placeholder="65 99999-9999"
-                            value={contact.phone}
-                            onChange={e => {
-                              const current = [...(watch('whatsappContacts') || [])];
-                              if (!current[idx]) current[idx] = { name: '', phone: '' };
-                              current[idx].phone = e.target.value;
-                              setValue('whatsappContacts', current);
-                            }}
+                            {...register(`whatsappContacts.${idx}.phone` as const)}
                             className="rounded-[1.5rem] bg-background"
                           />
                         </div>
@@ -501,13 +594,7 @@ const CreateEventContent = () => {
                           <label className="text-xs font-bold text-primary uppercase ml-4">Tratar com (Nome)</label>
                           <Input
                             placeholder="Ex: João Silva ou Diretoria"
-                            value={contact.name}
-                            onChange={e => {
-                              const current = [...(watch('whatsappContacts') || [])];
-                              if (!current[idx]) current[idx] = { name: '', phone: '' };
-                              current[idx].name = e.target.value;
-                              setValue('whatsappContacts', current);
-                            }}
+                            {...register(`whatsappContacts.${idx}.name` as const)}
                             className="rounded-[1.5rem] bg-background"
                           />
                         </div>
@@ -622,6 +709,51 @@ const CreateEventContent = () => {
             >
               Confirmar Localização
             </Button>
+        </div>
+      )}
+
+      {/* Crop Modal */}
+      {cropModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex flex-col pt-12 pb-6 px-4">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="font-sans font-bold text-xl text-textDark">Ajustar Imagem</h2>
+              <p className="text-xs text-textDark/50">Recorte para exibição perfeita no Feed</p>
+            </div>
+            <button type="button" onClick={() => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); }} className="bg-primary/10 p-2 rounded-full text-primary" title="Cancelar">
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="relative flex-1 bg-black/5 rounded-3xl overflow-hidden mb-6 border border-primary/20 shadow-inner">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={16 / 9}
+              onCropChange={setCrop}
+              onCropComplete={(_, croppedAreaPixels) => setCroppedAreaPixels(croppedAreaPixels)}
+              onZoomChange={setZoom}
+            />
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              type="button"
+              className="flex-1 rounded-full py-4 border-2 border-primary/20 text-primary font-bold hover:bg-primary/5 transition-all"
+              onClick={() => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); }}
+            >
+              Cancelar
+            </button>
+            <Button
+              type="button"
+              className="flex-1 rounded-full py-4 shadow-xl"
+              onClick={handleCropConfirm}
+              disabled={isUploading}
+            >
+              {isUploading ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Confirmar Corte'}
+            </Button>
+          </div>
         </div>
       )}
     </div>

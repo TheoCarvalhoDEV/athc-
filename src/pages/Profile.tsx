@@ -5,13 +5,14 @@ import type { EventItem, Registration } from '../lib/storage';
 import gsap from 'gsap';
 import { User, LogOut, Calendar, MapPin, Clock, Trash2, Navigation, Ticket, Camera, X, Users, Edit2, Mail, Download } from 'lucide-react';
 import { InstagramIcon } from '../components/InstagramIcon';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Profile = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [myEvents, setMyEvents] = useState<EventItem[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const user = storage.getCurrentUser();
+  const { user, updateUser } = useAuth();
   const userRole = user?.role;
 
   // Estados do Perfil e Imagem
@@ -157,7 +158,7 @@ export const Profile = () => {
               imageUrl: remoteProfile.imageUrl || ''
             });
             
-            // Sincronizar localStorage
+            // Sincronizar contexto
             if (remoteProfile.imageUrl !== user.imageUrl || remoteProfile.name !== user.name || !user.profileId) {
               const updatedUser = {
                 ...user,
@@ -165,7 +166,7 @@ export const Profile = () => {
                 imageUrl: remoteProfile.imageUrl || '',
                 profileId: remoteProfile.id
               };
-              localStorage.setItem('@atche:user', JSON.stringify(updatedUser));
+              updateUser(updatedUser);
               loadEvents();
             }
           }
@@ -217,6 +218,16 @@ export const Profile = () => {
         setImageUrl(editData.imageUrl);
         setImgFailed(false);
         setShowEditModal(false);
+        
+        // Atualiza contexto caso mudou a foto/nome base
+        if (user) {
+          updateUser({
+            ...user,
+            name: editData.name,
+            imageUrl: editData.imageUrl
+          });
+        }
+        
         loadEvents();
       }
     } catch (error) {
@@ -274,9 +285,13 @@ export const Profile = () => {
       {/* Header */}
       <div className="px-5 pt-8 pb-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply mix-blend-multiply mix-blend-multiply" />
-            <h1 className="font-brand text-5xl text-primary font-bold tracking-tight mt-1">Atchê</h1>
+          <div className="flex items-center gap-3">
+            <img 
+              src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
+              alt="Atchê" 
+              className="w-12 h-12 object-contain mix-blend-multiply" 
+            />
+            <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
           </div>
           {user && userRole !== 'user' && (
             <button
@@ -411,7 +426,10 @@ export const Profile = () => {
           <div className="flex flex-col gap-3 px-5">
             {myEvents.map((event) => (
               <div key={event.id} className="profile-el bg-background border border-primary/15 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-md transition-all press-effect">
-                <div className="p-5">
+                <div 
+                  className="p-5 cursor-pointer hover:bg-primary/[0.02] transition-colors group/card"
+                  onClick={() => navigate(`/event/${event.id}`)}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -428,14 +446,14 @@ export const Profile = () => {
                       <Clock size={13} className="text-primary/60" />
                       <span className="font-mono text-xs font-bold text-primary">{event.time}</span>
                     </div>
-                    <button onClick={() => openMaps(event)} className="flex items-center gap-1.5 hover:text-primary transition-colors group cursor-pointer">
+                    <button onClick={(e) => { e.stopPropagation(); openMaps(event); }} className="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group-hover/card:text-primary/80">
                       <MapPin size={13} className="text-primary/60" />
-                      <span className="font-mono text-xs group-hover:underline">{event.location}</span>
+                      <span className="font-mono text-xs hover:underline">{event.location}</span>
                     </button>
                   </div>
 
                   {event.address && (
-                    <button onClick={() => openMaps(event)} className="mt-1.5 flex items-center gap-1 text-textDark/40 hover:text-primary/60 transition-colors cursor-pointer">
+                    <button onClick={(e) => { e.stopPropagation(); openMaps(event); }} className="mt-1.5 flex items-center gap-1 text-textDark/40 hover:text-primary/60 transition-colors cursor-pointer">
                       <span className="font-mono text-[11px] truncate">📍 {event.address}</span>
                     </button>
                   )}
@@ -450,25 +468,25 @@ export const Profile = () => {
                     <>
                       <button
                         onClick={() => handleOpenParticipants(event)}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 text-primary font-bold text-sm hover:bg-primary/5 transition-colors cursor-pointer"
+                        className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-primary font-bold text-[11px] uppercase tracking-wider hover:bg-primary/5 transition-colors cursor-pointer"
                       >
-                        <Users size={15} />
-                        Participantes
+                        <Users size={16} />
+                        Inscritos
                       </button>
                       <div className="w-px bg-primary/10" />
                       <button
                         onClick={() => navigate(`/edit/${event.id}`)}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 text-textDark/80 font-bold text-sm hover:bg-primary/5 transition-colors cursor-pointer"
+                        className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-textDark/80 font-bold text-[11px] uppercase tracking-wider hover:bg-primary/5 transition-colors cursor-pointer"
                       >
-                        <Edit2 size={14} />
+                        <Edit2 size={16} />
                         Editar
                       </button>
                       <div className="w-px bg-primary/10" />
                       <button
                         onClick={() => setDeleteConfirm(event.id)}
-                        className="flex-1 flex items-center justify-center gap-2 py-3.5 text-red-500/80 font-bold text-sm hover:bg-red-500/5 transition-colors cursor-pointer"
+                        className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-red-500/80 font-bold text-[11px] uppercase tracking-wider hover:bg-red-500/5 transition-colors cursor-pointer"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                         Excluir
                       </button>
                     </>
@@ -590,6 +608,16 @@ export const Profile = () => {
                       </div>
                     )}
                   </div>
+                  {editData.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditData({ ...editData, imageUrl: '' })}
+                      className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 hover:scale-105 active:scale-95 transition-all cursor-pointer z-10"
+                      title="Remover foto"
+                    >
+                      <X size={12} strokeWidth={3} />
+                    </button>
+                  )}
                   <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-primary text-textLight flex items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer">
                     <Camera size={14} />
                     <input type="file" className="hidden" accept="image/*" disabled={isUploadingPhoto} onChange={handleProfilePhotoChange} />

@@ -152,20 +152,17 @@ export const Feed = () => {
     <div ref={containerRef} className="min-h-screen bg-background pb-28">
       {/* Premium Header */}
       <div className="feed-header px-5 pt-8 pb-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="flex items-center gap-2">
-              <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply mix-blend-multiply mix-blend-multiply" />
-              <h1 className="font-brand text-5xl text-primary font-bold tracking-tight mt-1">Atchê</h1>
-            </div>
-            <p className="font-sans text-sm text-textDark/60 mt-1 flex items-center gap-1.5">
-              <Calendar size={13} className="text-primary/50" />
-              {formatDate()}
-            </p>
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <img 
+              src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
+              alt="Atchê" 
+              className="w-12 h-12 object-contain mix-blend-multiply" 
+            />
+            <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="pulse-dot" />
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden">
               {user?.imageUrl ? (
                 <img src={user.imageUrl} className="w-full h-full object-cover" alt={user.name} />
@@ -177,15 +174,21 @@ export const Feed = () => {
         </div>
 
         {/* Greeting */}
-        <div className="mt-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl px-5 py-4">
-          <p className="font-sans text-textDark">
-            <span className="font-bold text-lg">{getGreeting()}</span>
-            {user?.name && <span className="text-primary font-bold">, {user.name}</span>}
-            <span className="text-textDark/60"> 👋</span>
-          </p>
-          <p className="font-sans text-xs text-textDark/50 mt-1">
-            Confira os melhores eventos perto de você
-          </p>
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl px-5 py-4 relative overflow-hidden">
+          <div className="relative z-10">
+            <p className="font-sans text-sm text-textDark/60 mb-2 flex items-center gap-1.5 font-medium">
+              <Calendar size={14} className="text-primary/60" />
+              {formatDate()}
+            </p>
+            <p className="font-sans text-textDark">
+              <span className="font-bold text-lg">{getGreeting()}</span>
+              {user?.name && <span className="text-primary font-bold">, {user.name}</span>}
+              <span className="text-textDark/60"> 👋</span>
+            </p>
+            <p className="font-sans text-xs text-textDark/50 mt-1">
+              Confira os melhores eventos perto de você
+            </p>
+          </div>
         </div>
       </div>
 

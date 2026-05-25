@@ -9,12 +9,14 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   logout: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
-  logout: async () => {},
+  logout: async () => { },
+  updateUser: () => { }
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -33,18 +35,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Se não tem no localStorage ou o id não bate (acontece no exato momento do login), 
           // não desloga! Busca o perfil novamente para restaurar a sessão.
           const email = firebaseUser.email || '';
+          const isAppAdmin = email.toLowerCase() === 'admin@atche.com.br';
           const profile = await storage.getProfileById(firebaseUser.uid);
-          
+
           const newUser: User = {
             id: firebaseUser.uid,
             name: profile?.name || firebaseUser.displayName || 'Usuário',
             username: email,
-            role: email.toLowerCase() === 'admin@atche.com.br' ? 'admin' : (profile?.type === 'atletica' || profile?.type === 'estabelecimento' ? 'partner' : 'user'),
+            role: profile?.type === 'admin' || isAppAdmin ? 'admin' : (profile && profile.type !== 'user' ? 'partner' : 'user'),
             mustChangePassword: profile?.mustChangePassword ?? false,
             imageUrl: profile?.imageUrl || '',
             profileId: profile?.id
           };
-          
+
           setUser(newUser);
           localStorage.setItem('@atche:user', JSON.stringify(newUser));
         }
@@ -63,8 +66,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
   };
 
+  const handleUpdateUser = (newUser: User) => {
+    setUser(newUser);
+    localStorage.setItem('@atche:user', JSON.stringify(newUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout: handleLogout }}>
+    <AuthContext.Provider value={{ user, isLoading, logout: handleLogout, updateUser: handleUpdateUser }}>
       {children}
     </AuthContext.Provider>
   );

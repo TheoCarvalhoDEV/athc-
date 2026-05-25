@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration } from '../lib/storage';
 import { Button } from '../components/ui/Button';
-import { Calendar, Users, Settings, Trash2, Search as SearchIcon, Building2, UserPlus, Mail, Lock, ShieldCheck, X } from 'lucide-react';
+import { Calendar, Users, Settings, Trash2, Search as SearchIcon, Building2, UserPlus, Mail, Lock, ShieldCheck, X, Copy, Check } from 'lucide-react';
 import gsap from 'gsap';
 import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
@@ -26,6 +26,7 @@ export const AdminDashboard = () => {
     imageUrl: ''
   });
   const [lastGenerated, setLastGenerated] = useState<{ email: string; pass: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const [editingPartner, setEditingPartner] = useState<AppProfile | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [confirmModal, setConfirmModal] = useState<{
@@ -161,13 +162,19 @@ export const AdminDashboard = () => {
     e.preventDefault();
     if (!editingPartner) return;
     try {
-      await storage.updateProfile(editingPartner.id, {
+      const updates: Partial<AppProfile> = {
         name: editingPartner.name,
         type: editingPartner.type,
-        description: editingPartner.description,
-        password: editingPartner.password,
-        mustChangePassword: editingPartner.mustChangePassword
-      });
+        description: editingPartner.description || '',
+        mustChangePassword: editingPartner.mustChangePassword || false
+      };
+      
+      // Apenas adicionar o password na atualização se ele foi digitado (não estiver vazio)
+      if (editingPartner.password) {
+        updates.password = editingPartner.password;
+      }
+
+      await storage.updateProfile(editingPartner.id, updates);
       const allProfiles = await storage.getProfiles();
       setProfiles(allProfiles);
       setEditingPartner(null);
@@ -388,8 +395,10 @@ export const AdminDashboard = () => {
                   value={editingPartner.type}
                   onChange={e => setEditingPartner(prev => prev ? ({ ...prev, type: e.target.value as any }) : null)}
                 >
+                  <option value="user">Usuário Comum</option>
                   <option value="estabelecimento">Estabelecimento</option>
                   <option value="atletica">Atlética</option>
+                  <option value="admin">Administrador</option>
                 </select>
               </div>
 
@@ -459,8 +468,10 @@ export const AdminDashboard = () => {
                     value={newPartner.type}
                     onChange={e => setNewPartner(prev => ({ ...prev, type: e.target.value as any }))}
                   >
+                    <option value="user">Usuário Comum</option>
                     <option value="estabelecimento">Estabelecimento</option>
                     <option value="atletica">Atlética</option>
+                    <option value="admin">Administrador</option>
                   </select>
                 </div>
 
@@ -495,7 +506,19 @@ export const AdminDashboard = () => {
                 <h3 className="font-sans text-2xl font-bold text-textDark mb-2">Parceiro Criado!</h3>
                 <p className="text-sm text-textDark/60 mb-6">Salve os dados de acesso abaixo:</p>
                 
-                <div className="bg-primary/5 p-4 rounded-2xl space-y-3 text-left border border-primary/10 mb-8">
+                <div className="bg-primary/5 p-4 rounded-2xl space-y-3 text-left border border-primary/10 mb-8 relative">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`Email: ${lastGenerated.email}\nSenha: ${lastGenerated.pass}`);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="absolute top-4 right-4 p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                    title="Copiar dados"
+                  >
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                  
                   <div>
                     <p className="text-[10px] font-bold text-primary uppercase">E-mail de Acesso</p>
                     <p className="font-mono text-sm font-bold text-textDark flex items-center gap-2">

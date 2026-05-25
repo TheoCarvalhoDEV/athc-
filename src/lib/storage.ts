@@ -57,6 +57,7 @@ export type EventItem = {
   description: string;
   creatorId: string;
   hasTickets?: boolean;
+  ticketPrice?: string;
   whatsappNumber?: string;
   whatsappName?: string;
   whatsappContacts?: { name: string; phone: string }[];
@@ -114,11 +115,11 @@ export const storage = {
     const q = lastVisibleDoc
       ? query(eventsRef, orderBy('date', 'asc'), startAfter(lastVisibleDoc), limit(pageSize))
       : query(eventsRef, orderBy('date', 'asc'), limit(pageSize));
-    
+
     const querySnapshot = await getDocs(q);
     const events = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EventItem));
     const lastDoc = querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
-    
+
     return { events, lastDoc };
   },
 
@@ -154,7 +155,7 @@ export const storage = {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const fbUser = userCredential.user;
-      
+
       const user: User = {
         id: fbUser.uid,
         name: name,
@@ -200,7 +201,7 @@ export const storage = {
         id: fbUser.uid,
         name: isAdminEmail ? 'Administrador' : (profile?.name || fbUser.displayName || 'Usuário'),
         username: email,
-        role: isAdminEmail ? 'admin' : (profile ? (profile.type === 'admin' ? 'admin' : 'partner') : 'user'),
+        role: profile?.type === 'admin' || isAdminEmail ? 'admin' : (profile && profile.type !== 'user' ? 'partner' : 'user'),
         mustChangePassword: profile?.mustChangePassword ?? false,
         imageUrl: profile?.imageUrl || '',
         profileId: profile?.id
