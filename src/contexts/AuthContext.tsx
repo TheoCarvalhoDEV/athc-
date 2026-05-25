@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             id: firebaseUser.uid,
             name: profile?.name || firebaseUser.displayName || 'Usuário',
             username: email,
-            role: profile?.type === 'admin' || isAppAdmin ? 'admin' : (profile && profile.type !== 'user' ? 'partner' : 'user'),
+            role: profile?.type === 'admin' || isAppAdmin ? 'admin' : (profile && (profile.type as string) !== 'user' ? 'partner' : 'user'),
             mustChangePassword: profile?.mustChangePassword ?? false,
             imageUrl: profile?.imageUrl || '',
             profileId: profile?.id

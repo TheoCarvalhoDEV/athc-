@@ -6,7 +6,7 @@ import { storage } from '../lib/storage';
 import type { AppProfile } from '../lib/storage';
 import { cn } from '../lib/utils';
 import gsap from 'gsap';
-import { User, Image as ImageIcon, MapPin, X, Plus, Calendar as CalendarIcon, Clock, Map as MapIcon, Loader2, Search as SearchIcon } from 'lucide-react';
+import { Image as ImageIcon, MapPin, X, Plus, Calendar as CalendarIcon, Clock, Map as MapIcon, Loader2, Search as SearchIcon } from 'lucide-react';
 import { useMap, useMapsLibrary, APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -73,6 +73,8 @@ const eventSchema = z.object({
   description: z.string().min(10, "A descrição deve ter no mínimo 10 caracteres"),
   hasTickets: z.boolean(),
   ticketPrice: z.string().optional(),
+  hasPixTickets: z.boolean().optional(),
+  pixTicketPrice: z.string().optional(),
   whatsappContacts: z.array(z.object({ name: z.string(), phone: z.string() })).optional(),
   whatsappNumber: z.string().optional(),
   mediaUrls: z.array(z.string())
@@ -121,6 +123,8 @@ const CreateEventContent = () => {
       mediaUrls: [],
       hasTickets: false,
       ticketPrice: '',
+      hasPixTickets: false,
+      pixTicketPrice: '',
       whatsappContacts: [{ name: '', phone: '' }],
       whatsappNumber: ''
     }
@@ -568,7 +572,7 @@ const CreateEventContent = () => {
                         />
                       </div>
                     </div>
-                    {(watch('whatsappContacts') || [{name: '', phone: ''}]).map((contact: {name: string, phone: string}, idx: number) => (
+                    {(watch('whatsappContacts') || [{name: '', phone: ''}]).map((_: {name: string, phone: string}, idx: number) => (
                       <div key={idx} className="p-4 border border-primary/10 rounded-[1.5rem] bg-primary/5 relative">
                         {(watch('whatsappContacts') || []).length > 1 && (
                           <button 
@@ -774,7 +778,7 @@ const CreateEventContent = () => {
               zoom={zoom}
               aspect={16 / 9}
               onCropChange={setCrop}
-              onCropComplete={(_, croppedAreaPixels) => setCroppedAreaPixels(croppedAreaPixels)}
+              onCropComplete={(_: any, croppedAreaPixels: any) => setCroppedAreaPixels(croppedAreaPixels)}
               onZoomChange={setZoom}
             />
           </div>

@@ -5,7 +5,7 @@ import type { EventItem, AppProfile } from '../lib/storage';
 import { EventCard } from '../components/EventCard';
 import { ProfileCard } from '../components/ProfileCard';
 import gsap from 'gsap';
-import { User, Search as SearchIcon } from 'lucide-react';
+import { Search as SearchIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 import { useAuth } from '../contexts/AuthContext';

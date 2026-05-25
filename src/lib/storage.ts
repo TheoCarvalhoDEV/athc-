@@ -58,6 +58,8 @@ export type EventItem = {
   creatorId: string;
   hasTickets?: boolean;
   ticketPrice?: string;
+  hasPixTickets?: boolean;
+  pixTicketPrice?: string;
   whatsappNumber?: string;
   whatsappName?: string;
   whatsappContacts?: { name: string; phone: string }[];
@@ -201,7 +203,7 @@ export const storage = {
         id: fbUser.uid,
         name: isAdminEmail ? 'Administrador' : (profile?.name || fbUser.displayName || 'Usuário'),
         username: email,
-        role: profile?.type === 'admin' || isAdminEmail ? 'admin' : (profile && profile.type !== 'user' ? 'partner' : 'user'),
+        role: profile?.type === 'admin' || isAdminEmail ? 'admin' : (profile && (profile.type as string) !== 'user' ? 'partner' : 'user'),
         mustChangePassword: profile?.mustChangePassword ?? false,
         imageUrl: profile?.imageUrl || '',
         profileId: profile?.id
