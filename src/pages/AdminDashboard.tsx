@@ -369,7 +369,7 @@ export const AdminDashboard = () => {
       {editingPartner && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
           <div className="bg-background border border-primary/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setEditingPartner(null)} className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full">
+            <button aria-label="Fechar Modal" title="Fechar Modal" onClick={() => setEditingPartner(null)} className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full">
               <X size={20} />
             </button>
 
@@ -392,8 +392,10 @@ export const AdminDashboard = () => {
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-primary uppercase ml-2">Tipo</label>
+                <label htmlFor="edit-partner-type" className="text-[10px] font-bold text-primary uppercase ml-2">Tipo</label>
                 <select 
+                  id="edit-partner-type"
+                  title="Tipo de Parceiro"
                   className="w-full h-12 bg-primary/5 border border-primary/10 rounded-2xl px-4 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/20"
                   value={editingPartner.type}
                   onChange={e => setEditingPartner(prev => prev ? ({ ...prev, type: e.target.value as any }) : null)}

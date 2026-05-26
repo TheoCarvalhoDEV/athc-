@@ -262,6 +262,8 @@ export const EventDetails = () => {
       <div className="max-w-2xl mx-auto bg-background min-h-screen shadow-2xl relative flex flex-col">
         <div className="absolute top-8 left-0 right-0 px-4 flex justify-between items-center z-20">
           <button
+            title="Voltar"
+            aria-label="Voltar"
             onClick={() => navigate(-1)}
             className="w-10 h-10 bg-background/60 backdrop-blur-xl rounded-2xl flex items-center justify-center text-textDark shadow-lg border border-white/20"
           >
@@ -269,6 +271,8 @@ export const EventDetails = () => {
           </button>
 
           <button
+            title="Compartilhar"
+            aria-label="Compartilhar"
             onClick={handleShare}
             className="w-10 h-10 bg-background/60 backdrop-blur-xl rounded-2xl flex items-center justify-center text-textDark shadow-lg border border-white/20"
           >

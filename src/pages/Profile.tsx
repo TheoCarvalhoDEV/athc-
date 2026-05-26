@@ -578,6 +578,8 @@ export const Profile = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <button 
+              title="Fechar"
+              aria-label="Fechar"
               onClick={() => setShowEditModal(false)} 
               className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full text-textDark/60 transition-colors cursor-pointer z-10"
             >
@@ -618,9 +620,9 @@ export const Profile = () => {
                       <X size={12} strokeWidth={3} />
                     </button>
                   )}
-                  <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-primary text-textLight flex items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer">
+                  <label htmlFor="profile-photo-upload" className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-primary text-textLight flex items-center justify-center shadow-lg hover:scale-105 transition-all cursor-pointer">
                     <Camera size={14} />
-                    <input type="file" className="hidden" accept="image/*" disabled={isUploadingPhoto} onChange={handleProfilePhotoChange} />
+                    <input id="profile-photo-upload" title="Mudar Foto" aria-label="Mudar Foto" type="file" className="hidden" accept="image/*" disabled={isUploadingPhoto} onChange={handleProfilePhotoChange} />
                   </label>
                 </div>
                 <span className="text-[10px] font-bold text-primary/60 uppercase">Clique no ícone para alterar a foto</span>
@@ -708,6 +710,8 @@ export const Profile = () => {
                 <Download size={18} />
               </button>
               <button 
+                title="Fechar"
+                aria-label="Fechar"
                 onClick={() => setShowParticipantsModal(false)} 
                 className="p-2 hover:bg-primary/5 rounded-full text-textDark/60 transition-colors cursor-pointer"
               >

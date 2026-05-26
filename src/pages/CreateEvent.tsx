@@ -72,8 +72,8 @@ const eventSchema = z.object({
   publicType: z.string(),
   description: z.string().min(10, "A descrição deve ter no mínimo 10 caracteres"),
   hasTickets: z.boolean(),
-  ticketPrice: z.string().optional(),
   hasPixTickets: z.boolean().optional(),
+  ticketPrice: z.string().optional(),
   pixTicketPrice: z.string().optional(),
   whatsappContacts: z.array(z.object({ name: z.string(), phone: z.string() })).optional(),
   whatsappNumber: z.string().optional(),
@@ -122,8 +122,8 @@ const CreateEventContent = () => {
       address: '',
       mediaUrls: [],
       hasTickets: false,
-      ticketPrice: '',
       hasPixTickets: false,
+      ticketPrice: '',
       pixTicketPrice: '',
       whatsappContacts: [{ name: '', phone: '' }],
       whatsappNumber: ''
@@ -577,6 +577,8 @@ const CreateEventContent = () => {
                         {(watch('whatsappContacts') || []).length > 1 && (
                           <button 
                             type="button" 
+                            title="Remover Contato"
+                            aria-label="Remover Contato"
                             onClick={() => {
                               const current = watch('whatsappContacts') || [];
                               setValue('whatsappContacts', current.filter((_: {name: string, phone: string}, i: number) => i !== idx));

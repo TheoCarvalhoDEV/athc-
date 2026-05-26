@@ -26,7 +26,7 @@ export type ProfileType = 'user' | 'estabelecimento' | 'atletica';
 export interface AppProfile {
   id: string;
   name: string;
-  type: 'atletica' | 'estabelecimento' | 'admin';
+  type: 'user' | 'atletica' | 'estabelecimento' | 'admin';
   description: string;
   imageUrl?: string;
   email?: string;
@@ -57,8 +57,8 @@ export type EventItem = {
   description: string;
   creatorId: string;
   hasTickets?: boolean;
-  ticketPrice?: string;
   hasPixTickets?: boolean;
+  ticketPrice?: string;
   pixTicketPrice?: string;
   whatsappNumber?: string;
   whatsappName?: string;
