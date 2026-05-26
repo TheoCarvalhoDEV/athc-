@@ -330,6 +330,18 @@ export const storage = {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
   },
 
+  getRegistrationCounts: async (): Promise<Map<string, number>> => {
+    const querySnapshot = await getDocs(collection(db, 'registrations'));
+    const counts = new Map<string, number>();
+    querySnapshot.docs.forEach(doc => {
+      const eventId = doc.data().eventId;
+      if (eventId) {
+        counts.set(eventId, (counts.get(eventId) || 0) + 1);
+      }
+    });
+    return counts;
+  },
+
   hasUserRegistered: async (eventId: string, userId: string): Promise<boolean> => {
     const q = query(
       collection(db, 'registrations'),

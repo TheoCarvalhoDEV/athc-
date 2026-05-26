@@ -24,12 +24,13 @@ const formatDate = (): string => {
   });
 };
 
-type FilterType = 'todos' | 'Aberto' | 'hoje' | 'semana';
+type FilterType = 'todos' | 'Aberto' | 'hoje' | 'semana' | 'emAlta';
 
 export const Feed = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [registrationCounts, setRegistrationCounts] = useState<Map<string, number>>(new Map());
   const [filter, setFilter] = useState<FilterType>('todos');
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -45,7 +46,15 @@ export const Feed = () => {
       const pageSize = 10;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const currentLastDoc = isLoadMore ? lastDoc : null;
-      const { events: newEvents, lastDoc: newLastDoc } = await storage.getPaginatedEvents(currentLastDoc, pageSize);
+      
+      const [{ events: newEvents, lastDoc: newLastDoc }, counts] = await Promise.all([
+        storage.getPaginatedEvents(currentLastDoc, pageSize),
+        !isLoadMore ? storage.getRegistrationCounts() : Promise.resolve(registrationCounts)
+      ]);
+
+      if (!isLoadMore) {
+        setRegistrationCounts(counts);
+      }
       
       const isUserAdmin = user?.role === 'admin';
       const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
@@ -142,6 +151,9 @@ export const Feed = () => {
         eventDate.setHours(0, 0, 0, 0);
         return eventDate >= today && eventDate <= nextWeek;
       });
+    } else if (filter === 'emAlta') {
+      // Sort by registration count (most popular first)
+      return filtered.sort((a, b) => (registrationCounts.get(b.id) || 0) - (registrationCounts.get(a.id) || 0));
     }
 
     // Sort ascending by date
@@ -150,8 +162,10 @@ export const Feed = () => {
 
   const filteredEvents = getFilteredAndSortedEvents();
 
-  // Top 2 events as highlights
-  const highlights = events.slice(0, 3);
+  // Top 3 events sorted by popularity (most confirmed first)
+  const highlights = [...events]
+    .sort((a, b) => (registrationCounts.get(b.id) || 0) - (registrationCounts.get(a.id) || 0))
+    .slice(0, 3);
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background pb-28">
@@ -234,6 +248,7 @@ export const Feed = () => {
       <div className="flex gap-2 px-5 mb-5 overflow-x-auto scrollbar-hide pb-1">
         {[
           { key: 'todos' as FilterType, label: 'Todos', icon: Sparkles },
+          { key: 'emAlta' as FilterType, label: 'Em Alta', icon: Flame },
           { key: 'hoje' as FilterType, label: 'Hoje', icon: Calendar },
           { key: 'semana' as FilterType, label: 'Esta Semana', icon: null },
           { key: 'Aberto' as FilterType, label: 'Aberto', icon: null },
