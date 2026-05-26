@@ -8,8 +8,11 @@ const cors = require("cors")({ origin: true });
 admin.initializeApp();
 const db = admin.firestore();
 
-// TOKEN_MP_TESTE_AQUI - Substituir com o Token TEST- do usuário
-const mpAccessToken = process.env.MP_ACCESS_TOKEN || "APP_USR-8994816777129240-052517-c89f31f9f747b822cec9dfdfc54ece96-319387696";
+// TOKEN_MP_TESTE_AQUI - Carregar do ambiente via variáveis de configuração ou Secret Manager
+const mpAccessToken = process.env.MP_ACCESS_TOKEN || "";
+if (!mpAccessToken) {
+    logger.warn("AVISO: MP_ACCESS_TOKEN não está configurado no ambiente.");
+}
 
 const client = new MercadoPagoConfig({ accessToken: mpAccessToken, options: { timeout: 10000 } });
 const payment = new Payment(client);
@@ -205,4 +208,47 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
             res.status(500).send('Erro interno do servidor.');
         }
     });
+});
+
+exports.adminResetPassword = onCall({ cors: true }, async (request) => {
+    const data = request.data;
+    const { uid, newPassword } = data;
+    
+    // 1. Verificar se quem está chamando está autenticado
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Apenas usuários autenticados podem redefinir senhas.');
+    }
+    
+    // 2. Verificar se o solicitante é um dos administradores permitidos
+    const callerEmail = request.auth.token.email || '';
+    const adminEmails = [
+      'admin@atche.com.br',
+      'theotheteo@gmail.com',
+      'allanjipa123@gmail.com'
+    ];
+    if (!adminEmails.includes(callerEmail.toLowerCase())) {
+        throw new HttpsError('permission-denied', 'Apenas administradores podem redefinir senhas de parceiros.');
+    }
+    
+    if (!uid || !newPassword) {
+        throw new HttpsError('invalid-argument', 'UID e nova senha são obrigatórios.');
+    }
+    
+    try {
+        // 3. Atualizar a senha no Firebase Authentication
+        await admin.auth().updateUser(uid, {
+            password: newPassword
+        });
+        
+        // 4. Atualizar o perfil no Firestore para exigir mudança no próximo login
+        await db.collection('profiles').doc(uid).update({
+            mustChangePassword: true
+        });
+        
+        logger.info(`Senha do usuário ${uid} redefinida com sucesso pelo admin ${callerEmail}.`);
+        return { success: true };
+    } catch (error) {
+        logger.error(`Erro ao redefinir senha do usuário ${uid}:`, error);
+        throw new HttpsError('internal', 'Erro interno ao redefinir senha.');
+    }
 });

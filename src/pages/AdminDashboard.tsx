@@ -8,6 +8,7 @@ import gsap from 'gsap';
 import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
 import type { AppProfile } from '../lib/storage';
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -172,9 +173,24 @@ export const AdminDashboard = () => {
         mustChangePassword: editingPartner.mustChangePassword || false
       };
       
-      // Apenas adicionar o password na atualização se ele foi digitado (não estiver vazio)
-      if (editingPartner.password) {
-        updates.password = editingPartner.password;
+      // Se uma nova senha foi digitada, redefinir usando a Cloud Function segura
+      if (editingPartner.password && editingPartner.password.trim() !== '') {
+        const functions = getFunctions();
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            try {
+                connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+            } catch (e) {
+                // Ignore
+            }
+        }
+        const adminResetPassword = httpsCallable(functions, 'adminResetPassword');
+        await adminResetPassword({
+          uid: editingPartner.id,
+          newPassword: editingPartner.password
+        });
+        
+        // Forçar alteração de senha no próximo login
+        updates.mustChangePassword = true;
       }
 
       await storage.updateProfile(editingPartner.id, updates);
@@ -184,7 +200,7 @@ export const AdminDashboard = () => {
       alert('Perfil atualizado com sucesso!');
     } catch (error) {
       console.error("Erro ao atualizar parceiro:", error);
-      alert("Erro ao atualizar parceiro no banco de dados.");
+      alert("Erro ao atualizar parceiro ou ao redefinir a senha.");
     }
   };
 
