@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EventCard } from '../components/EventCard';
 import { storage } from '../lib/storage';
 import type { EventItem } from '../lib/storage';
@@ -27,6 +28,7 @@ type FilterType = 'todos' | 'Aberto' | 'hoje' | 'semana';
 
 export const Feed = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [filter, setFilter] = useState<FilterType>('todos');
   const [isLoading, setIsLoading] = useState(true);
@@ -166,13 +168,17 @@ export const Feed = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden">
+            <button 
+              onClick={() => navigate('/profile')}
+              className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              title="Ir para o perfil"
+            >
               {user?.imageUrl ? (
                 <img src={user.imageUrl} className="w-full h-full object-cover" alt={user.name} />
               ) : (
                 user?.name?.charAt(0).toUpperCase() || 'U'
               )}
-            </div>
+            </button>
           </div>
         </div>
 

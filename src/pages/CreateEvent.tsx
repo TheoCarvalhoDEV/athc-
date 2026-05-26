@@ -417,13 +417,18 @@ const CreateEventContent = () => {
           />
           <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
         </div>
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden">
+        <button 
+          type="button"
+          onClick={() => navigate('/profile')}
+          className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          title="Ir para o perfil"
+        >
           {user?.imageUrl ? (
             <img src={user.imageUrl} className="w-full h-full object-cover" alt={user.name} />
           ) : (
             user?.name?.charAt(0).toUpperCase() || 'U'
           )}
-        </div>
+        </button>
       </div>
 
       {user ? (

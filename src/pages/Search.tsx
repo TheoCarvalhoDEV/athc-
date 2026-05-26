@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '../components/ui/Input';
 import { storage } from '../lib/storage';
 import type { EventItem, AppProfile } from '../lib/storage';
@@ -14,6 +15,7 @@ type TabType = 'eventos' | 'estabelecimentos' | 'atleticas';
 
 export const Search = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('eventos');
   
@@ -72,13 +74,17 @@ export const Search = () => {
           />
           <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
         </div>
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden">
+        <button 
+          onClick={() => navigate('/profile')}
+          className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          title="Ir para o perfil"
+        >
           {user?.imageUrl ? (
             <img src={user.imageUrl} className="w-full h-full object-cover" alt={user.name} />
           ) : (
             user?.name?.charAt(0).toUpperCase() || 'U'
           )}
-        </div>
+        </button>
       </div>
 
       <div className="relative mb-6">

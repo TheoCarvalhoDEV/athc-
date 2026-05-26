@@ -303,7 +303,7 @@ export const Profile = () => {
             />
             <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
           </div>
-          {user && userRole !== 'user' && (
+          {user && (
             <button
               onClick={handleLogout}
               className="w-10 h-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all cursor-pointer"
@@ -391,15 +391,7 @@ export const Profile = () => {
                   </button>
                 )}
 
-                {userRole === 'user' && (
-                  <button 
-                    onClick={handleLogout}
-                    className="flex items-center gap-1.5 mt-3 px-4.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full font-mono text-[10px] font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer uppercase tracking-wider shadow-lg"
-                  >
-                    <LogOut size={10} />
-                    Sair da Conta
-                  </button>
-                )}
+
               </div>
             </div>
           </div>
