@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
-import type { EventItem, AppProfile } from '../lib/storage';
+import type { EventItem, AppProfile, Registration } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode } from 'lucide-react';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
@@ -45,6 +45,61 @@ export const EventDetails = () => {
       setBuyerEmail(currentUser.username || '');
     }
   }, [currentUser?.id]);
+
+  // Inicialização do SDK V2 do Mercado Pago no Frontend
+  // Inicializa o SDK V2 do Mercado Pago + Carrega o script de segurança como fallback
+  useEffect(() => {
+    const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+    if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI' && (window as any).MercadoPago) {
+      try {
+        new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
+        console.log("Mercado Pago SDK inicializado com sucesso no frontend.");
+      } catch (err) {
+        console.error("Erro ao inicializar o Mercado Pago SDK:", err);
+      }
+    }
+
+    // Injeta o script de segurança do Mercado Pago dinamicamente como fallback se não estiver carregado
+    const isAlreadyLoaded = !!(window as any).MP_DEVICE_SESSION_ID || 
+                            !!document.querySelector('script[src*="mercadopago.com/v2/security.js"]');
+    
+    if (!isAlreadyLoaded) {
+      const scriptId = 'mp-security-script';
+      const script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://www.mercadopago.com/v2/security.js';
+      script.setAttribute('view', 'checkout');
+      script.setAttribute('output', 'MP_DEVICE_SESSION_ID');
+      script.async = true;
+
+      try {
+        Object.defineProperty(document, 'currentScript', {
+          get: () => document.getElementById(scriptId) || script,
+          configurable: true
+        });
+      } catch (e) {
+        console.warn("Não foi possível interceptar document.currentScript", e);
+      }
+
+      script.onload = () => {
+        console.log("Script de segurança do Mercado Pago (security.js) injetado dinamicamente no checkout.");
+        try {
+          delete (document as any).currentScript;
+        } catch (e) {}
+      };
+
+      script.onerror = () => {
+        console.error("Erro ao carregar script de segurança dinamicamente no checkout.");
+        try {
+          delete (document as any).currentScript;
+        } catch (e) {}
+      };
+
+      document.body.appendChild(script);
+    }
+  }, []);
+
+
 
   // Firebase Instances
   const functions = getFunctions();
@@ -90,6 +145,12 @@ export const EventDetails = () => {
     const novoPedidoId = `PIX-${event.id}-${buyerId}-${Date.now()}`;
     setPedidoId(novoPedidoId);
     
+    // Captura o Device Session ID gerado pelo script de segurança do Mercado Pago
+    // Captura o Device Session ID por ordem de prioridade (variável global -> input oculto -> vazio)
+    const deviceId = (window as any).MP_DEVICE_SESSION_ID || 
+                     (document.getElementById('deviceId') as HTMLInputElement)?.value || 
+                     '';
+    
     const pedido = {
         pedidoId: novoPedidoId,
         valor: Number(event.pixTicketPrice || 0),
@@ -100,7 +161,8 @@ export const EventDetails = () => {
         eventId: event.id,
         eventTitle: event.title,
         eventDescription: event.description || '',
-        userId: buyerId
+        userId: buyerId,
+        deviceId: deviceId
     };
 
     try {
@@ -282,6 +344,7 @@ export const EventDetails = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background pb-44">
+      <input type="hidden" id="deviceId" />
       {/* Centered Container for Desktop */}
       <div className="max-w-2xl mx-auto bg-background min-h-screen shadow-2xl relative flex flex-col">
         <div className="absolute top-8 left-0 right-0 px-4 flex justify-between items-center z-20">

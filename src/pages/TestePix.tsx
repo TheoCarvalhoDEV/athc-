@@ -16,6 +16,58 @@ export const TestePix = () => {
     
     const db = getFirestore();
 
+    // Inicialização do SDK V2 do Mercado Pago no Frontend + Script de Segurança
+    useEffect(() => {
+        const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+        if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI' && (window as any).MercadoPago) {
+            try {
+                new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
+                console.log("Mercado Pago SDK inicializado com sucesso no frontend de teste.");
+            } catch (err) {
+                console.error("Erro ao inicializar o Mercado Pago SDK:", err);
+            }
+        }
+
+        // Injeta o script de segurança dinamicamente para o checkout de teste se já não existir
+        const isAlreadyLoaded = !!(window as any).MP_DEVICE_SESSION_ID || 
+                                !!document.querySelector('script[src*="mercadopago.com/v2/security.js"]');
+        
+        if (!isAlreadyLoaded) {
+            const scriptId = 'mp-security-script';
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = 'https://www.mercadopago.com/v2/security.js';
+            script.setAttribute('view', 'checkout');
+            script.setAttribute('output', 'MP_DEVICE_SESSION_ID');
+            script.async = true;
+
+            try {
+                Object.defineProperty(document, 'currentScript', {
+                    get: () => document.getElementById(scriptId) || script,
+                    configurable: true
+                });
+            } catch (e) {
+                console.warn("Não foi possível interceptar document.currentScript", e);
+            }
+
+            script.onload = () => {
+                console.log("Script de segurança do Mercado Pago (security.js) injetado dinamicamente no teste.");
+                try {
+                    delete (document as any).currentScript;
+                } catch (e) {}
+            };
+
+            script.onerror = () => {
+                console.error("Erro ao carregar script de segurança dinamicamente no teste.");
+                try {
+                    delete (document as any).currentScript;
+                } catch (e) {}
+            };
+
+            document.body.appendChild(script);
+        }
+    }, []);
+
     const pedido = {
         pedidoId,
         valor: 1.50,
@@ -26,8 +78,17 @@ export const TestePix = () => {
     const handlePagarPix = async () => {
         setLoading(true);
         try {
+            // Captura o Device Session ID gerado pelo script de segurança do Mercado Pago
+            // Captura o Device Session ID por ordem de prioridade (variável global -> input oculto -> vazio)
+            const deviceId = (window as any).MP_DEVICE_SESSION_ID || 
+                             (document.getElementById('deviceId') as HTMLInputElement)?.value || 
+                             '';
+            const pedidoComDevice = {
+                ...pedido,
+                deviceId
+            };
             const criarCobrancaPix = httpsCallable(functions, 'criarCobrancaPix');
-            const result = await criarCobrancaPix(pedido);
+            const result = await criarCobrancaPix(pedidoComDevice);
             const data = result.data as any;
             
             setQrCodeData({
@@ -94,6 +155,7 @@ export const TestePix = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+            <input type="hidden" id="deviceId" />
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 font-sans p-8">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Teste Real - Integração PIX</h2>
                 

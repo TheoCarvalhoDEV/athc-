@@ -16,7 +16,7 @@ const payment = new Payment(client);
 
 exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
     const data = request.data;
-    const { valor, cpf, email, pedidoId } = data;
+    const { valor, cpf, email, pedidoId, deviceId } = data;
     
     if (!valor || !email || !pedidoId) {
         throw new HttpsError('invalid-argument', 'Dados incompletos para gerar o Pix.');
@@ -103,9 +103,17 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             notification_url: 'https://webhookmercadopago-dfjumiogoq-uc.a.run.app'
         };
 
+        const requestOptions = {
+            idempotencyKey
+        };
+
+        if (deviceId) {
+            requestOptions.meliSessionId = deviceId;
+        }
+
         const mpResponse = await payment.create({
             body,
-            requestOptions: { idempotencyKey }
+            requestOptions
         });
 
         await db.collection('pedidos').doc(pedidoId).set({
