@@ -98,6 +98,8 @@ export const EventDetails = () => {
         clienteNome: buyerName,
         clienteTelefone: buyerPhone,
         eventId: event.id,
+        eventTitle: event.title,
+        eventDescription: event.description || '',
         userId: buyerId
     };
 

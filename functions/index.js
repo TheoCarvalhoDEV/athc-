@@ -25,29 +25,80 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
     try {
         const idempotencyKey = `${pedidoId}_${Date.now()}`;
 
+        // Extrai e formata o nome do comprador
+        const clienteNome = data.clienteNome || "Comprador Ficticio";
+        const nameParts = clienteNome.trim().split(/\s+/);
+        const firstName = nameParts[0] || "Comprador";
+        const lastName = nameParts.slice(1).join(" ") || "Atche";
+
+        // Extrai e formata o telefone
+        const clienteTelefone = data.clienteTelefone || "11999999999";
+        const cleanPhone = clienteTelefone.replace(/\D/g, "");
+        let areaCode = "11";
+        let phoneNumber = "999999999";
+        if (cleanPhone.length >= 10) {
+            areaCode = cleanPhone.substring(0, 2);
+            phoneNumber = cleanPhone.substring(2);
+        } else if (cleanPhone.length > 0) {
+            phoneNumber = cleanPhone;
+        }
+
+        const cleanCpf = (cpf || "").replace(/\D/g, "") || "00000000000";
+        const eventId = data.eventId || "ingresso";
+        const eventTitle = data.eventTitle || "Ingresso Atche";
+        const eventDescription = data.eventDescription || `Ingresso para o evento ID ${eventId}`;
+
         const body = {
             transaction_amount: Number(valor),
-            description: `Ingresso Atchê - Pedido ${pedidoId}`,
+            description: `Ingresso Atche - Pedido ${pedidoId}`.substring(0, 60),
             payment_method_id: 'pix',
             external_reference: pedidoId,
             payer: {
                 email: email,
+                first_name: firstName,
+                last_name: lastName,
+                phone: {
+                    area_code: areaCode,
+                    number: phoneNumber
+                },
                 identification: {
                     type: 'CPF',
-                    number: cpf || '00000000000'
+                    number: cleanCpf
+                },
+                address: {
+                    zip_code: '01001000',
+                    street_name: 'Praca da Se',
+                    street_number: '1',
+                    neighborhood: 'Se',
+                    city: 'Sao Paulo',
+                    federal_unit: 'SP'
                 }
             },
             additional_info: {
                 items: [
                     {
-                        id: data.eventId || 'ingresso',
-                        title: 'Ingresso Atchê',
-                        description: `Ingresso para o evento ID ${data.eventId || ''}`,
+                        id: eventId,
+                        title: eventTitle.substring(0, 30),
+                        description: eventDescription.substring(0, 60),
                         category_id: 'tickets',
                         quantity: 1,
                         unit_price: Number(valor)
                     }
-                ]
+                ],
+                payer: {
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone: {
+                        area_code: areaCode,
+                        number: phoneNumber
+                    },
+                    address: {
+                        zip_code: '01001000',
+                        street_name: 'Praca da Se',
+                        street_number: '1'
+                    },
+                    registration_date: new Date().toISOString()
+                }
             },
             notification_url: 'https://webhookmercadopago-dfjumiogoq-uc.a.run.app'
         };
@@ -61,10 +112,10 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             id: pedidoId,
             valor: Number(valor),
             clienteEmail: email,
-            clienteNome: data.clienteNome || '',
-            clienteTelefone: data.clienteTelefone || '',
-            clienteCpf: cpf || '',
-            eventId: data.eventId || '',
+            clienteNome: clienteNome,
+            clienteTelefone: clienteTelefone,
+            clienteCpf: cleanCpf,
+            eventId: eventId,
             userId: data.userId || '',
             status: 'pendente',
             mercadoPagoPaymentId: mpResponse.id,
