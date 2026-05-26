@@ -257,7 +257,7 @@ export const Profile = () => {
 
   const exportToCSV = () => {
     if (!participantsList || participantsList.length === 0) return;
-    const headers = ['Nome,E-mail,Telefone,CPF,Situação de Pagamento,Data da Inscrição'];
+    const headers = ['Nome;E-mail;Telefone;CPF;Situação de Pagamento;Data da Inscrição'];
     const rows = participantsList.map(p => {
       const name = p.userName || '';
       const email = p.userEmail || '';
@@ -265,7 +265,7 @@ export const Profile = () => {
       const cpf = p.userCpf || '';
       const status = p.paymentStatus || 'Gratuito';
       const date = new Date(p.timestamp).toLocaleString('pt-BR');
-      return `"${name}","${email}","${phone}","${cpf}","${status}","${date}"`;
+      return `${name};${email};${phone};${cpf};${status};${date}`;
     });
     const csvContent = '\uFEFF' + headers.concat(rows).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
