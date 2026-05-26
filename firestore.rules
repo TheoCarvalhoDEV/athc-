@@ -8,28 +8,57 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Função auxiliar para verificar se o usuário é administrador
+    function isAdmin() {
+      return isAuthed() && 
+        request.auth.token.email.lower() in [
+          'admin@atche.com.br', 
+          'theotheteo@gmail.com', 
+          'allanjipa123@gmail.com'
+        ];
+    }
+
     match /profiles/{profileId} {
       // Perfis são públicos para visualização
       allow read: if true;
-      // Permite escrita apenas para usuários autenticados no momento
-      // (Em um ambiente com a Fase 1 completa, restringiríamos por UID: request.auth.uid == profileId)
-      allow write: if isAuthed();
+      // Permite escrita apenas ao próprio dono do perfil ou a administradores
+      allow write: if isAuthed() && (request.auth.uid == profileId || isAdmin());
     }
 
     match /events/{eventId} {
-      // Eventos são públicos
+      // Eventos são públicos para visualização
       allow read: if true;
-      // Somente usuários logados podem criar/editar eventos
-      allow write: if isAuthed();
+      // Somente usuários logados podem criar eventos
+      allow create: if isAuthed();
+      // Somente o criador do evento ou o administrador podem editar/excluir
+      allow update, delete: if isAuthed() && (resource.data.creatorId == request.auth.uid || isAdmin());
     }
 
     match /registrations/{registrationId} {
-      // Qualquer um pode ler ou escrever inscrições (incluindo Visitantes)
-      allow read, write: if true;
+      // Uma inscrição só pode ser lida se:
+      // 1. O solicitante for administrador
+      // 2. O solicitante for o dono da inscrição (userId)
+      // 3. O solicitante for o criador do evento associado
+      allow read: if isAuthed() && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin() || 
+        get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.creatorId == request.auth.uid
+      );
+      // Qualquer um pode criar inscrições (visitantes compram ingressos/confirmam presença)
+      allow create: if true;
+      // Apenas administradores podem modificar ou deletar inscrições
+      allow update, delete: if isAdmin();
     }
 
     match /pedidos/{pedidoId} {
-      allow read, write: if true;
+      // Um pedido só pode ser lido se:
+      // 1. O solicitante for administrador
+      // 2. O solicitante for o comprador (userId)
+      // 3. O solicitante for um visitante (guest) buscando seu próprio ID de pedido
+      allow read: if (isAuthed() && (resource.data.userId == request.auth.uid || isAdmin())) ||
+                     (!isAuthed() && resource.data.userId.matches('^guest-.*'));
+      // Escrita direta pelo cliente é proibida (apenas Cloud Functions do backend criam/alteram)
+      allow write: if false;
     }
   }
 }

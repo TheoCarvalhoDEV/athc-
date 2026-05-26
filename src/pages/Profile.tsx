@@ -134,9 +134,8 @@ export const Profile = () => {
       } else if (currentUserRole === 'partner') {
         const targetId = currentProfileId || currentUserId;
         setMyEvents(visibleEvents.filter(e => e.creatorId === targetId));
-      } else {
-        const registrations = await storage.getRegistrations();
-        const myRegs = registrations.filter(r => r.userId === currentUserId);
+      } else if (currentUserId) {
+        const myRegs = await storage.getRegistrationsForUser(currentUserId);
         const myRegIds = myRegs.map(r => r.eventId);
         setMyEvents(visibleEvents.filter(e => myRegIds.includes(e.id)));
       }

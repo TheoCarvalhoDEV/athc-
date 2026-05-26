@@ -173,10 +173,11 @@ export const storage = {
         mustChangePassword: false,
       };
 
-      await addDoc(collection(db, 'profiles'), {
+      await setDoc(doc(db, 'profiles', fbUser.uid), {
         name: isAppAdmin ? 'Administrador' : name,
         email,
-        type: isAppAdmin ? 'admin' : 'user'
+        type: isAppAdmin ? 'admin' : 'user',
+        mustChangePassword: false
       });
 
       localStorage.setItem('@atche:user', JSON.stringify(user));
@@ -314,8 +315,14 @@ export const storage = {
 
 
   // Registrations (Inscrições/Presenças)
-  getRegistrations: async (): Promise<Registration[]> => {
+   getRegistrations: async (): Promise<Registration[]> => {
     const querySnapshot = await getDocs(collection(db, 'registrations'));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
+  },
+
+  getRegistrationsForUser: async (userId: string): Promise<Registration[]> => {
+    const q = query(collection(db, 'registrations'), where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
   },
 
@@ -354,7 +361,9 @@ export const storage = {
 
   uploadFile: async (file: File, folder: string): Promise<string> => {
     try {
-      const fileRef = ref(storageRef, `${folder}/${Date.now()}_${file.name}`);
+      const currentUser = storage.getCurrentUser();
+      const userId = currentUser ? currentUser.id : 'guest';
+      const fileRef = ref(storageRef, `${folder}/${userId}/${Date.now()}_${file.name}`);
       await uploadBytes(fileRef, file);
       const url = await getDownloadURL(fileRef);
       return url;
