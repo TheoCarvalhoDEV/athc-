@@ -45,14 +45,17 @@ export const Feed = () => {
       const currentLastDoc = isLoadMore ? lastDoc : null;
       const { events: newEvents, lastDoc: newLastDoc } = await storage.getPaginatedEvents(currentLastDoc, pageSize);
       
+      const isUserAdmin = user?.role === 'admin';
+      const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
+
       if (isLoadMore) {
         setEvents(prev => {
           const existingIds = new Set(prev.map(e => e.id));
-          const uniqueNewEvents = newEvents.filter(e => !existingIds.has(e.id));
+          const uniqueNewEvents = visibleEvents.filter(e => !existingIds.has(e.id));
           return [...prev, ...uniqueNewEvents];
         });
       } else {
-        setEvents(newEvents);
+        setEvents(visibleEvents);
       }
       
       setLastDoc(newLastDoc);

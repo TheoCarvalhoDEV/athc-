@@ -75,6 +75,7 @@ const eventSchema = z.object({
   hasPixTickets: z.boolean().optional(),
   ticketPrice: z.string().optional(),
   pixTicketPrice: z.string().optional(),
+  isTestEvent: z.boolean().optional(),
   whatsappContacts: z.array(z.object({ name: z.string(), phone: z.string() })).optional(),
   whatsappNumber: z.string().optional(),
   mediaUrls: z.array(z.string())
@@ -125,6 +126,7 @@ const CreateEventContent = () => {
       hasPixTickets: false,
       ticketPrice: '',
       pixTicketPrice: '',
+      isTestEvent: false,
       whatsappContacts: [{ name: '', phone: '' }],
       whatsappNumber: ''
     }
@@ -133,6 +135,7 @@ const CreateEventContent = () => {
   const mediaUrls = watch('mediaUrls');
   const hasTickets = watch('hasTickets');
   const hasPixTickets = watch('hasPixTickets');
+  const isTestEvent = watch('isTestEvent');
   const location = watch('location');
   const address = watch('address');
   const [showMapModal, setShowMapModal] = useState(false);
@@ -152,19 +155,23 @@ const CreateEventContent = () => {
   const { user } = useAuth();
   const userId = user?.id;
   const userRole = user?.role;
-  const [profiles, setProfiles] = useState<AppProfile[]>([]);
   const [originalCreatorId, setOriginalCreatorId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadProfiles = async () => {
-      const data = await storage.getProfiles();
-      setProfiles(data);
-    };
-    loadProfiles();
-  }, []);
+  // States for Admin selecting partner
+  const [profiles, setProfiles] = useState<AppProfile[]>([]);
+  const [selectedCreatorId, setSelectedCreatorId] = useState<string>('');
 
   useEffect(() => {
     const loadEventData = async () => {
+      if (userRole === 'admin') {
+        try {
+          const allProfiles = await storage.getProfiles();
+          setProfiles(allProfiles.filter(p => p.type === 'estabelecimento' || p.type === 'atletica'));
+        } catch (error) {
+          console.error("Erro ao carregar perfis:", error);
+        }
+      }
+
       if (id) {
         try {
           const events = await storage.getEvents();
@@ -181,10 +188,14 @@ const CreateEventContent = () => {
               mediaUrls: ev.mediaUrls || [],
               hasTickets: ev.hasTickets || false,
               ticketPrice: ev.ticketPrice || '',
+              hasPixTickets: ev.hasPixTickets || false,
+              pixTicketPrice: ev.pixTicketPrice || '',
+              isTestEvent: ev.isTestEvent || false,
               whatsappContacts: ev.whatsappContacts || (ev.whatsappNumber ? [{ name: ev.whatsappName || '', phone: ev.whatsappNumber }] : [{ name: '', phone: '' }]),
               whatsappNumber: ev.whatsappNumber || ''
             });
             setOriginalCreatorId(ev.creatorId);
+            setSelectedCreatorId(ev.creatorId);
           }
         } catch (error) {
           console.error("Erro ao carregar dados do evento para edição:", error);
@@ -201,15 +212,7 @@ const CreateEventContent = () => {
     }
   }, [userId, userRole, navigate]);
 
-  // Filter profiles that are establishments or athletics to show as suggestions
-  const suggestions = profiles.map(p => ({
-    name: p.name,
-    addr: p.description || '', // Using description as fallback address
-    coords: (p.id === 'p1' ? [-16.0669, -57.6868] :
-      p.id === 'p2' ? [-16.0680, -57.6890] :
-      p.id === 'p3' ? [-16.0650, -57.6850] :
-      [-16.0669, -57.6868]) as [number, number]
-  }));
+
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -225,13 +228,13 @@ const CreateEventContent = () => {
   }, []);
 
   const onSubmit = async (data: EventFormValues) => {
-    const targetCreatorId = user?.profileId || userId!;
+    const targetCreatorId = selectedCreatorId || user?.profileId || userId!;
     const eventData = {
       id: id || Date.now().toString(),
       ...data,
       whatsappContacts: data.whatsappContacts?.filter(c => c.phone.trim() !== '') || [],
       publicType: data.publicType as any,
-      creatorId: id ? (originalCreatorId || targetCreatorId) : targetCreatorId,
+      creatorId: id ? (selectedCreatorId || originalCreatorId || targetCreatorId) : targetCreatorId,
     };
     await storage.saveEvent(eventData as any);
     toast.success('Evento salvo com sucesso!');
@@ -349,10 +352,7 @@ const CreateEventContent = () => {
     setValue('mediaUrls', mediaUrls.filter((_: string, i: number) => i !== index), { shouldValidate: true });
   };
 
-  const selectMockLocation = (loc: string, addr: string) => {
-    setValue('location', loc); setValue('address', addr, { shouldValidate: true });
-    setShowMapModal(false);
-  };
+
 
   const getAddressFromCoords = async (lat: number, lng: number) => {
     setIsSearching(true);
@@ -373,6 +373,12 @@ const CreateEventContent = () => {
   // Google Maps Click Handler
   const GoogleMapEvents = () => {
     const map = useMap();
+
+    useEffect(() => {
+      if (map && mapCenter) {
+        map.panTo({ lat: mapCenter[0], lng: mapCenter[1] });
+      }
+    }, [map, mapCenter]);
 
     useEffect(() => {
       if (!map) return;
@@ -422,6 +428,26 @@ const CreateEventContent = () => {
 
       {user ? (
         <form onSubmit={formSubmit(onSubmit, onError)} className="space-y-4 px-2">
+          {userRole === 'admin' && (
+            <div className="form-el">
+              <label className="text-[10px] font-bold text-primary uppercase ml-4 mb-1 block">
+                Criar evento pelo estabelecimento:
+              </label>
+              <select
+                className="w-full h-14 bg-background border border-primary/20 rounded-[1.5rem] px-5 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-textDark"
+                value={selectedCreatorId}
+                onChange={e => setSelectedCreatorId(e.target.value)}
+              >
+                <option value="">(Nenhum - Criar como Admin)</option>
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.type})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="form-el">
             <Input
               placeholder="Nome do evento..."
@@ -497,7 +523,7 @@ const CreateEventContent = () => {
                   </button>
                 </div>
               ))}
-              {mediaUrls.length < 6 && (
+              {mediaUrls.length > 0 && mediaUrls.length < 6 && (
                 <label className="aspect-square rounded-xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 transition-colors">
                   {isUploading ? (
                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -625,7 +651,8 @@ const CreateEventContent = () => {
             </div>
             
             {/* Venda Pix */}
-            <div className="space-y-4 pt-4 border-t border-primary/10 form-el">
+            {userRole === 'admin' && (
+              <div className="space-y-4 pt-4 border-t border-primary/10 form-el">
                 <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-[1.5rem] border border-emerald-100">
                   <div>
                     <p className="font-bold text-emerald-800 text-sm">Venda Automática via Pix</p>
@@ -664,7 +691,35 @@ const CreateEventContent = () => {
                   </div>
                 )}
               </div>
+            )}
           </div>
+
+          {/* Evento de Teste (Apenas para Admins) */}
+          {userRole === 'admin' && (
+            <div className="space-y-4 pt-4 border-t border-primary/10 form-el">
+              <div className="flex items-center justify-between p-4 bg-red-50 rounded-[1.5rem] border border-red-100 shadow-inner">
+                <div>
+                  <p className="font-bold text-red-800 text-sm">Evento de Teste (Modo Admin)</p>
+                  <p className="text-[10px] text-red-600/70">Apenas administradores poderão visualizar este evento</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setValue('isTestEvent', !isTestEvent, { shouldValidate: true })}
+                  className={cn(
+                    "w-12 h-6 rounded-full transition-all relative flex items-center px-1 shrink-0",
+                    isTestEvent ? "bg-red-500" : "bg-red-200"
+                  )}
+                  title="Alternar evento de teste"
+                  aria-label="Alternar evento de teste"
+                >
+                  <div className={cn(
+                    "w-4 h-4 bg-white rounded-full transition-all shadow-md transform",
+                    isTestEvent ? "translate-x-6" : "translate-x-0"
+                  )} />
+                </button>
+              </div>
+            </div>
+          )}
 
           <Button type="submit" disabled={isSubmitting} className="w-full mt-4 rounded-full py-4 shadow-lg text-lg">
             {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : (id ? 'Salvar Alterações' : 'Publicar Evento')}
@@ -678,18 +733,28 @@ const CreateEventContent = () => {
 
       {/* Modal do Mapa */}
       {showMapModal && (
-        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm p-4 flex flex-col pt-12">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-sans font-bold text-lg text-textDark">Escolher Local</h2>
-            <button type="button" onClick={() => setShowMapModal(false)} className="bg-primary/10 p-2 rounded-full text-primary" title="Fechar Mapa" aria-label="Fechar Mapa">
-              <X size={20} />
-            </button>
-          </div>
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-lg h-[80vh] rounded-[2.5rem] border border-primary/20 shadow-2xl flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="font-sans text-xl font-black text-textDark">Escolher Localização</h3>
+                <p className="text-[10px] font-mono text-textDark/50 uppercase tracking-wider">Busque ou clique no mapa para marcar</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowMapModal(false)} 
+                className="bg-primary/10 p-2.5 rounded-full text-primary hover:bg-primary/20 hover:scale-110 active:scale-95 transition-all cursor-pointer" 
+                title="Fechar Mapa" 
+                aria-label="Fechar Mapa"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-          <div className="relative flex-1 rounded-3xl overflow-hidden border border-primary/20 bg-primary/5 shadow-2xl flex flex-col">
-            <div className="absolute top-4 left-4 right-4 z-10">
-              <div className="bg-background rounded-full shadow-lg border border-primary/10 overflow-hidden relative">
-                <SearchIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-textDark/40" />
+            {/* Map Container */}
+            <div className="relative flex-1 rounded-[2rem] overflow-hidden border border-primary/15 bg-primary/5 shadow-inner flex flex-col">
+              <div className="absolute top-4 left-4 right-4 z-20">
                 <PlaceAutocomplete
                   onPlaceSelect={(place) => {
                     if (place && (place as any).geometry?.location) {
@@ -703,16 +768,14 @@ const CreateEventContent = () => {
                   }}
                 />
               </div>
-            </div>
-            <Map
+              
+              <Map
+                style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
                 mapId={GOOGLE_MAP_ID}
-                center={{ lat: mapCenter[0], lng: mapCenter[1] }}
-                zoom={15}
+                defaultCenter={{ lat: mapCenter[0], lng: mapCenter[1] }}
+                defaultZoom={15}
                 gestureHandling={'greedy'}
                 disableDefaultUI={true}
-                onIdle={() => {
-                  // Update center state if needed
-                }}
               >
                 <GoogleMapEvents />
                 {selectedPos && (
@@ -722,41 +785,31 @@ const CreateEventContent = () => {
             </div>
 
             {isSearching && (
-              <div className="flex items-center justify-center gap-2 mb-4 text-primary animate-pulse">
-                <Loader2 size={16} className="animate-spin" />
+              <div className="flex items-center justify-center gap-2 mt-4 text-primary animate-pulse">
+                <Loader2 size={14} className="animate-spin" />
                 <span className="text-xs font-bold font-mono">Buscando endereço...</span>
               </div>
             )}
 
-            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 scrollbar-hide">
-              <p className="text-xs font-bold text-textDark/50 uppercase tracking-widest px-2">Sugestões de Parceiros</p>
-              {suggestions.map((loc, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPos(loc.coords);
-                    setMapCenter(loc.coords);
-                    selectMockLocation(loc.name, loc.addr);
-                  }}
-                  className="w-full flex items-center gap-3 p-4 rounded-2xl hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-all text-left group"
-                >
-                  <MapPin size={18} className="text-primary/60 group-hover:scale-125 transition-transform" />
-                  <div>
-                    <p className="font-sans font-bold text-sm text-textDark">{loc.name}</p>
-                    <p className="font-mono text-[10px] text-textDark/50">{loc.addr}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
+            {/* Address Preview */}
+            {address && (
+              <div className="mt-4 p-3.5 bg-primary/5 border border-primary/10 rounded-2xl flex items-start gap-2.5 text-left">
+                <MapPin className="text-primary shrink-0 mt-0.5" size={16} />
+                <div className="min-w-0">
+                  <span className="text-[9px] font-bold text-primary/70 uppercase block tracking-wider">Endereço Selecionado</span>
+                  <p className="font-sans font-bold text-xs text-textDark truncate leading-snug">{address}</p>
+                </div>
+              </div>
+            )}
 
             <Button
-              className="w-full mt-6 rounded-full py-3"
+              className="w-full mt-4 rounded-full py-3.5 shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all"
               onClick={() => setShowMapModal(false)}
               disabled={!address}
             >
               Confirmar Localização
             </Button>
+          </div>
         </div>
       )}
 

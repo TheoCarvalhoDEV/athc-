@@ -28,7 +28,9 @@ export const Search = () => {
           storage.getEvents(),
           storage.getProfiles()
         ]);
-        setEvents(allEvents);
+        const currentUser = storage.getCurrentUser();
+        const visibleEvents = currentUser?.role === 'admin' ? allEvents : allEvents.filter(e => !e.isTestEvent);
+        setEvents(visibleEvents);
         setProfiles(allProfiles);
       } catch (error) {
         console.error("Erro ao carregar dados na busca:", error);

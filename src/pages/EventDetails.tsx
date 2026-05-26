@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
-import type { EventItem, Registration, AppProfile } from '../lib/storage';
+import type { EventItem, AppProfile } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode } from 'lucide-react';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
@@ -15,7 +16,7 @@ export const EventDetails = () => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentUser = storage.getCurrentUser();
+  const { user: currentUser } = useAuth();
   const userId = currentUser?.id;
   const [showContactsModal, setShowContactsModal] = useState(false);
 
@@ -31,9 +32,18 @@ export const EventDetails = () => {
   const [qrCodeData, setQrCodeData] = useState<{ qr_code: string, qr_code_base64: string } | null>(null);
   const [pedidoId, setPedidoId] = useState('');
   
-  // GUEST STATES
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
+  // BUYER STATES
+  const [buyerName, setBuyerName] = useState(currentUser?.name || '');
+  const [buyerEmail, setBuyerEmail] = useState(currentUser?.username || '');
+  const [buyerPhone, setBuyerPhone] = useState('');
+  const [buyerCpf, setBuyerCpf] = useState('');
+
+  useEffect(() => {
+    if (currentUser) {
+      setBuyerName(currentUser.name || '');
+      setBuyerEmail(currentUser.username || '');
+    }
+  }, [currentUser?.id]);
 
   // Firebase Instances
   const functions = getFunctions();
@@ -56,8 +66,8 @@ export const EventDetails = () => {
             if (dados.status === 'pago') {
                 // Fechar modal Pix e garantir vaga
                 setShowPixModal(false);
-                await handleRegister();
-                // O handleRegister já abre o showModal (Success Modal)
+                setIsRegistered(true);
+                setShowModal(true);
             }
         }
     });
@@ -68,14 +78,13 @@ export const EventDetails = () => {
   const handlePagarPix = async () => {
     if (!event) return;
     
-    if (!currentUser && (!guestName || !guestEmail)) {
-        alert("Por favor, preencha nome e email para continuar.");
+    if (!buyerName || !buyerEmail || !buyerPhone || !buyerCpf) {
+        alert("Por favor, preencha todos os campos do formulário para continuar.");
         return;
     }
     
     setLoadingPix(true);
     const buyerId = currentUser ? currentUser.id : `guest-${Date.now()}`;
-    const buyerEmail = currentUser ? (currentUser.username || 'comprador@atche.com') : guestEmail;
 
     const novoPedidoId = `PIX-${event.id}-${buyerId}-${Date.now()}`;
     setPedidoId(novoPedidoId);
@@ -83,8 +92,12 @@ export const EventDetails = () => {
     const pedido = {
         pedidoId: novoPedidoId,
         valor: Number(event.pixTicketPrice || 0),
-        cpf: '12345678909', // Placeholder temporário
-        email: buyerEmail
+        cpf: buyerCpf.replace(/\D/g, ''),
+        email: buyerEmail,
+        clienteNome: buyerName,
+        clienteTelefone: buyerPhone,
+        eventId: event.id,
+        userId: buyerId
     };
 
     try {
@@ -116,8 +129,13 @@ export const EventDetails = () => {
       setIsLoading(true);
       try {
         const allEvents = await storage.getEvents();
-        const found = allEvents.find(e => e.id === id);
-        setEvent(found || null);
+        const found = allEvents.find((e: EventItem) => e.id === id);
+        const currentUser = storage.getCurrentUser();
+        if (found && found.isTestEvent && currentUser?.role !== 'admin') {
+          setEvent(null);
+        } else {
+          setEvent(found || null);
+        }
 
         if (found) {
           const orgProfile = await storage.getProfileById(found.creatorId);
@@ -174,9 +192,10 @@ export const EventDetails = () => {
     );
   }
 
+  /*
   const handleRegister = async () => {
     // Se não tiver logado e não for visitante com dados preenchidos, não pode registrar ingresso grátis (Garantir Vaga)
-    if (!currentUser && (!guestName || !guestEmail)) {
+    if (!currentUser && (!buyerName || !buyerEmail)) {
       navigate('/login');
       return;
     }
@@ -184,13 +203,16 @@ export const EventDetails = () => {
     if (!event) return;
 
     const buyerId = currentUser ? currentUser.id : `guest-${Date.now()}`;
-    const buyerName = currentUser ? currentUser.name : guestName;
 
     const registration: Registration = {
       id: Date.now().toString(),
       eventId: event.id,
       userId: buyerId,
       userName: buyerName,
+      userEmail: buyerEmail,
+      userPhone: buyerPhone,
+      userCpf: buyerCpf,
+      paymentStatus: 'Gratuito',
       timestamp: new Date().toISOString()
     };
 
@@ -203,6 +225,7 @@ export const EventDetails = () => {
       alert("Ocorreu um erro ao confirmar sua vaga.");
     }
   };
+  */
 
   const mediaList = event.mediaUrls && event.mediaUrls.length > 0
     ? event.mediaUrls
@@ -500,7 +523,7 @@ export const EventDetails = () => {
               </button>
               */}
 
-              {event.hasPixTickets ? (
+              {event.hasPixTickets && currentUser?.role === 'admin' ? (
                 <button
                   onClick={() => {
                       if (!isRegistered) setShowPixModal(true);
@@ -623,30 +646,58 @@ export const EventDetails = () => {
             <p className="text-xs text-gray-500 mb-4">Total: R$ {Number(event?.pixTicketPrice || 0).toFixed(2).replace('.', ',')}</p>
             
             {!qrCodeData ? (
-              <div className="flex flex-col gap-4">
-                {!currentUser && (
-                  <div className="text-left space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
-                    <p className="text-xs font-bold text-gray-700">Seus Dados (Visitante)</p>
+              <div className="flex flex-col gap-4 text-left">
+                <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
+                  <p className="text-xs font-bold text-gray-700">Seus Dados de Inscrição</p>
+                  
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">Nome Completo</label>
                     <input 
                       type="text" 
                       placeholder="Nome Completo" 
-                      value={guestName}
-                      onChange={e => setGuestName(e.target.value)}
-                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                      value={buyerName}
+                      onChange={e => setBuyerName(e.target.value)}
+                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors animate-in fade-in duration-300"
                     />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">E-mail</label>
                     <input 
                       type="email" 
                       placeholder="Seu melhor email" 
-                      value={guestEmail}
-                      onChange={e => setGuestEmail(e.target.value)}
+                      value={buyerEmail}
+                      onChange={e => setBuyerEmail(e.target.value)}
                       className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
                     />
                   </div>
-                )}
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone</label>
+                    <input 
+                      type="tel" 
+                      placeholder="(00) 00000-0000" 
+                      value={buyerPhone}
+                      onChange={e => setBuyerPhone(e.target.value)}
+                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">CPF</label>
+                    <input 
+                      type="text" 
+                      placeholder="000.000.000-00" 
+                      value={buyerCpf}
+                      onChange={e => setBuyerCpf(e.target.value)}
+                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                    />
+                  </div>
+                </div>
                 
                 <button 
                     onClick={handlePagarPix}
-                    disabled={loadingPix || (!currentUser && (!guestName || !guestEmail))}
+                    disabled={loadingPix || !buyerName || !buyerEmail || !buyerPhone || !buyerCpf}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-md disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loadingPix ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <QrCode size={18} />}

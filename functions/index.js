@@ -27,14 +27,27 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
 
         const body = {
             transaction_amount: Number(valor),
-            description: `Pedido ${pedidoId}`,
+            description: `Ingresso Atchê - Pedido ${pedidoId}`,
             payment_method_id: 'pix',
+            external_reference: pedidoId,
             payer: {
                 email: email,
                 identification: {
                     type: 'CPF',
                     number: cpf || '00000000000'
                 }
+            },
+            additional_info: {
+                items: [
+                    {
+                        id: data.eventId || 'ingresso',
+                        title: 'Ingresso Atchê',
+                        description: `Ingresso para o evento ID ${data.eventId || ''}`,
+                        category_id: 'tickets',
+                        quantity: 1,
+                        unit_price: Number(valor)
+                    }
+                ]
             },
             notification_url: 'https://webhookmercadopago-dfjumiogoq-uc.a.run.app'
         };
@@ -48,6 +61,11 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             id: pedidoId,
             valor: Number(valor),
             clienteEmail: email,
+            clienteNome: data.clienteNome || '',
+            clienteTelefone: data.clienteTelefone || '',
+            clienteCpf: cpf || '',
+            eventId: data.eventId || '',
+            userId: data.userId || '',
             status: 'pendente',
             mercadoPagoPaymentId: mpResponse.id,
             dataCriacao: FieldValue.serverTimestamp(),
@@ -80,23 +98,53 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
             const statusReal = mpPaymentInfo.status;
             
             const pedidosRef = db.collection('pedidos');
-            const querySnapshot = await pedidosRef.where('mercadoPagoPaymentId', '==', Number(paymentId)).limit(1).get();
+            let pedidoDoc = null;
+            let dadosPedido = null;
 
-            if (querySnapshot.empty) {
-                logger.error(`Pedido com MP ID ${paymentId} não encontrado no Firestore.`);
+            // Busca direta por external_reference (pedidoId)
+            if (mpPaymentInfo.external_reference) {
+                const docSnap = await pedidosRef.doc(mpPaymentInfo.external_reference).get();
+                if (docSnap.exists) {
+                    pedidoDoc = docSnap;
+                    dadosPedido = docSnap.data();
+                }
+            }
+
+            // Fallback por mercadoPagoPaymentId se não achou por external_reference
+            if (!dadosPedido) {
+                const querySnapshot = await pedidosRef.where('mercadoPagoPaymentId', '==', Number(paymentId)).limit(1).get();
+                if (!querySnapshot.empty) {
+                    pedidoDoc = querySnapshot.docs[0];
+                    dadosPedido = pedidoDoc.data();
+                }
+            }
+
+            if (!dadosPedido) {
+                logger.error(`Pedido correspondente ao pagamento MP ID ${paymentId} não encontrado no Firestore.`);
                 res.status(404).send('Pedido não encontrado.');
                 return;
             }
-
-            const pedidoDoc = querySnapshot.docs[0];
-            const dadosPedido = pedidoDoc.data();
             
             if (statusReal === 'approved' && dadosPedido.status !== 'pago') {
                 await pedidoDoc.ref.update({
                     status: 'pago',
                     dataPagamento: FieldValue.serverTimestamp()
                 });
-                logger.info(`Sucesso: Pedido ${pedidoDoc.id} foi pago!`);
+                
+                const registrationId = `reg_${dadosPedido.eventId}_${dadosPedido.userId}_${Date.now()}`;
+                await db.collection('registrations').doc(registrationId).set({
+                    id: registrationId,
+                    eventId: dadosPedido.eventId || '',
+                    userId: dadosPedido.userId || '',
+                    userName: dadosPedido.clienteNome || '',
+                    userEmail: dadosPedido.clienteEmail || '',
+                    userPhone: dadosPedido.clienteTelefone || '',
+                    userCpf: dadosPedido.clienteCpf || '',
+                    paymentStatus: 'Pago',
+                    timestamp: new Date().toISOString()
+                });
+
+                logger.info(`Sucesso: Pedido ${pedidoDoc.id} foi pago! Inscrição ${registrationId} criada.`);
             }
 
             res.status(200).send('Webhook processado.');

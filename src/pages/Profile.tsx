@@ -127,16 +127,18 @@ export const Profile = () => {
       const currentUserRole = currentUser?.role;
       const currentProfileId = currentUser?.profileId;
 
+      const visibleEvents = currentUserRole === 'admin' ? all : all.filter(e => !e.isTestEvent);
+
       if (currentUserRole === 'admin') {
-        setMyEvents(all);
+        setMyEvents(visibleEvents);
       } else if (currentUserRole === 'partner') {
         const targetId = currentProfileId || currentUserId;
-        setMyEvents(all.filter(e => e.creatorId === targetId));
+        setMyEvents(visibleEvents.filter(e => e.creatorId === targetId));
       } else {
         const registrations = await storage.getRegistrations();
         const myRegs = registrations.filter(r => r.userId === currentUserId);
         const myRegIds = myRegs.map(r => r.eventId);
-        setMyEvents(all.filter(e => myRegIds.includes(e.id)));
+        setMyEvents(visibleEvents.filter(e => myRegIds.includes(e.id)));
       }
     } catch (error) {
       console.error("Erro ao carregar eventos do perfil:", error);
@@ -255,9 +257,17 @@ export const Profile = () => {
 
   const exportToCSV = () => {
     if (!participantsList || participantsList.length === 0) return;
-    const headers = ['Nome,Data da Inscricao'];
-    const rows = participantsList.map(p => `"${p.userName}","${new Date(p.timestamp).toLocaleString('pt-BR')}"`);
-    const csvContent = headers.concat(rows).join('\n');
+    const headers = ['Nome,E-mail,Telefone,CPF,Situação de Pagamento,Data da Inscrição'];
+    const rows = participantsList.map(p => {
+      const name = p.userName || '';
+      const email = p.userEmail || '';
+      const phone = p.userPhone || '';
+      const cpf = p.userCpf || '';
+      const status = p.paymentStatus || 'Gratuito';
+      const date = new Date(p.timestamp).toLocaleString('pt-BR');
+      return `"${name}","${email}","${phone}","${cpf}","${status}","${date}"`;
+    });
+    const csvContent = '\uFEFF' + headers.concat(rows).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -747,19 +757,44 @@ export const Profile = () => {
                     <span className="text-[10px] font-bold text-primary uppercase">Nome do Participante</span>
                     <span className="font-mono text-[10px] text-primary/70 font-bold">{participantsList.length} confirmado(s)</span>
                   </div>
-                  {participantsList.map((reg) => (
-                    <div key={reg.id} className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/10 rounded-2xl">
-                      <div className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                        {reg.userName ? reg.userName.charAt(0).toUpperCase() : <User size={14} />}
+                  {participantsList.map((reg) => {
+                    const isPaid = reg.paymentStatus === 'Pago';
+                    return (
+                      <div key={reg.id} className="p-4 bg-primary/5 border border-primary/10 rounded-[1.5rem] space-y-2 text-left">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                              {reg.userName ? reg.userName.charAt(0).toUpperCase() : <User size={14} />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-sans font-bold text-sm text-textDark truncate leading-snug">{reg.userName || 'Usuário Anônimo'}</p>
+                              <p className="font-mono text-[10px] text-textDark/45 truncate leading-none mt-0.5">{reg.userEmail || 'Sem e-mail'}</p>
+                            </div>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide shrink-0 ${
+                            isPaid 
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                              : 'bg-gray-100 text-gray-700 border border-gray-200'
+                          }`}>
+                            {reg.paymentStatus || 'Gratuito'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-primary/5 text-[10px] font-mono text-textDark/60">
+                          <div>
+                            <span className="text-[8px] font-bold text-primary/70 uppercase block">Telefone</span>
+                            <span>{reg.userPhone || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[8px] font-bold text-primary/70 uppercase block">CPF</span>
+                            <span>{reg.userCpf || '-'}</span>
+                          </div>
+                        </div>
+                        <div className="text-[9px] font-mono text-textDark/40 text-right pt-1">
+                          Confirmado: {new Date(reg.timestamp).toLocaleDateString('pt-BR')} {new Date(reg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-sans font-bold text-sm text-textDark truncate leading-snug">{reg.userName || 'Usuário Anônimo'}</p>
-                        <p className="font-mono text-[9px] text-textDark/40 mt-0.5">
-                          Inscrito em: {new Date(reg.timestamp).toLocaleDateString('pt-BR')} às {new Date(reg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

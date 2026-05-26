@@ -63,6 +63,7 @@ export type EventItem = {
   whatsappNumber?: string;
   whatsappName?: string;
   whatsappContacts?: { name: string; phone: string }[];
+  isTestEvent?: boolean;
 };
 
 export type Registration = {
@@ -70,6 +71,10 @@ export type Registration = {
   eventId: string;
   userId: string;
   userName: string;
+  userEmail?: string;
+  userPhone?: string;
+  userCpf?: string;
+  paymentStatus?: string;
   timestamp: string;
 };
 
@@ -158,18 +163,20 @@ export const storage = {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const fbUser = userCredential.user;
 
+      const isAppAdmin = storage.isAdminEmail(email);
+
       const user: User = {
         id: fbUser.uid,
-        name: name,
+        name: isAppAdmin ? 'Administrador' : name,
         username: email,
-        role: 'user',
+        role: isAppAdmin ? 'admin' : 'user',
         mustChangePassword: false,
       };
 
       await addDoc(collection(db, 'profiles'), {
-        name,
+        name: isAppAdmin ? 'Administrador' : name,
         email,
-        type: 'user'
+        type: isAppAdmin ? 'admin' : 'user'
       });
 
       localStorage.setItem('@atche:user', JSON.stringify(user));
@@ -178,6 +185,15 @@ export const storage = {
       console.error("Erro no registro:", error);
       throw error;
     }
+  },
+
+  isAdminEmail: (email: string): boolean => {
+    const adminEmails = [
+      'admin@atche.com.br',
+      'theotheteo@gmail.com',
+      'allanjipa123@gmail.com'
+    ];
+    return adminEmails.includes(email.toLowerCase());
   },
 
   login: async (email: string, password?: string): Promise<User | null> => {
@@ -197,13 +213,13 @@ export const storage = {
         }
       }
 
-      const isAdminEmail = email.toLowerCase() === 'admin@atche.com.br';
+      const isAppAdmin = storage.isAdminEmail(email);
 
       const user: User = {
         id: fbUser.uid,
-        name: isAdminEmail ? 'Administrador' : (profile?.name || fbUser.displayName || 'Usuário'),
+        name: isAppAdmin ? 'Administrador' : (profile?.name || fbUser.displayName || 'Usuário'),
         username: email,
-        role: profile?.type === 'admin' || isAdminEmail ? 'admin' : (profile && (profile.type as string) !== 'user' ? 'partner' : 'user'),
+        role: profile?.type === 'admin' || isAppAdmin ? 'admin' : (profile && (profile.type as string) !== 'user' ? 'partner' : 'user'),
         mustChangePassword: profile?.mustChangePassword ?? false,
         imageUrl: profile?.imageUrl || '',
         profileId: profile?.id
