@@ -28,6 +28,7 @@ export const EventDetails = () => {
 
   // PIX STATES
   const [showPixModal, setShowPixModal] = useState(false);
+  const [showFreeTicketModal, setShowFreeTicketModal] = useState(false);
   const [loadingPix, setLoadingPix] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<{ qr_code: string, qr_code_base64: string } | null>(null);
   const [pedidoId, setPedidoId] = useState('');
@@ -192,11 +193,9 @@ export const EventDetails = () => {
     );
   }
 
-  /*
   const handleRegister = async () => {
-    // Se não tiver logado e não for visitante com dados preenchidos, não pode registrar ingresso grátis (Garantir Vaga)
-    if (!currentUser && (!buyerName || !buyerEmail)) {
-      navigate('/login');
+    if (!buyerName || !buyerPhone) {
+      alert("Por favor, preencha nome e telefone para confirmar presença.");
       return;
     }
 
@@ -218,6 +217,7 @@ export const EventDetails = () => {
 
     try {
       await storage.saveRegistration(registration);
+      setShowFreeTicketModal(false);
       setIsRegistered(true);
       setShowModal(true);
     } catch (error) {
@@ -225,7 +225,6 @@ export const EventDetails = () => {
       alert("Ocorreu um erro ao confirmar sua vaga.");
     }
   };
-  */
 
   const mediaList = event.mediaUrls && event.mediaUrls.length > 0
     ? event.mediaUrls
@@ -503,9 +502,8 @@ export const EventDetails = () => {
 
             {/* Ações (Grid dinâmico dependendo de quantos botões temos) */}
             <div className="flex flex-col gap-2">
-              {/* Botão Temporariamente Oculto a pedido
               <button
-                onClick={handleRegister}
+                onClick={() => setShowFreeTicketModal(true)}
                 disabled={isRegistered}
                 className={`w-full rounded-xl py-3.5 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-sans font-bold text-sm cursor-pointer ${isRegistered
                     ? 'bg-primary/10 text-primary border border-primary/20 shadow-none scale-100'
@@ -521,7 +519,6 @@ export const EventDetails = () => {
                   <span>Garantir Vaga</span>
                 )}
               </button>
-              */}
 
               {event.hasPixTickets && currentUser?.role === 'admin' ? (
                 <button
@@ -634,6 +631,52 @@ export const EventDetails = () => {
           </div>
         </div>
       )}
+      {/* Free Ticket Modal */}
+      {showFreeTicketModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-[2rem] border border-primary/20 shadow-2xl max-w-sm w-full text-center relative">
+            <button onClick={() => setShowFreeTicketModal(false)} className="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200 transition-colors cursor-pointer">
+              <span className="sr-only">Fechar</span>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 className="font-sans text-xl font-bold text-gray-800 mb-1">Confirmar Presença</h3>
+            <p className="text-xs text-gray-500 mb-4">Para evitar spam, informe seus dados.</p>
+            
+            <div className="flex flex-col gap-4 text-left">
+              <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Nome Completo</label>
+                  <input 
+                    type="text" 
+                    placeholder="Seu nome" 
+                    value={buyerName}
+                    onChange={e => setBuyerName(e.target.value)}
+                    className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone / WhatsApp</label>
+                  <input 
+                    type="tel" 
+                    placeholder="(00) 00000-0000" 
+                    value={buyerPhone}
+                    onChange={e => setBuyerPhone(e.target.value)}
+                    className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+              </div>
+              <button 
+                  onClick={handleRegister}
+                  disabled={!buyerName || !buyerPhone}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all shadow-md disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+              >
+                  Confirmar Presença
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pix Modal */}
       {showPixModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
