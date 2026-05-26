@@ -516,7 +516,7 @@ export const EventDetails = () => {
                     <span>Presença Confirmada</span>
                   </>
                 ) : (
-                  <span>Garantir Vaga</span>
+                  <span>Confirmar Presença</span>
                 )}
               </button>
 
