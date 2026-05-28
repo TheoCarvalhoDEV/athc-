@@ -8,6 +8,7 @@ import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket,
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import gsap from 'gsap';
+import { loadMercadoPago } from '@mercadopago/sdk-js';
 
 export const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -49,15 +50,19 @@ export const EventDetails = () => {
   // Inicialização do SDK V2 do Mercado Pago no Frontend
   // Inicializa o SDK V2 do Mercado Pago + Carrega o script de segurança como fallback
   useEffect(() => {
-    const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
-    if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI' && (window as any).MercadoPago) {
-      try {
-        new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
-        console.log("Mercado Pago SDK inicializado com sucesso no frontend.");
-      } catch (err) {
-        console.error("Erro ao inicializar o Mercado Pago SDK:", err);
+    const initMP = async () => {
+      const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+      if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI') {
+        try {
+          await loadMercadoPago();
+          new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
+          console.log("Mercado Pago SDK inicializado com sucesso no frontend.");
+        } catch (err) {
+          console.error("Erro ao inicializar o Mercado Pago SDK:", err);
+        }
       }
-    }
+    };
+    initMP();
 
     // Injeta o script de segurança do Mercado Pago dinamicamente como fallback se não estiver carregado
     const isAlreadyLoaded = !!(window as any).MP_DEVICE_SESSION_ID || 
@@ -103,7 +108,7 @@ export const EventDetails = () => {
 
   // Firebase Instances
   const functions = getFunctions();
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && import.meta.env.VITE_USE_EMULATORS === 'true') {
       try {
           connectFunctionsEmulator(functions, "127.0.0.1", 5001);
       } catch (e) {
@@ -148,6 +153,7 @@ export const EventDetails = () => {
     // Captura o Device Session ID gerado pelo script de segurança do Mercado Pago
     // Captura o Device Session ID por ordem de prioridade (variável global -> input oculto -> vazio)
     const deviceId = (window as any).MP_DEVICE_SESSION_ID || 
+                     (document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement)?.value || 
                      (document.getElementById('deviceId') as HTMLInputElement)?.value || 
                      '';
     
@@ -344,6 +350,7 @@ export const EventDetails = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background pb-44">
+      <input type="hidden" id="MP_DEVICE_SESSION_ID" name="MP_DEVICE_SESSION_ID" />
       <input type="hidden" id="deviceId" />
       {/* Centered Container for Desktop */}
       <div className="max-w-2xl mx-auto bg-background min-h-screen shadow-2xl relative flex flex-col">

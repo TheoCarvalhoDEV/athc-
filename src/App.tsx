@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -14,6 +15,7 @@ import { PrivateRoute } from './components/PrivateRoute';
 import { BottomNav } from './components/BottomNav';
 import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { loadMercadoPago } from '@mercadopago/sdk-js';
 
 // MainLayout agora é apenas para rotas que têm Nav Bar mas não são necessariamente protegidas
 const MainLayout = () => {
@@ -26,6 +28,22 @@ const MainLayout = () => {
 };
 
 function App() {
+  useEffect(() => {
+    const initMP = async () => {
+      const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+      if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI') {
+        try {
+          await loadMercadoPago();
+          new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
+          console.log("Mercado Pago SDK global inicializado com sucesso.");
+        } catch (err) {
+          console.error("Erro ao inicializar o Mercado Pago SDK global:", err);
+        }
+      }
+    };
+    initMP();
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>

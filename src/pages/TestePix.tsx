@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { getFirestore, doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { loadMercadoPago } from '@mercadopago/sdk-js';
 
 export const TestePix = () => {
     const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export const TestePix = () => {
     
     // Configurar o Firebase Functions para apontar pro localhost se não estiver no env prod
     const functions = getFunctions();
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && import.meta.env.VITE_USE_EMULATORS === 'true') {
         connectFunctionsEmulator(functions, "127.0.0.1", 5001);
     }
     
@@ -18,15 +19,19 @@ export const TestePix = () => {
 
     // Inicialização do SDK V2 do Mercado Pago no Frontend + Script de Segurança
     useEffect(() => {
-        const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
-        if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI' && (window as any).MercadoPago) {
-            try {
-                new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
-                console.log("Mercado Pago SDK inicializado com sucesso no frontend de teste.");
-            } catch (err) {
-                console.error("Erro ao inicializar o Mercado Pago SDK:", err);
+        const initMP = async () => {
+            const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+            if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI') {
+                try {
+                    await loadMercadoPago();
+                    new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
+                    console.log("Mercado Pago SDK inicializado com sucesso no frontend de teste.");
+                } catch (err) {
+                    console.error("Erro ao inicializar o Mercado Pago SDK:", err);
+                }
             }
-        }
+        };
+        initMP();
 
         // Injeta o script de segurança dinamicamente para o checkout de teste se já não existir
         const isAlreadyLoaded = !!(window as any).MP_DEVICE_SESSION_ID || 
@@ -81,6 +86,7 @@ export const TestePix = () => {
             // Captura o Device Session ID gerado pelo script de segurança do Mercado Pago
             // Captura o Device Session ID por ordem de prioridade (variável global -> input oculto -> vazio)
             const deviceId = (window as any).MP_DEVICE_SESSION_ID || 
+                             (document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement)?.value || 
                              (document.getElementById('deviceId') as HTMLInputElement)?.value || 
                              '';
             const pedidoComDevice = {
@@ -155,6 +161,7 @@ export const TestePix = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+            <input type="hidden" id="MP_DEVICE_SESSION_ID" name="MP_DEVICE_SESSION_ID" />
             <input type="hidden" id="deviceId" />
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-gray-100 font-sans p-8">
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Teste Real - Integração PIX</h2>

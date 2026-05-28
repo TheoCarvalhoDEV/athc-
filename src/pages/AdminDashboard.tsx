@@ -176,7 +176,7 @@ export const AdminDashboard = () => {
       // Se uma nova senha foi digitada, redefinir usando a Cloud Function segura
       if (editingPartner.password && editingPartner.password.trim() !== '') {
         const functions = getFunctions();
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && import.meta.env.VITE_USE_EMULATORS === 'true') {
             try {
                 connectFunctionsEmulator(functions, "127.0.0.1", 5001);
             } catch (e) {
