@@ -37,6 +37,56 @@ export const Feed = () => {
   const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
 
+  // Pull to Refresh States & Refs
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const startY = useRef(0);
+  const isPulling = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0 && !isRefreshing) {
+      startY.current = e.touches[0].clientY;
+      isPulling.current = true;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isPulling.current) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - startY.current;
+
+    if (diff > 0) {
+      const distance = Math.min(diff * 0.45, 80);
+      setPullDistance(distance);
+      
+      if (diff > 5 && e.cancelable) {
+        e.preventDefault();
+      }
+    } else {
+      isPulling.current = false;
+      setPullDistance(0);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (!isPulling.current) return;
+    isPulling.current = false;
+
+    if (pullDistance >= 60) {
+      setIsRefreshing(true);
+      setPullDistance(60);
+      
+      await loadEvents(false);
+      
+      setTimeout(() => {
+        setIsRefreshing(false);
+        setPullDistance(0);
+      }, 300);
+    } else {
+      setPullDistance(0);
+    }
+  };
+
   const loadEvents = async (isLoadMore = false) => {
     if (isLoadMore) setIsLoadingMore(true);
     else setIsLoading(true);
@@ -164,7 +214,36 @@ export const Feed = () => {
     .slice(0, 3);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-28">
+    <div 
+      ref={containerRef} 
+      className="min-h-screen bg-background pb-28 select-none"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull to Refresh Indicator */}
+      <div 
+        className="flex items-center justify-center overflow-hidden transition-all duration-200 pointer-events-none sticky top-0 z-50 w-full"
+        style={{ 
+          height: `${pullDistance}px`,
+          opacity: pullDistance > 0 ? 1 : 0,
+        }}
+      >
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FCFAF7]/90 backdrop-blur-md border border-primary/10 shadow-lg mt-2">
+          {isRefreshing ? (
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <div 
+              className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full transition-transform duration-75"
+              style={{ transform: `rotate(${pullDistance * 6}deg)` }}
+            />
+          )}
+          <span className="text-[10px] font-bold text-primary uppercase tracking-widest font-mono">
+            {isRefreshing ? 'Atualizando...' : (pullDistance >= 60 ? 'Solte para atualizar' : 'Puxe para atualizar')}
+          </span>
+        </div>
+      </div>
+
       {/* Premium Header */}
       <div className="feed-header px-5 pt-8 pb-4">
         <div className="flex justify-between items-center mb-6">
