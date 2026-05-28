@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { storage } from '../lib/storage';
 import type { AppProfile } from '../lib/storage';
 import { cn } from '../lib/utils';
+import { compressImage } from '../lib/imageUtils';
 import gsap from 'gsap';
 import { Image as ImageIcon, MapPin, X, Plus, Calendar as CalendarIcon, Clock, Map as MapIcon, Loader2, Search as SearchIcon } from 'lucide-react';
 import { useMap, useMapsLibrary, APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
@@ -246,52 +247,7 @@ const CreateEventContent = () => {
       toast.error(err.message);
     });
   };
-  const compressImage = (file: File, maxWidth: number = 600, maxHeight: number = 600, quality: number = 0.5): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
 
-          if (width > height) {
-            if (width > maxWidth) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            resolve(event.target?.result as string);
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
-          resolve(compressedBase64);
-        };
-        img.onerror = () => {
-          resolve(event.target?.result as string);
-        };
-      };
-      reader.onerror = () => {
-        resolve('');
-      };
-    });
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -409,18 +365,17 @@ const CreateEventContent = () => {
     <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-8 px-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <img 
             src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
-            alt="Atchê" 
-            className="w-12 h-12 object-contain mix-blend-multiply" 
+            alt="Atchêi" 
+            className="w-auto h-14 object-contain mix-blend-multiply drop-shadow-sm" 
           />
-          <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
         </div>
         <button 
           type="button"
           onClick={() => navigate('/profile')}
-          className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
           title="Ir para o perfil"
         >
           {user?.imageUrl ? (

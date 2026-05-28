@@ -1,4 +1,5 @@
 const { onRequest, onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentCreated, onDocumentDeleted } = require("firebase-functions/v2/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
@@ -32,7 +33,7 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         const clienteNome = data.clienteNome || "Comprador Ficticio";
         const nameParts = clienteNome.trim().split(/\s+/);
         const firstName = nameParts[0] || "Comprador";
-        const lastName = nameParts.slice(1).join(" ") || "Atche";
+        const lastName = nameParts.slice(1).join(" ") || "Atchêi";
 
         // Extrai e formata o telefone
         const clienteTelefone = data.clienteTelefone || "11999999999";
@@ -48,12 +49,12 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
 
         const cleanCpf = (cpf || "").replace(/\D/g, "") || "00000000000";
         const eventId = data.eventId || "ingresso";
-        const eventTitle = data.eventTitle || "Ingresso Atche";
+        const eventTitle = data.eventTitle || "Ingresso Atchêi";
         const eventDescription = data.eventDescription || `Ingresso para o evento ID ${eventId}`;
 
         const body = {
             transaction_amount: Number(valor),
-            description: `Ingresso Atche - Pedido ${pedidoId}`.substring(0, 60),
+            description: `Ingresso Atchêi - Pedido ${pedidoId}`.substring(0, 60),
             payment_method_id: 'pix',
             external_reference: pedidoId,
             payer: {
@@ -260,3 +261,31 @@ exports.adminResetPassword = onCall({ cors: true }, async (request) => {
         throw new HttpsError('internal', 'Erro interno ao redefinir senha.');
     }
 });
+
+exports.onRegistrationCreated = onDocumentCreated("registrations/{registrationId}", async (event) => {
+    const data = event.data.data();
+    if (!data.eventId) return;
+    try {
+        await db.collection("events").doc(data.eventId).update({
+            registrationCount: FieldValue.increment(1)
+        });
+        logger.info(`Incremented registration count for event ${data.eventId}`);
+    } catch (error) {
+        logger.error(`Error incrementing registration count for event ${data.eventId}:`, error);
+    }
+});
+
+exports.onRegistrationDeleted = onDocumentDeleted("registrations/{registrationId}", async (event) => {
+    const data = event.data.data();
+    if (!data.eventId) return;
+    try {
+        await db.collection("events").doc(data.eventId).update({
+            registrationCount: FieldValue.increment(-1)
+        });
+        logger.info(`Decremented registration count for event ${data.eventId}`);
+    } catch (error) {
+        logger.error(`Error decrementing registration count for event ${data.eventId}:`, error);
+    }
+});
+
+

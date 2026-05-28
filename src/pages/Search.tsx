@@ -66,17 +66,16 @@ export const Search = () => {
     <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-6 px-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <img 
             src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
-            alt="Atchê" 
-            className="w-12 h-12 object-contain mix-blend-multiply" 
+            alt="Atchêi" 
+            className="w-auto h-14 object-contain mix-blend-multiply drop-shadow-sm" 
           />
-          <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
         </div>
         <button 
           onClick={() => navigate('/profile')}
-          className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-lg font-bold overflow-hidden"
           title="Ir para o perfil"
         >
           {user?.imageUrl ? (
