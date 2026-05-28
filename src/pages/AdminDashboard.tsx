@@ -293,7 +293,7 @@ export const AdminDashboard = () => {
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-textDark truncate">{event.title}</h3>
-                      <p className="text-xs text-textDark/60 font-mono mt-0.5">{event.date} • {event.publicType}</p>
+                      <p className="text-xs text-textDark/60 font-mono mt-0.5">{event.date}</p>
                     </div>
                     <div className="bg-primary/5 px-2 py-1 rounded-md flex items-center gap-1.5 shrink-0">
                       <Users size={12} className="text-primary" />

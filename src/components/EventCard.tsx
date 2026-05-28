@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { EventItem } from '../lib/storage';
 import { Navigation, Clock, MapPin, ExternalLink, Ticket, ArrowRight } from 'lucide-react';
@@ -9,6 +10,7 @@ interface EventCardProps {
 
 export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
   const navigate = useNavigate();
+  const [imageError, setImageError] = useState(false);
 
 
   const openMaps = () => {
@@ -38,8 +40,13 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
       <div className="relative min-w-[260px] max-w-[260px] h-[180px] rounded-[1.5rem] overflow-hidden shadow-lg press-effect cursor-pointer shrink-0 group"
         onClick={() => navigate(`/event/${event.id}`)}>
         {/* Background */}
-        {event.mediaUrls && event.mediaUrls.length > 0 ? (
-          <img src={event.mediaUrls[0]} alt={event.title} className="absolute inset-0 w-full h-full object-cover" />
+        {event.mediaUrls && event.mediaUrls.length > 0 && !imageError ? (
+          <img 
+            src={event.mediaUrls[0]} 
+            alt={event.title} 
+            className="absolute inset-0 w-full h-full object-cover" 
+            onError={() => setImageError(true)}
+          />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-primary/60" />
         )}
@@ -47,17 +54,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        {/* Badge */}
-        <div className="absolute top-3 left-3 flex gap-2">
-          <span className="badge-open">
-            Aberto
-          </span>
-          {event.mediaUrls && event.mediaUrls.length > 1 && (
-            <span className="bg-black/40 backdrop-blur-sm rounded-full px-2 py-0.5 text-[9px] font-bold text-white flex items-center gap-1 border border-white/10 shadow-md">
-              📸 {event.mediaUrls.length}
-            </span>
-          )}
-        </div>
+
 
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -84,30 +81,27 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
       <div className="bg-background border border-primary/15 rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col press-effect">
         {/* Image Section */}
         <div className="h-44 relative overflow-hidden cursor-pointer" onClick={() => navigate(`/event/${event.id}`)}>
-          {event.mediaUrls && event.mediaUrls.length > 0 ? (
-            <img src={event.mediaUrls[0]} alt={event.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          {event.mediaUrls && event.mediaUrls.length > 0 && !imageError ? (
+            <img 
+              src={event.mediaUrls[0]} 
+              alt={event.title} 
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+              onError={() => setImageError(true)}
+            />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-[#E6DCCF] via-[#DDD0BF] to-[#D4C4AD] flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <div className="w-8 h-8 border-b-4 border-primary rounded-b-full opacity-40"></div>
-              </div>
+              <img 
+                src={`${import.meta.env.BASE_URL}placeholder-logo.png`} 
+                alt="Atchêi" 
+                className="w-20 h-20 object-contain opacity-35" 
+              />
             </div>
           )}
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
-          {/* Badge */}
-          <div className="absolute top-3 left-3 flex gap-2">
-            <span className="badge-open">
-              Aberto
-            </span>
-            {event.mediaUrls && event.mediaUrls.length > 1 && (
-              <span className="bg-background/80 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] font-bold text-primary border border-primary/10 flex items-center gap-1 shadow-sm">
-                📸 {event.mediaUrls.length}
-              </span>
-            )}
-          </div>
+
 
           {/* Time badge top right */}
           <div className="absolute top-3 right-3">

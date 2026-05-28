@@ -238,7 +238,6 @@ export const Feed = () => {
           { key: 'emAlta' as FilterType, label: 'Em Alta', icon: Flame },
           { key: 'hoje' as FilterType, label: 'Hoje', icon: Calendar },
           { key: 'semana' as FilterType, label: 'Esta Semana', icon: null },
-          { key: 'Aberto' as FilterType, label: 'Aberto', icon: null },
         ].map(f => (
           <button
             key={f.key}
