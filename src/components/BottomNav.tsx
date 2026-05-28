@@ -19,7 +19,7 @@ export const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-6 left-1/2 z-[9999] px-4 md:hidden w-max max-w-[calc(100vw-2rem)]" style={{ transform: 'translate3d(-50%, 0, 0)', backfaceVisibility: 'hidden' }}>
+    <div className="fixed bottom-6 left-1/2 z-[9999] px-4 md:hidden w-max max-w-[calc(100vw-2rem)] bottom-nav-container">
       <nav className="glass rounded-[2rem] px-5 py-2.5 flex items-center gap-4 md:gap-6 shadow-glass-shadow relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
         {navItems.map((item) => (

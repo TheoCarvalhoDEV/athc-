@@ -158,6 +158,30 @@ export const storage = {
     return { events, lastDoc };
   },
 
+  getUpcomingEvents: async (): Promise<EventItem[]> => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const eventsRef = collection(db, 'events');
+    const q = query(
+      eventsRef,
+      where('date', '>=', todayStr),
+      orderBy('date', 'asc')
+    );
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      if (data.publicType === 'VIP' || data.publicType === 'vip') {
+        data.publicType = 'Aberto';
+      }
+      return { id: doc.id, ...data } as EventItem;
+    });
+  },
+
   saveEvent: async (event: EventItem) => {
     const { id, ...eventData } = event;
     if (id && id.length > 5) { // Se tiver um ID real, atualiza

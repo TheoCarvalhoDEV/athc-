@@ -52,7 +52,12 @@ export const Agenda = () => {
       {/* Ambient glow */}
       <div className="ambient-glow w-48 h-48 bg-primary/15 top-20 right-0" />
 
-      <button onClick={() => navigate(-1)} className="w-10 h-10 mb-6 rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10">
+      <button 
+        onClick={() => navigate(-1)} 
+        title="Voltar"
+        aria-label="Voltar"
+        className="w-10 h-10 mb-6 rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
+      >
         <ArrowLeft size={18} />
       </button>
 

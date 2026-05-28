@@ -33,9 +33,6 @@ export const Feed = () => {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [filter, setFilter] = useState<FilterType>('todos');
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [lastDoc, setLastDoc] = useState<any>(null);
-  const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
 
   // Pull to Refresh States & Refs
@@ -77,7 +74,7 @@ export const Feed = () => {
       setIsRefreshing(true);
       setPullDistance(60);
       
-      await loadEvents(false);
+      await loadEvents();
       
       setTimeout(() => {
         setIsRefreshing(false);
@@ -88,15 +85,11 @@ export const Feed = () => {
     }
   };
 
-  const loadEvents = async (isLoadMore = false) => {
-    if (isLoadMore) setIsLoadingMore(true);
-    else setIsLoading(true);
+  const loadEvents = async () => {
+    setIsLoading(true);
     
     try {
-      const pageSize = 10;
-      const currentLastDoc = isLoadMore ? lastDoc : null;
-      
-      const { events: newEvents, lastDoc: newLastDoc } = await storage.getPaginatedEvents(currentLastDoc, pageSize);
+      const newEvents = await storage.getUpcomingEvents();
 
       const isUserAdmin = user?.role === 'admin';
       const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
@@ -107,23 +100,11 @@ export const Feed = () => {
         return eventDateTime >= now;
       });
 
-      if (isLoadMore) {
-        setEvents(prev => {
-          const existingIds = new Set(prev.map(e => e.id));
-          const uniqueNewEvents = upcomingEvents.filter(e => !existingIds.has(e.id));
-          return [...prev, ...uniqueNewEvents];
-        });
-      } else {
-        setEvents(upcomingEvents);
-      }
-      
-      setLastDoc(newLastDoc);
-      setHasMore(newEvents.length === pageSize);
+      setEvents(upcomingEvents);
     } catch (error) {
       console.error("Erro ao carregar eventos:", error);
     } finally {
       setIsLoading(false);
-      setIsLoadingMore(false);
     }
   };
 
@@ -196,8 +177,10 @@ export const Feed = () => {
         return eventDate >= today && eventDate <= nextWeek;
       });
     } else if (filter === 'emAlta') {
-      // Sort by registration count (most popular first)
-      return filtered.sort((a, b) => (b.registrationCount || 0) - (a.registrationCount || 0));
+      // Sort by registration count (most popular first) and limit to 10
+      return filtered
+        .sort((a, b) => (b.registrationCount || 0) - (a.registrationCount || 0))
+        .slice(0, 10);
     }
 
     // Sort ascending by date
@@ -398,17 +381,7 @@ export const Feed = () => {
               </div>
             ))}
             
-            {hasMore && filteredEvents.length > 0 && (
-              <div className="flex justify-center mt-4 mb-8 col-span-full">
-                <button
-                  onClick={() => loadEvents(true)}
-                  disabled={isLoadingMore}
-                  className="px-6 py-3.5 rounded-2xl bg-surface/50 border border-glassBorder hover:border-primary/30 text-textLight font-display font-black hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  {isLoadingMore ? 'Carregando...' : 'Ver Mais Eventos'}
-                </button>
-              </div>
-            )}
+            {/* Paginação removida */}
 
             {filteredEvents.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 col-span-full">

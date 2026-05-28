@@ -370,6 +370,8 @@ const CreateEventContent = () => {
       <button
         type="button"
         onClick={() => navigate(-1)}
+        title="Voltar"
+        aria-label="Voltar"
         className="w-10 h-10 mb-6 rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
       >
         <ArrowLeft size={18} />
@@ -426,6 +428,8 @@ const CreateEventContent = () => {
                     <button
                       type="button"
                       onClick={() => removeMedia(i)}
+                      title="Remover mídia"
+                      aria-label="Remover mídia"
                       className="absolute top-2 right-2 w-6 h-6 bg-danger text-textLight border border-danger/20 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer duration-300"
                     >
                       <X size={12} />
@@ -562,6 +566,8 @@ const CreateEventContent = () => {
                 <button
                   type="button"
                   onClick={() => setValue('hasTickets', !hasTickets, { shouldValidate: true })}
+                  title="Possui ingressos"
+                  aria-label="Possui ingressos"
                   className={cn(
                     "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
                     hasTickets ? 'bg-primary/20 border-primary/45' : 'bg-surfaceHover/50'
@@ -608,6 +614,8 @@ const CreateEventContent = () => {
                               const current = watch('whatsappContacts') || [];
                               setValue('whatsappContacts', current.filter((_, idx) => idx !== i));
                             }}
+                            title="Remover promoter"
+                            aria-label="Remover promoter"
                             className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface/50 hover:bg-surfaceHover rounded-xl neo-click transition-all duration-300"
                           >
                             <Trash2 size={14} />
@@ -644,6 +652,8 @@ const CreateEventContent = () => {
                   <button
                     type="button"
                     onClick={() => setValue('hasPixTickets', !hasPixTickets, { shouldValidate: true })}
+                    title="Venda via PIX"
+                    aria-label="Venda via PIX"
                     className={cn(
                       "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
                       hasPixTickets ? 'bg-success/20 border-success/40' : 'bg-surfaceHover/50'

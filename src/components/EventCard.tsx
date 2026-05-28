@@ -67,14 +67,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
         {/* Gradient Overlay - Dark Shadow (no white fade) */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent z-10" />
 
-        {/* Badge */}
-        {event.mediaUrls && event.mediaUrls.length > 1 && (
-          <div className="absolute top-3 left-3 z-20">
-            <span className="glass border border-glassBorder rounded-lg px-2 py-0.5 text-[9px] text-accent flex items-center gap-1 backdrop-blur-md">
-              📸 {event.mediaUrls.length}
-            </span>
-          </div>
-        )}
+        {/* Badge de quantidade de mídias removido */}
 
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
@@ -122,14 +115,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
             </div>
           )}
 
-          {/* Badge */}
-          {event.mediaUrls && event.mediaUrls.length > 1 && (
-            <div className="absolute top-3 left-3">
-              <span className="glass border border-glassBorder rounded-lg px-2.5 py-1 text-[10px] text-accent flex items-center gap-1 backdrop-blur-md">
-                📸 {event.mediaUrls.length}
-              </span>
-            </div>
-          )}
+          {/* Badge de quantidade de mídias removido */}
 
           {/* Time badge top right */}
           <div className="absolute top-3 right-3">
