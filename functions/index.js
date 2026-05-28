@@ -24,7 +24,7 @@ function getPaymentClient() {
     return payment;
 }
 
-exports.criarCobrancaPix = onCall({ cors: true, secrets: ["MP_ACCESS_TOKEN"] }, async (request) => {
+exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
     const data = request.data;
     const { valor, cpf, email, pedidoId, deviceId } = data;
     
@@ -152,7 +152,7 @@ exports.criarCobrancaPix = onCall({ cors: true, secrets: ["MP_ACCESS_TOKEN"] }, 
     }
 });
 
-exports.webhookMercadoPago = onRequest({ secrets: ["MP_ACCESS_TOKEN"] }, async (req, res) => {
+exports.webhookMercadoPago = onRequest(async (req, res) => {
     cors(req, res, async () => {
         const paymentId = req.query.id || req.body?.data?.id || req.body?.id;
         logger.info("Webhook payload recebido. Query:", req.query, "Body:", req.body, "Parsed ID:", paymentId);
