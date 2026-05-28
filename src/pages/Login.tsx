@@ -63,7 +63,7 @@ export const Login = () => {
       <div className="w-full max-w-sm flex flex-col items-center">
 
         <div className="flex flex-col items-center gap-3 stagger-el mb-12">
-          <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchê" className="w-32 h-32 object-contain mix-blend-multiply" />
+          <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchêi" className="w-32 h-32 object-contain mix-blend-multiply" />
         </div>
 
         <form onSubmit={handleLogin} className="w-full space-y-6">

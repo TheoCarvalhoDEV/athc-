@@ -9,7 +9,6 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { Profile } from './pages/Profile';
 import { Agenda } from './pages/Agenda';
 import { ChangePassword } from './pages/ChangePassword';
-import { TestePix } from './pages/TestePix';
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
 import { BottomNav } from './components/BottomNav';
@@ -37,7 +36,6 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/event/:id" element={<EventDetails />} />
-            <Route path="/teste-pix" element={<TestePix />} />
             
             {/* Rotas Públicas com Nav */}
             <Route element={<MainLayout />}>

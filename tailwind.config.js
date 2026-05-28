@@ -19,6 +19,7 @@ export default {
         serif: ['Cormorant Garamond', 'serif'],
         mono: ['JetBrains Mono', 'monospace'],
         brand: ['Outfit', 'sans-serif'],
+        nunito: ['Nunito', 'sans-serif'],
       },
     },
   },

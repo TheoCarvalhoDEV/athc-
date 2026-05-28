@@ -1,6 +1,6 @@
-# Atchê - Plataforma de Eventos Cinematográfica 🎬
+# Atchêi - Plataforma de Eventos Cinematográfica 🎬
 
-Bem-vindo ao **Atchê**, uma web-app de alta fidelidade voltada para a gestão e descoberta de eventos, festivais, clubes e atléticas. O Atchê não é apenas um site de ingressos; é a porta de entrada para a melhor experiência noturna.
+Bem-vindo ao **Atchêi**, uma web-app de alta fidelidade voltada para a gestão e descoberta de eventos, festivais, clubes e atléticas. O Atchêi não é apenas um site de ingressos; é a porta de entrada para a melhor experiência noturna.
 
 ---
 
@@ -12,16 +12,16 @@ Bem-vindo ao **Atchê**, uma web-app de alta fidelidade voltada para a gestão e
 
 ## 🤝 Para Estabelecimentos e Organizadores
 
-Você é proprietário de uma casa noturna, organizador de festivais ou líder de atlética? O **Atchê** foi desenhado para elevar o nível da sua marca.
+Você é proprietário de uma casa noturna, organizador de festivais ou líder de atlética? O **Atchêi** foi desenhado para elevar o nível da sua marca.
 
-### Por que ser um parceiro Atchê?
+### Por que ser um parceiro Atchêi?
 - **Visibilidade Premium**: Seu evento em destaque com um design que respira exclusividade.
 - **Painel de Gestão**: Controle total sobre seus eventos, descrições e links de venda.
 - **Conexão Direta**: Integração nativa com WhatsApp para facilitar a reserva de mesas, lounges e venda de ingressos.
 - **Localização Inteligente**: Direcione seu público com precisão através da integração com Google Maps.
 
 ### 📩 Tem interesse? Entre em contato!
-Estamos abertos a novas parcerias e expansões da plataforma. Se você deseja ver seu estabelecimento no Atchê, entre em contato com o desenvolvedor:
+Estamos abertos a novas parcerias e expansões da plataforma. Se você deseja ver seu estabelecimento no Atchêi, entre em contato com o desenvolvedor:
 
 - **Instagram**: [@theocarvalho.dev](https://instagram.com/theo_carvalho.09) 
 - **WhatsApp**: [Conversar com Theo](https://wa.me/5565996097252)
@@ -31,7 +31,7 @@ Estamos abertos a novas parcerias e expansões da plataforma. Se você deseja ve
 
 ## ✨ Características do Projeto
 
-O Atchê oferece uma experiência visual imersiva e de alta performance:
+O Atchêi oferece uma experiência visual imersiva e de alta performance:
 
 - **Estética "Velvet VIP"**: Interface moderna em modo escuro, com tons de dourado (#D4AF37) e tipografia refinada.
 - **Feed de Fomo (Fear Of Missing Out)**: Layout focado em gerar urgência e desejo visual.

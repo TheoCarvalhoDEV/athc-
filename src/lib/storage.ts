@@ -21,8 +21,6 @@ import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
 
-export type ProfileType = 'user' | 'estabelecimento' | 'atletica';
-
 export interface AppProfile {
   id: string;
   name: string;
@@ -64,6 +62,7 @@ export type EventItem = {
   whatsappName?: string;
   whatsappContacts?: { name: string; phone: string }[];
   isTestEvent?: boolean;
+  registrationCount?: number;
 };
 
 export type Registration = {
@@ -335,18 +334,6 @@ export const storage = {
     const q = query(collection(db, 'registrations'), where('eventId', '==', eventId));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
-  },
-
-  getRegistrationCounts: async (): Promise<Map<string, number>> => {
-    const querySnapshot = await getDocs(collection(db, 'registrations'));
-    const counts = new Map<string, number>();
-    querySnapshot.docs.forEach(doc => {
-      const eventId = doc.data().eventId;
-      if (eventId) {
-        counts.set(eventId, (counts.get(eventId) || 0) + 1);
-      }
-    });
-    return counts;
   },
 
   hasUserRegistered: async (eventId: string, userId: string): Promise<boolean> => {

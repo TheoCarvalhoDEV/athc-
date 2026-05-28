@@ -413,7 +413,7 @@ export const EventDetails = () => {
                 <div className="min-w-0 flex-1">
                   <p className="text-[9px] font-bold text-primary/50 uppercase tracking-widest truncate">Organizado por</p>
                   <p className="font-sans font-bold text-base text-textDark mt-0.5 truncate">{organizer.name}</p>
-                  <p className="text-[10px] text-textDark/40 font-mono truncate">Parceiro Oficial Atchê</p>
+                  <p className="text-[10px] text-textDark/40 font-mono truncate">Parceiro Oficial Atchêi</p>
                 </div>
               </div>
 

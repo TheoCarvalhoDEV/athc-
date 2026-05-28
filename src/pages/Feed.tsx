@@ -30,7 +30,6 @@ export const Feed = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [registrationCounts, setRegistrationCounts] = useState<Map<string, number>>(new Map());
   const [filter, setFilter] = useState<FilterType>('todos');
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -47,15 +46,8 @@ export const Feed = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const currentLastDoc = isLoadMore ? lastDoc : null;
       
-      const [{ events: newEvents, lastDoc: newLastDoc }, counts] = await Promise.all([
-        storage.getPaginatedEvents(currentLastDoc, pageSize),
-        !isLoadMore ? storage.getRegistrationCounts() : Promise.resolve(registrationCounts)
-      ]);
+      const { events: newEvents, lastDoc: newLastDoc } = await storage.getPaginatedEvents(currentLastDoc, pageSize);
 
-      if (!isLoadMore) {
-        setRegistrationCounts(counts);
-      }
-      
       const isUserAdmin = user?.role === 'admin';
       const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
 
@@ -126,10 +118,6 @@ export const Feed = () => {
     }
   }, []); // Run only once on mount
 
-  const handleDelete = (id: string) => {
-    setEvents(prev => prev.filter(e => e.id !== id));
-  };
-
   const getFilteredAndSortedEvents = () => {
     let filtered = [...events];
     const today = new Date();
@@ -153,7 +141,7 @@ export const Feed = () => {
       });
     } else if (filter === 'emAlta') {
       // Sort by registration count (most popular first)
-      return filtered.sort((a, b) => (registrationCounts.get(b.id) || 0) - (registrationCounts.get(a.id) || 0));
+      return filtered.sort((a, b) => (b.registrationCount || 0) - (a.registrationCount || 0));
     }
 
     // Sort ascending by date
@@ -164,7 +152,7 @@ export const Feed = () => {
 
   // Top 3 events sorted by popularity (most confirmed first)
   const highlights = [...events]
-    .sort((a, b) => (registrationCounts.get(b.id) || 0) - (registrationCounts.get(a.id) || 0))
+    .sort((a, b) => (b.registrationCount || 0) - (a.registrationCount || 0))
     .slice(0, 3);
 
   return (
@@ -172,19 +160,18 @@ export const Feed = () => {
       {/* Premium Header */}
       <div className="feed-header px-5 pt-8 pb-4">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <img 
               src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
-              alt="Atchê" 
-              className="w-12 h-12 object-contain mix-blend-multiply" 
+              alt="Atchêi" 
+              className="w-auto h-14 object-contain mix-blend-multiply drop-shadow-sm" 
             />
-            <h1 className="font-brand text-3xl text-primary font-bold tracking-tight">Atchê</h1>
           </div>
           
           <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate('/profile')}
-              className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-lg font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               title="Ir para o perfil"
             >
               {user?.imageUrl ? (
@@ -230,7 +217,7 @@ export const Feed = () => {
           ) : highlights.length > 0 ? (
             <>
               {highlights.map(event => (
-                <EventCard key={`hl-${event.id}`} event={event} variant="highlight" onDelete={handleDelete} />
+                 <EventCard key={`hl-${event.id}`} event={event} variant="highlight" />
               ))}
               {/* Spacer for scroll padding */}
               <div className="min-w-[20px] shrink-0" />
@@ -290,7 +277,7 @@ export const Feed = () => {
           <>
             {filteredEvents.map((event) => (
               <div key={event.id} className="event-card-anim">
-                <EventCard event={event} onDelete={handleDelete} />
+                 <EventCard event={event} />
               </div>
             ))}
             

@@ -1,18 +1,15 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { EventItem } from '../lib/storage';
-import { storage } from '../lib/storage';
-import { Navigation, Trash2, Clock, MapPin, ExternalLink, Ticket, ArrowRight } from 'lucide-react';
+import { Navigation, Clock, MapPin, ExternalLink, Ticket, ArrowRight } from 'lucide-react';
 
 interface EventCardProps {
   event: EventItem;
-  onDelete?: (id: string) => void;
   variant?: 'default' | 'highlight';
 }
 
-export const EventCard = ({ event, onDelete, variant = 'default' }: EventCardProps) => {
+export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
   const navigate = useNavigate();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
 
   const openMaps = () => {
     const query = event.address || event.location;
@@ -21,16 +18,18 @@ export const EventCard = ({ event, onDelete, variant = 'default' }: EventCardPro
   };
 
   const openWhatsApp = () => {
-    const message = `Olá! Gostaria de comprar ingresso para o evento *${event.title}* (${event.time} - ${event.location}).`;
-    const url = `https://wa.me/5565996097252?text=${encodeURIComponent(message)}`;
+    const contacts = event.whatsappContacts && event.whatsappContacts.length > 0
+      ? event.whatsappContacts
+      : (event.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : []);
+    const contact = contacts[0];
+    if (!contact) return;
+    const cleanPhone = contact.phone.replace(/\D/g, '');
+    const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Gostaria de comprar ingresso para o evento *${event.title}* (${event.time} - ${event.location}).`;
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
-  const handleDelete = () => {
-    storage.deleteEvent(event.id);
-    onDelete?.(event.id);
-    setShowDeleteConfirm(false);
-  };
+
 
 
 
@@ -177,39 +176,6 @@ export const EventCard = ({ event, onDelete, variant = 'default' }: EventCardPro
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6" onClick={() => setShowDeleteConfirm(false)}>
-          <div
-            className="bg-background rounded-[1.5rem] p-6 max-w-sm w-full shadow-2xl border border-primary/20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
-                <Trash2 size={24} className="text-red-500" />
-              </div>
-              <h3 className="font-sans font-bold text-lg text-textDark mb-2">Excluir evento?</h3>
-              <p className="font-sans text-sm text-textDark/60 mb-6">
-                Tem certeza que deseja excluir <span className="font-bold text-textDark">"{event.title}"</span>? Esta ação não pode ser desfeita.
-              </p>
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 py-3 rounded-full border-2 border-primary/20 text-textDark font-bold text-sm hover:bg-primary/5 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 py-3 rounded-full bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-colors beat-hover"
-                >
-                  Excluir
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
