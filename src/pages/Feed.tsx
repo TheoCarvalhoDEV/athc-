@@ -51,14 +51,20 @@ export const Feed = () => {
       const isUserAdmin = user?.role === 'admin';
       const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
 
+      const now = new Date();
+      const upcomingEvents = visibleEvents.filter(e => {
+        const eventDateTime = new Date(`${e.date}T${e.time || '00:00'}`);
+        return eventDateTime >= now;
+      });
+
       if (isLoadMore) {
         setEvents(prev => {
           const existingIds = new Set(prev.map(e => e.id));
-          const uniqueNewEvents = visibleEvents.filter(e => !existingIds.has(e.id));
+          const uniqueNewEvents = upcomingEvents.filter(e => !existingIds.has(e.id));
           return [...prev, ...uniqueNewEvents];
         });
       } else {
-        setEvents(visibleEvents);
+        setEvents(upcomingEvents);
       }
       
       setLastDoc(newLastDoc);

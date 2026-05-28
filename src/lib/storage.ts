@@ -123,10 +123,27 @@ export const storage = {
   },
 
   getPaginatedEvents: async (lastVisibleDoc: any = null, pageSize: number = 10) => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
     const eventsRef = collection(db, 'events');
     const q = lastVisibleDoc
-      ? query(eventsRef, orderBy('date', 'asc'), startAfter(lastVisibleDoc), limit(pageSize))
-      : query(eventsRef, orderBy('date', 'asc'), limit(pageSize));
+      ? query(
+          eventsRef,
+          where('date', '>=', todayStr),
+          orderBy('date', 'asc'),
+          startAfter(lastVisibleDoc),
+          limit(pageSize)
+        )
+      : query(
+          eventsRef,
+          where('date', '>=', todayStr),
+          orderBy('date', 'asc'),
+          limit(pageSize)
+        );
 
     const querySnapshot = await getDocs(q);
     const events = querySnapshot.docs.map(doc => {
