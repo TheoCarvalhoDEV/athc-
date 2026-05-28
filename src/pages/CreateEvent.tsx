@@ -390,10 +390,12 @@ const CreateEventContent = () => {
         <form onSubmit={formSubmit(onSubmit, onError)} className="space-y-4 px-2">
           {userRole === 'admin' && (
             <div className="form-el">
-              <label className="text-[10px] font-bold text-primary uppercase ml-4 mb-1 block">
+              <label htmlFor="creator-select" className="text-[10px] font-bold text-primary uppercase ml-4 mb-1 block">
                 Criar evento pelo estabelecimento:
               </label>
               <select
+                id="creator-select"
+                title="Selecione o estabelecimento criador"
                 className="w-full h-14 bg-background border border-primary/20 rounded-[1.5rem] px-5 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-textDark"
                 value={selectedCreatorId}
                 onChange={e => setSelectedCreatorId(e.target.value)}
