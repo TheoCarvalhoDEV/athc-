@@ -126,23 +126,25 @@ export const Feed = () => {
 
   const getFilteredAndSortedEvents = () => {
     let filtered = [...events];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 
-    if (filter === 'Aberto') {
-      filtered = filtered.filter(e => e.publicType === 'Aberto');
-    } else if (filter === 'hoje') {
+    const parseLocalDate = (dateStr: string): Date => {
+      const parts = dateStr.split('-');
+      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+    };
+
+    if (filter === 'hoje') {
       filtered = filtered.filter(e => {
-        const eventDate = new Date(e.date);
-        eventDate.setHours(0, 0, 0, 0);
+        const eventDate = parseLocalDate(e.date);
         return eventDate.getTime() === today.getTime();
       });
     } else if (filter === 'semana') {
       const nextWeek = new Date(today);
       nextWeek.setDate(today.getDate() + 7);
       filtered = filtered.filter(e => {
-        const eventDate = new Date(e.date);
-        eventDate.setHours(0, 0, 0, 0);
+        const eventDate = parseLocalDate(e.date);
         return eventDate >= today && eventDate <= nextWeek;
       });
     } else if (filter === 'emAlta') {
