@@ -9,16 +9,22 @@ const cors = require("cors")({ origin: true });
 admin.initializeApp();
 const db = admin.firestore();
 
-// TOKEN_MP_TESTE_AQUI - Carregar do ambiente via variáveis de configuração ou Secret Manager
-const mpAccessToken = process.env.MP_ACCESS_TOKEN || "";
-if (!mpAccessToken) {
-    logger.warn("AVISO: MP_ACCESS_TOKEN não está configurado no ambiente.");
+let client;
+let payment;
+
+function getPaymentClient() {
+    if (!payment) {
+        const mpAccessToken = process.env.MP_ACCESS_TOKEN || "";
+        if (!mpAccessToken) {
+            logger.warn("AVISO: MP_ACCESS_TOKEN não está configurado no ambiente.");
+        }
+        client = new MercadoPagoConfig({ accessToken: mpAccessToken, options: { timeout: 10000 } });
+        payment = new Payment(client);
+    }
+    return payment;
 }
 
-const client = new MercadoPagoConfig({ accessToken: mpAccessToken, options: { timeout: 10000 } });
-const payment = new Payment(client);
-
-exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
+exports.criarCobrancaPix = onCall({ cors: true, secrets: ["MP_ACCESS_TOKEN"] }, async (request) => {
     const data = request.data;
     const { valor, cpf, email, pedidoId, deviceId } = data;
     
@@ -115,7 +121,7 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             requestOptions.meliSessionId = deviceId;
         }
 
-        const mpResponse = await payment.create({
+        const mpResponse = await getPaymentClient().create({
             body,
             requestOptions
         });
@@ -146,7 +152,7 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
     }
 });
 
-exports.webhookMercadoPago = onRequest(async (req, res) => {
+exports.webhookMercadoPago = onRequest({ secrets: ["MP_ACCESS_TOKEN"] }, async (req, res) => {
     cors(req, res, async () => {
         const paymentId = req.query.id || req.body?.data?.id || req.body?.id;
         logger.info("Webhook payload recebido. Query:", req.query, "Body:", req.body, "Parsed ID:", paymentId);
@@ -157,7 +163,7 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
         }
 
         try {
-            const mpPaymentInfo = await payment.get({ id: paymentId });
+            const mpPaymentInfo = await getPaymentClient().get({ id: paymentId });
             const statusReal = mpPaymentInfo.status;
             
             const pedidosRef = db.collection('pedidos');
