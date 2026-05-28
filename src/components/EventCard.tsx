@@ -8,6 +8,16 @@ interface EventCardProps {
   variant?: 'default' | 'highlight';
 }
 
+const formatCardDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+  }
+  return dateStr;
+};
+
 export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
   const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
@@ -63,7 +73,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
           </h3>
           <div className="flex items-center gap-2 mt-1.5">
             <Clock size={12} className="text-accent" />
-            <span className="font-mono text-[10px] text-white/90 font-bold">{event.date} {event.time}</span>
+            <span className="font-mono text-[10px] text-white/90 font-bold">{formatCardDate(event.date)} {event.time}</span>
             <span className="text-white/40">·</span>
             <MapPin size={12} className="text-accent" />
             <span className="font-mono text-[10px] text-white/80 truncate">{event.location}</span>
@@ -103,11 +113,10 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
 
 
 
-          {/* Time badge top right */}
           <div className="absolute top-3 right-3">
             <div className="bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1.5 border border-primary/10">
               <Clock size={12} className="text-primary" />
-              <span className="font-mono text-[10px] font-bold text-primary">{event.date} {event.time}</span>
+              <span className="font-mono text-[10px] font-bold text-primary">{formatCardDate(event.date)} {event.time}</span>
             </div>
           </div>
         </div>
