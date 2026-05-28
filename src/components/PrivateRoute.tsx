@@ -22,9 +22,9 @@ export const PrivateRoute = ({ withNav = true }: { withNav?: boolean }) => {
 
   // Se estiver logado, renderiza as rotas filhas
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-background w-full overflow-x-hidden">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background w-full">
       {withNav && <Sidebar />}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-0 md:px-8 py-6 relative">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 md:px-8 py-6 relative overflow-x-hidden">
         <Outlet />
       </main>
       {withNav && <BottomNav />}
