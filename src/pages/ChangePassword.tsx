@@ -59,23 +59,26 @@ export const ChangePassword = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-sm flex flex-col items-center">
+    <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Ambient glows */}
+      <div className="ambient-glow w-64 h-64 bg-primary/10 -top-32 left-1/2 -translate-x-1/2" />
+
+      <div className="w-full max-w-sm flex flex-col items-center relative z-10">
         {/* Icon */}
-        <div className="stagger-el mb-6 w-24 h-24 border-4 border-primary rounded-full flex items-center justify-center bg-primary/5 shadow-lg">
-          <ShieldCheck size={40} className="text-primary" />
+        <div className="stagger-el mb-6 w-20 h-20 border border-primary/20 rounded-2xl flex items-center justify-center bg-primary/10 shadow-glow-primary text-primary">
+          <ShieldCheck size={36} />
         </div>
 
-        <h1 className="stagger-el font-sans text-3xl italic text-primary mb-2">Primeiro Acesso</h1>
-        <p className="stagger-el text-sm text-textDark/60 text-center mb-8">
+        <h1 className="stagger-el font-serifDisplay italic font-bold text-3xl text-textLight tracking-wide mb-2">Primeiro Acesso</h1>
+        <p className="stagger-el text-xs text-textMuted font-mono uppercase tracking-wider text-center mb-8 leading-relaxed">
           Defina uma nova senha para a sua conta.<br />
           A senha temporária não poderá mais ser usada.
         </p>
 
         <form onSubmit={handleSubmit} className="w-full space-y-5">
-          <div className="stagger-el space-y-2">
-            <label className="text-sm font-sans text-textDark ml-4 flex items-center gap-2">
-              <Lock size={14} className="text-primary/60" />
+          <div className="stagger-el space-y-1.5 text-left">
+            <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1.5 flex items-center gap-2 tracking-wider">
+              <Lock size={14} className="text-primary" />
               Nova Senha
             </label>
             <div className="relative">
@@ -89,16 +92,16 @@ export const ChangePassword = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-textDark/40 hover:text-primary transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-primary hover:text-accent transition-colors duration-300"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <div className="stagger-el space-y-2">
-            <label className="text-sm font-sans text-textDark ml-4 flex items-center gap-2">
-              <Lock size={14} className="text-primary/60" />
+          <div className="stagger-el space-y-1.5 text-left">
+            <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1.5 flex items-center gap-2 tracking-wider">
+              <Lock size={14} className="text-primary" />
               Confirmar Senha
             </label>
             <Input
@@ -111,13 +114,13 @@ export const ChangePassword = () => {
           </div>
 
           {error && (
-            <div className="stagger-el bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-sans px-4 py-3 rounded-2xl text-center">
+            <div className="stagger-el bg-danger/10 border border-danger/20 text-danger text-xs font-mono uppercase tracking-wider px-4 py-3 rounded-2xl text-center shadow-glass-shadow">
               {error}
             </div>
           )}
 
           <div className="stagger-el pt-4 flex justify-center">
-            <Button type="submit" className="w-3/4 rounded-full py-6 font-bold shadow-xl">
+            <Button type="submit" className="w-full rounded-xl py-4 font-display uppercase tracking-wider text-base">
               Definir Nova Senha
             </Button>
           </div>

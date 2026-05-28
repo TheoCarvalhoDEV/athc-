@@ -13,6 +13,7 @@ import { ChangePassword } from './pages/ChangePassword';
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
 import { BottomNav } from './components/BottomNav';
+import { Sidebar } from './components/Sidebar';
 import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { loadMercadoPago } from '@mercadopago/sdk-js';
@@ -20,8 +21,11 @@ import { loadMercadoPago } from '@mercadopago/sdk-js';
 // MainLayout agora é apenas para rotas que têm Nav Bar mas não são necessariamente protegidas
 const MainLayout = () => {
   return (
-    <div className="relative min-h-screen bg-background">
-      <Outlet />
+    <div className="flex flex-col md:flex-row min-h-screen bg-background w-full overflow-x-hidden">
+      <Sidebar />
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 md:px-8 py-6 relative">
+        <Outlet />
+      </main>
       <BottomNav />
     </div>
   );
@@ -47,7 +51,7 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Toaster position="top-center" toastOptions={{ duration: 4000, style: { borderRadius: '20px', background: '#333', color: '#fff' } }} />
+        <Toaster position="top-center" toastOptions={{ duration: 4000, style: { borderRadius: '16px', background: '#13131A', color: '#F0EDE8', border: '1px solid rgba(212,168,75,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' } }} />
         <Router>
           <Routes>
             <Route path="/login" element={<Login />} />

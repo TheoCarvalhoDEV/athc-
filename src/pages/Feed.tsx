@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EventCard } from '../components/EventCard';
+import { cn } from '../lib/utils';
 import { storage } from '../lib/storage';
 import type { EventItem } from '../lib/storage';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,7 +25,7 @@ const formatDate = (): string => {
   });
 };
 
-type FilterType = 'todos' | 'Aberto' | 'hoje' | 'semana' | 'emAlta';
+type FilterType = 'todos' | 'hoje' | 'semana' | 'emAlta';
 
 export const Feed = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,7 +94,6 @@ export const Feed = () => {
     
     try {
       const pageSize = 10;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const currentLastDoc = isLoadMore ? lastDoc : null;
       
       const { events: newEvents, lastDoc: newLastDoc } = await storage.getPaginatedEvents(currentLastDoc, pageSize);
@@ -156,8 +156,6 @@ export const Feed = () => {
           });
         }
         
-
-
         // Event cards
         if (containerRef.current?.querySelectorAll('.event-card-anim').length) {
           gsap.from('.event-card-anim', {
@@ -216,7 +214,7 @@ export const Feed = () => {
   return (
     <div 
       ref={containerRef} 
-      className="min-h-screen bg-background pb-28 select-none"
+      className="min-h-screen bg-background pb-28 relative select-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -244,21 +242,25 @@ export const Feed = () => {
         </div>
       </div>
 
+      {/* Ambient glow decorative */}
+      <div className="ambient-glow w-64 h-64 bg-primary/10 -top-32 -right-32 pointer-events-none" />
+      <div className="ambient-glow w-48 h-48 bg-accent/8 top-96 -left-24 pointer-events-none" />
+
       {/* Premium Header */}
-      <div className="feed-header px-5 pt-8 pb-4">
-        <div className="flex justify-between items-center mb-6">
+      <div className="feed-header px-5 pt-8 pb-4 relative z-10">
+        <div className="flex justify-between items-center mb-6 md:hidden">
           <div className="flex items-center gap-2">
             <img 
               src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
               alt="Atchêi" 
-              className="w-auto h-14 object-contain mix-blend-multiply drop-shadow-sm" 
+              className="w-auto h-14 object-contain drop-shadow-sm brightness-110" 
             />
           </div>
           
           <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate('/profile')}
-              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-lg font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primaryHover text-textDark border border-primary/20 flex items-center justify-center shadow-glow-primary text-lg font-display font-extrabold overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
               title="Ir para o perfil"
             >
               {user?.imageUrl ? (
@@ -271,55 +273,80 @@ export const Feed = () => {
         </div>
 
         {/* Greeting */}
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl px-5 py-4 relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="font-sans text-sm text-textDark/60 mb-2 flex items-center gap-1.5 font-medium">
-              <Calendar size={14} className="text-primary/60" />
-              {formatDate()}
-            </p>
-            <p className="font-sans text-textDark">
-              <span className="font-bold text-lg">{getGreeting()}</span>
-              {user?.name && <span className="text-primary font-bold">, {user.name}</span>}
-              <span className="text-textDark/60"> 👋</span>
-            </p>
-            <p className="font-sans text-xs text-textDark/50 mt-1">
-              Confira os melhores eventos perto de você
-            </p>
+        <div className="glass rounded-[2.5rem] p-7 relative overflow-hidden shadow-glass-shadow border-glassBorder/60 bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-xl">
+          <div className="absolute -right-6 -top-6 w-36 h-36 rounded-full bg-primary/8 blur-2xl pointer-events-none" />
+          <div className="absolute -left-6 -bottom-6 w-28 h-28 rounded-full bg-accent/4 blur-xl pointer-events-none" />
+          
+          <div className="flex justify-between items-center gap-6 relative z-10">
+            <div className="flex-1 min-w-0 text-left">
+              <p className="font-mono text-[9px] text-accent/80 mb-3 flex items-center gap-2 font-bold uppercase tracking-[0.15em]">
+                <Calendar size={12} className="text-accent" />
+                {formatDate()}
+              </p>
+              <div className="text-textLight">
+                <span className="font-serifDisplay italic font-light text-2xl tracking-wide block text-accent leading-none">
+                  {getGreeting()},
+                </span>
+                {user?.name && (
+                  <span className="text-primary font-serifDisplay italic font-bold text-4xl block tracking-wide leading-tight mt-1 truncate">
+                    {user.name}
+                  </span>
+                )}
+              </div>
+              <p className="font-sans text-xs text-textMuted mt-4 font-medium leading-relaxed max-w-[240px]">
+                Descubra os melhores encontros e eventos selecionados para hoje.
+              </p>
+            </div>
+
+            {/* Métrica de eventos ativos na cena */}
+            <div className="shrink-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary to-primaryHover text-textDark border border-primary/20 rounded-[2rem] w-24 h-24 shadow-glow-primary relative overflow-hidden group hover:scale-[1.03] active:scale-[0.98] transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-tr from-primaryHover/60 via-transparent to-transparent opacity-80 pointer-events-none" />
+              <div className="relative z-10 flex flex-col items-center justify-center">
+                <span className="text-[8px] font-mono font-bold text-textDark/70 uppercase tracking-widest leading-none">Na Cena</span>
+                <span className="text-3xl font-serifDisplay font-bold text-textDark mt-1.5 leading-none">{events.length}</span>
+                <span className="text-[7px] font-mono font-bold text-textDark/85 uppercase mt-1.5 tracking-wider">rolês</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Highlights Carousel */}
-      <div className="highlights-section mt-2 mb-6">
-        <div className="flex items-center gap-2 px-5 mb-3">
-          <Flame size={16} className="text-accent" />
-          <h2 className="font-sans font-bold text-base text-textDark">Em Destaque</h2>
+      <div className="highlights-section mt-4 mb-6 relative z-10">
+        <div className="flex items-center justify-between px-5 mb-3.5">
+          <div className="flex flex-col text-left">
+            <h2 className="font-serifDisplay italic font-semibold text-2xl text-textLight leading-none">
+              Em Destaque
+            </h2>
+            <span className="text-[9px] font-mono text-textMuted uppercase tracking-widest mt-1.5 flex items-center gap-1 opacity-80">
+              <Flame size={10} className="text-primary animate-pulse" /> Rolês mais quentes da semana
+            </span>
+          </div>
         </div>
         
         <div className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-2">
           {isLoading ? (
             [1, 2, 3].map(i => (
-              <div key={`hl-skel-${i}`} className="min-w-[280px] h-[160px] rounded-3xl bg-primary/10 animate-pulse shrink-0 border border-primary/5" />
+              <div key={`hl-skel-${i}`} className="min-w-[280px] h-[160px] rounded-3xl skeleton-dark shrink-0" />
             ))
           ) : highlights.length > 0 ? (
             <>
               {highlights.map(event => (
                  <EventCard key={`hl-${event.id}`} event={event} variant="highlight" />
               ))}
-              {/* Spacer for scroll padding */}
               <div className="min-w-[20px] shrink-0" />
             </>
           ) : (
-            <div className="min-w-[280px] h-[160px] rounded-3xl bg-primary/5 border border-primary/10 flex flex-col items-center justify-center shrink-0 w-full">
+            <div className="min-w-[280px] h-[160px] rounded-3xl glass flex flex-col items-center justify-center shrink-0 w-full">
               <Flame size={24} className="text-primary/30 mb-2" />
-              <p className="font-sans text-sm text-textDark/50 font-bold">Nenhum evento em destaque</p>
+              <p className="font-sans text-sm text-textMuted font-bold">Nenhum evento em destaque</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Filter Pills */}
-      <div className="flex gap-2 px-5 mb-5 overflow-x-auto scrollbar-hide pb-1">
+      <div className="flex gap-3 px-5 mb-6 overflow-x-auto scrollbar-hide pb-1.5 relative z-10">
         {[
           { key: 'todos' as FilterType, label: 'Todos', icon: Sparkles },
           { key: 'emAlta' as FilterType, label: 'Em Alta', icon: Flame },
@@ -329,35 +356,39 @@ export const Feed = () => {
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`filter-pill flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all duration-200 ${
+            className={cn(
+              "filter-pill flex items-center gap-1.5 px-5 py-3 rounded-2xl font-display font-black text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 border neo-click cursor-pointer",
               filter === f.key
-                ? 'bg-primary text-textLight shadow-md scale-105'
-                : 'bg-primary/8 text-primary/70 hover:bg-primary/15'
-            }`}
+                ? 'bg-gradient-to-r from-primary to-primaryHover text-textDark border-primary/20 shadow-glow-primary scale-105'
+                : 'bg-white/80 border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5'
+            )}
           >
-            {f.icon && <f.icon size={14} />}
+            {f.icon && <f.icon size={13} className={filter === f.key ? "text-textDark" : "text-primary/70"} />}
             {f.label}
           </button>
         ))}
       </div>
 
       {/* Section Title */}
-      <div className="flex items-center gap-2 px-5 mb-4">
-        <div className="w-1 h-5 bg-primary rounded-full" />
-        <h2 className="font-sans font-bold text-base text-textDark">
-          Próximos Eventos
-        </h2>
-        <span className="font-mono text-xs text-textDark/40 ml-auto">
-          {filteredEvents.length} evento{filteredEvents.length !== 1 ? 's' : ''}
+      <div className="flex items-center justify-between px-5 mb-5 relative z-10">
+        <div className="flex flex-col text-left">
+          <h2 className="font-serifDisplay italic font-semibold text-2xl text-textLight leading-none">
+            Próximos Eventos<span className="text-primary font-serifDisplay font-normal">.</span>
+          </h2>
+          <span className="text-[9px] font-mono text-textMuted uppercase tracking-widest mt-1.5 opacity-80">
+            Selecionados para você
+          </span>
+        </div>
+        <span className="font-mono text-[9px] text-primary bg-primary/10 px-3 py-1 border border-primary/20 rounded-full font-bold uppercase">
+          {filteredEvents.length} {filteredEvents.length !== 1 ? 'eventos' : 'evento'}
         </span>
       </div>
 
       {/* Events List */}
-      <div className="flex flex-col gap-4 px-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-5 relative z-10">
         {isLoading ? (
-          // Simple loading skeletons
           [1, 2, 3].map(i => (
-            <div key={i} className="w-full h-40 bg-primary/5 animate-pulse rounded-2xl" />
+            <div key={i} className="w-full h-40 skeleton-dark rounded-3xl animate-pulse" />
           ))
         ) : (
           <>
@@ -368,26 +399,26 @@ export const Feed = () => {
             ))}
             
             {hasMore && filteredEvents.length > 0 && (
-              <div className="flex justify-center mt-4 mb-8">
+              <div className="flex justify-center mt-4 mb-8 col-span-full">
                 <button
                   onClick={() => loadEvents(true)}
                   disabled={isLoadingMore}
-                  className="px-6 py-3 rounded-full bg-primary/10 text-primary font-bold text-sm hover:bg-primary hover:text-textLight transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3.5 rounded-2xl bg-surface/50 border border-glassBorder hover:border-primary/30 text-textLight font-display font-black hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {isLoadingMore ? 'Carregando...' : 'Carregar mais eventos'}
+                  {isLoadingMore ? 'Carregando...' : 'Ver Mais Eventos'}
                 </button>
               </div>
             )}
 
             {filteredEvents.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16">
+              <div className="flex flex-col items-center justify-center py-16 col-span-full">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Sparkles size={24} className="text-primary/40" />
                 </div>
-                <p className="font-sans text-textDark/50 text-sm text-center">
+                <p className="font-sans text-textMuted text-sm text-center font-bold">
                   Nenhum evento encontrado
                 </p>
-                <p className="font-mono text-xs text-textDark/30 mt-1">
+                <p className="font-mono text-xs text-textMuted/60 mt-1">
                   {filter !== 'todos' ? 'Tente outro filtro' : 'Crie seu primeiro evento!'}
                 </p>
               </div>

@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { BottomNav } from './BottomNav';
+import { Sidebar } from './Sidebar';
 
 export const PrivateRoute = ({ withNav = true }: { withNav?: boolean }) => {
   const { user, isLoading } = useAuth();
@@ -21,8 +22,11 @@ export const PrivateRoute = ({ withNav = true }: { withNav?: boolean }) => {
 
   // Se estiver logado, renderiza as rotas filhas
   return (
-    <div className="relative min-h-screen bg-background">
-      <Outlet />
+    <div className="flex flex-col md:flex-row min-h-screen bg-background w-full overflow-x-hidden">
+      {withNav && <Sidebar />}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-0 md:px-8 py-6 relative">
+        <Outlet />
+      </main>
       {withNav && <BottomNav />}
     </div>
   );

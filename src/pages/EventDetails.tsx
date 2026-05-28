@@ -9,6 +9,7 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import gsap from 'gsap';
 import { loadMercadoPago } from '@mercadopago/sdk-js';
+import { isVideoUrl } from '../lib/imageUtils';
 
 export const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -349,316 +350,350 @@ export const EventDetails = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-44">
+    <div ref={containerRef} className="min-h-screen bg-background pb-44 md:pb-16 px-4 md:px-8 pt-6">
       <input type="hidden" id="MP_DEVICE_SESSION_ID" name="MP_DEVICE_SESSION_ID" />
       <input type="hidden" id="deviceId" />
-      {/* Centered Container for Desktop */}
-      <div className="max-w-2xl mx-auto bg-background min-h-screen shadow-2xl relative flex flex-col">
-        <div className="absolute top-8 left-0 right-0 px-4 flex justify-between items-center z-20">
-          <button
-            title="Voltar"
-            aria-label="Voltar"
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 bg-background/60 backdrop-blur-xl rounded-2xl flex items-center justify-center text-textDark shadow-lg border border-white/20"
-          >
-            <ArrowLeft size={20} />
-          </button>
 
-          <button
-            title="Compartilhar"
-            aria-label="Compartilhar"
-            onClick={handleShare}
-            className="w-10 h-10 bg-background/60 backdrop-blur-xl rounded-2xl flex items-center justify-center text-textDark shadow-lg border border-white/20"
-          >
-            <Share2 size={20} />
-          </button>
-        </div>
+      {/* Main Responsive Grid Container */}
+      <div className="w-full max-w-7xl mx-auto relative flex flex-col">
 
-        <div
-          className="relative h-80 w-full overflow-hidden rounded-b-[3rem] group"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <img
-            src={mediaList[currentMediaIndex]}
-            alt={`${event.title} - Foto ${currentMediaIndex + 1}`}
-            className="w-full h-full object-cover transition-all duration-300 select-none"
-            draggable="false"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none" />
-
-          {/* Carousel Navigation Controls */}
-          {mediaList.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={handlePrevMedia}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/60 backdrop-blur-md rounded-xl flex items-center justify-center text-textDark shadow-md border border-white/20 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
-                aria-label="Mídia anterior"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={handleNextMedia}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/60 backdrop-blur-md rounded-xl flex items-center justify-center text-textDark shadow-md border border-white/20 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
-                aria-label="Próxima mídia"
-              >
-                <ChevronRight size={16} />
-              </button>
-
-              {/* Dots indicators */}
-              <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-auto">
-                {mediaList.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setCurrentMediaIndex(idx)}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentMediaIndex ? 'bg-primary w-4' : 'bg-primary/30'}`}
-                    aria-label={`Ir para foto ${idx + 1}`}
-                  />
-                ))}
-              </div>
-
-              {/* Counter Badge bottom-right */}
-              <div className="absolute bottom-6 right-6 bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 text-[10px] font-mono font-bold text-white border border-white/10 shadow-md z-20 pointer-events-none">
-                {currentMediaIndex + 1} / {mediaList.length}
-              </div>
-            </>
-          )}
-        </div>
-
-
-        <div className="relative z-10 px-5 pt-7 pb-40">
-          {/* Título com estilo premium e gradiente refinado */}
-          <h1 className="font-sans text-4xl font-extrabold text-textDark leading-tight mb-3 anim-up tracking-tight bg-gradient-to-r from-textDark via-primary to-accent bg-clip-text text-transparent">
-            {event.title}
-          </h1>
-          <div className="w-16 h-1.5 bg-gradient-to-r from-primary to-accent rounded-full mb-8 anim-up" />
-
-          {/* Cards de Data e Horário com estilo Glassmorphism */}
-          <div className="grid grid-cols-2 gap-4 mb-8 anim-up">
-            <div className="bg-gradient-to-b from-[#FCFAF7] to-[#F5EFE6] p-4 rounded-[2rem] border border-primary/10 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.03)] flex flex-col gap-2 hover:scale-[1.02] transition-transform duration-300">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <Calendar size={15} />
-                </div>
-                <span className="font-sans font-bold text-[10px] text-primary/60 uppercase tracking-widest">Data</span>
-              </div>
-              <p className="text-sm font-bold text-textDark leading-snug pl-1">{formatDate(event.date)}</p>
-            </div>
-
-            <div className="bg-gradient-to-b from-[#FCFAF7] to-[#F5EFE6] p-4 rounded-[2rem] border border-primary/10 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.03)] flex flex-col gap-2 hover:scale-[1.02] transition-transform duration-300">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <Clock size={15} />
-                </div>
-                <span className="font-sans font-bold text-[10px] text-primary/60 uppercase tracking-widest">Horário</span>
-              </div>
-              <p className="text-sm font-bold text-textDark leading-snug pl-1">{event.time}h</p>
-            </div>
-          </div>
-
-          {/* Seção do Organizador VIP */}
-          {organizer && (
-            <div className="bg-gradient-to-r from-primary/5 via-primary/2 to-transparent border border-primary/10 p-5 rounded-[2.2rem] mb-8 flex items-center justify-between gap-3 anim-up shadow-sm hover:border-primary/20 transition-all duration-300">
-              <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                <div className="relative shrink-0">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden border-2 border-white shadow-md">
-                    {organizer.imageUrl ? (
-                      <img src={organizer.imageUrl} className="w-full h-full object-cover" alt={organizer.name} />
-                    ) : (
-                      <User size={24} />
-                    )}
-                  </div>
-                  {/* Badge de Verificado */}
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary text-textLight border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-md">
-                    ✓
-                  </div>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] font-bold text-primary/50 uppercase tracking-widest truncate">Organizado por</p>
-                  <p className="font-sans font-bold text-base text-textDark mt-0.5 truncate">{organizer.name}</p>
-                  <p className="text-[10px] text-textDark/40 font-mono truncate">Parceiro Oficial Atchêi</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => navigate(`/agenda/${organizer.id}`)}
-                className="bg-primary text-textLight font-sans font-bold text-xs px-4 py-2.5 rounded-full shadow-md hover:bg-primary/95 hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
-              >
-                Ver Perfil
-              </button>
-            </div>
-          )}
-
-          {/* Seção Sobre o Evento Premium */}
-          <div className="mb-8 anim-up">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-4 bg-primary rounded-full" />
-              <h2 className="font-sans font-bold text-base text-textDark tracking-tight">Sobre o Evento</h2>
-            </div>
-            <div className="relative overflow-hidden bg-gradient-to-b from-[#FCFAF7] to-[#F8F3EA] p-6 rounded-[2.5rem] border border-primary/8 shadow-sm">
-              {/* Aspa de fundo decorativa */}
-              <div className="absolute -top-6 -right-6 text-9xl font-sans text-primary/5 pointer-events-none select-none">
-                ”
-              </div>
-              <p className="text-textDark/80 text-sm leading-relaxed whitespace-pre-wrap font-sans relative z-10">
-                {event.description}
-              </p>
-            </div>
-          </div>
-
-
-          {/* Localização e Card de GPS de Luxo */}
-          <div className="mb-8 anim-up">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-primary rounded-full" />
-                <h2 className="font-sans font-bold text-base text-textDark tracking-tight">Localização</h2>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-b from-[#FCFAF7] to-[#F5EFE6] border border-primary/10 rounded-[2.5rem] p-5 shadow-sm hover:border-primary/20 transition-all duration-300">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 border border-primary/5 shadow-inner">
-                  <MapPin size={22} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-sans font-bold text-textDark text-sm truncate">{event.location}</p>
-                  <p className="text-xs text-textDark/60 font-mono mt-0.5 leading-snug">{event.address}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.address || event.location)}`, '_blank')}
-                className="w-full bg-[#EAE3D5] text-primary hover:bg-primary hover:text-textLight font-sans font-bold text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-sm transition-all duration-300 cursor-pointer"
-              >
-                📍 Ver Rota no Google Maps
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Floating Action Button for Registration - Pílula Ultra Premium */}
-        <div className="fixed bottom-6 left-0 right-0 px-5 z-40 anim-up max-w-2xl mx-auto">
-          <div className="bg-gradient-to-b from-[#FCFAF7]/95 to-[#FAF5EC]/95 backdrop-blur-3xl p-5 rounded-[2rem] shadow-[0_20px_40px_rgba(43,24,16,0.12)] border border-primary/20 flex flex-col gap-4">
+        {/* 2-Column Responsive Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          
+          {/* LEFT COLUMN: Media Carousel, Title, About, Location */}
+          <div className="lg:col-span-2 space-y-6">
             
-            {/* Info do Ingresso */}
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-0.5">Ingresso</span>
-                <span className="text-xl font-sans font-bold text-primary tracking-tight leading-none truncate max-w-[140px]" title={event.hasTickets && event.ticketPrice ? event.ticketPrice : (event.hasTickets ? 'Consulte' : 'Gratuito')}>
-                  {(() => {
-                    if (!event.hasTickets) return 'Gratuito';
-                    if (!event.ticketPrice) return 'Consulte';
-                    const price = event.ticketPrice.trim();
-                    if (price.toUpperCase().includes('R$') || price.includes('$')) return price;
-                    if (/^[\d.,]+$/.test(price)) {
-                      if (!price.includes(',') && !price.includes('.')) return `R$ ${price},00`;
-                      return `R$ ${price}`;
-                    }
-                    return price;
-                  })()}
-                </span>
+            {/* Image Section */}
+            <div
+              className="relative h-80 md:h-[420px] w-full overflow-hidden rounded-[2.5rem] border border-glassBorder shadow-glass-shadow group"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Floating Action Buttons over Image */}
+              <div className="absolute top-5 left-5 right-5 flex justify-between items-center z-20">
+                <button
+                  title="Voltar"
+                  aria-label="Voltar"
+                  onClick={() => navigate(-1)}
+                  className="w-10 h-10 bg-white/75 hover:bg-white border border-glassBorder text-textLight rounded-2xl flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer backdrop-blur-md"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+
+                <button
+                  title="Compartilhar"
+                  aria-label="Compartilhar"
+                  onClick={handleShare}
+                  className="w-10 h-10 bg-white/75 hover:bg-white border border-glassBorder text-textLight rounded-2xl flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer backdrop-blur-md"
+                >
+                  <Share2 size={18} />
+                </button>
               </div>
-              <span className="bg-primary/5 text-primary text-[10px] font-mono px-3 py-1.5 rounded-full border border-primary/10">
-                1º Lote Disponível
+
+              {isVideoUrl(mediaList[currentMediaIndex]) ? (
+                <div className="w-full h-full relative flex items-center justify-center bg-black/10">
+                  <video
+                    src={mediaList[currentMediaIndex]}
+                    className="relative w-full h-full object-contain z-10"
+                    controls
+                    playsInline
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-full relative flex items-center justify-center overflow-hidden bg-black/5">
+                  {/* Intelligent Blurred Background */}
+                  <img
+                    src={mediaList[currentMediaIndex]}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-105 pointer-events-none"
+                  />
+                  {/* Clean Crisp Image */}
+                  <img
+                    src={mediaList[currentMediaIndex]}
+                    alt={`${event.title} - Foto ${currentMediaIndex + 1}`}
+                    className="relative w-full h-full object-contain z-10 select-none transition-all duration-300"
+                    draggable="false"
+                  />
+                </div>
+              )}
+
+              {/* Carousel Navigation Controls */}
+              {mediaList.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevMedia}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-surface/60 border border-glassBorder rounded-xl flex items-center justify-center text-textLight shadow-sm hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
+                    aria-label="Mídia anterior"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextMedia}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-surface/60 border border-glassBorder rounded-xl flex items-center justify-center text-textLight shadow-sm hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
+                    aria-label="Próxima mídia"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+
+                  {/* Dots indicators */}
+                  <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-auto">
+                    {mediaList.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setCurrentMediaIndex(idx)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentMediaIndex ? 'bg-primary w-4' : 'bg-textMuted/40'}`}
+                        aria-label={`Ir para foto ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Counter Badge */}
+                  <div className="absolute bottom-6 right-6 bg-surface/60 border border-glassBorder rounded-xl px-2.5 py-1 text-[10px] font-mono font-bold text-textLight z-20 pointer-events-none backdrop-blur-md">
+                    {currentMediaIndex + 1} / {mediaList.length}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Public Type Tag */}
+            <div className="flex">
+              <span className="bg-accent/15 text-accent text-[10px] font-mono font-bold border border-accent/25 px-3.5 py-1.5 rounded-full uppercase tracking-wider backdrop-blur-md">
+                Acesso {event.publicType}
               </span>
             </div>
 
-            {/* Ações (Grid dinâmico dependendo de quantos botões temos) */}
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setShowFreeTicketModal(true)}
-                disabled={isRegistered}
-                className={`w-full rounded-xl py-3.5 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-sans font-bold text-sm cursor-pointer ${isRegistered
-                    ? 'bg-primary/10 text-primary border border-primary/20 shadow-none scale-100'
-                    : 'bg-primary text-textLight hover:bg-primary/95 shadow-primary/20 hover:scale-[1.01] active:scale-95'
-                  }`}
-              >
-                {isRegistered ? (
-                  <>
-                    <CheckCircle2 size={18} />
-                    <span>Presença Confirmada</span>
-                  </>
-                ) : (
-                  <span>Confirmar Presença</span>
-                )}
-              </button>
+            {/* Event Title */}
+            <div className="text-left">
+              <h1 className="font-serifDisplay text-3xl md:text-4xl lg:text-5xl font-bold text-textLight leading-tight mb-3 anim-up tracking-wide uppercase">
+                {event.title}
+              </h1>
+              <div className="w-16 h-1.5 bg-gradient-to-r from-primary to-primaryHover rounded-full shadow-glow-primary mb-4 anim-up" />
+            </div>
 
-              {event.hasPixTickets && currentUser?.role === 'admin' ? (
+            {/* About Section */}
+            <div className="text-left space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
+                <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">Sobre o Evento</h2>
+              </div>
+              <div className="relative overflow-hidden glass p-6 rounded-[2rem] shadow-glass-shadow border-glassBorder/60 bg-gradient-to-br from-white/60 to-white/30">
+                <p className="text-textLight/80 text-sm leading-relaxed whitespace-pre-wrap font-sans relative z-10">
+                  {event.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Location Section */}
+            <div className="text-left space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
+                <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">Localização</h2>
+              </div>
+              <div className="glass rounded-[2rem] p-6 shadow-glass-shadow border-glassBorder/60">
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-accent/15 text-accent border border-accent/20 flex items-center justify-center shrink-0">
+                    <MapPin size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-sans font-bold text-textLight text-sm truncate">{event.location}</p>
+                    <p className="text-xs text-textMuted font-mono mt-1.5 leading-snug">{event.address}</p>
+                  </div>
+                </div>
+
                 <button
-                  onClick={() => {
-                      if (!isRegistered) setShowPixModal(true);
-                  }}
-                  disabled={isRegistered}
-                  className={`rounded-2xl px-5 py-3.5 shadow-md flex items-center gap-2 transition-all duration-300 font-sans font-extrabold text-xs h-auto cursor-pointer ${isRegistered
-                      ? 'bg-green-600 text-white shadow-green-600/10 scale-100'
-                      : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20 hover:scale-105 active:scale-95'
-                    }`}
+                  onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.address || event.location)}`, '_blank')}
+                  className="w-full bg-surface/60 hover:bg-surface/85 text-textLight border border-glassBorder hover:border-primary/40 font-display font-black text-xs py-4 rounded-xl flex items-center justify-center gap-2 shadow-glass-shadow hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click cursor-pointer"
                 >
+                  📍 Ver Rota no Google Maps
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* RIGHT COLUMN: Ticket Info/Actions (Sticky on Desktop), Date/Time/Organizer Info */}
+          <div className="space-y-6 lg:sticky lg:top-6">
+            
+            {/* Ticket Actions Card (Floating on Mobile, Static card in Right Column on Desktop) */}
+            <div className="fixed bottom-6 left-0 right-0 px-5 z-40 anim-up max-w-2xl mx-auto lg:relative lg:bottom-0 lg:px-0 lg:max-w-none lg:z-10">
+              <div className="glass rounded-[2.5rem] p-6 flex flex-col gap-4 shadow-float lg:shadow-glass-shadow backdrop-blur-xl relative overflow-hidden border border-glassBorder bg-gradient-to-br from-white/90 to-white/50">
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
+                
+                {/* Info do Ingresso */}
+                <div className="flex items-center justify-between z-10 text-left">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-mono font-bold text-accent uppercase tracking-wider mb-1">Ingresso</span>
+                    <span className="text-xl font-display font-black text-primary uppercase tracking-wider leading-none truncate max-w-[140px]" title={event.hasTickets && event.ticketPrice ? event.ticketPrice : (event.hasTickets ? 'Consulte' : 'Gratuito')}>
+                      {(() => {
+                        if (!event.hasTickets) return 'Gratuito';
+                        if (!event.ticketPrice) return 'Consulte';
+                        const price = event.ticketPrice.trim();
+                        if (price.toUpperCase().includes('R$') || price.includes('$')) return price;
+                        if (/^[\d.,]+$/.test(price)) {
+                          if (!price.includes(',') && !price.includes('.')) return `R$ ${price},00`;
+                          return `R$ ${price}`;
+                        }
+                        return price;
+                      })()}
+                    </span>
+                  </div>
+                  <span className="glass border border-glassBorder text-accent font-mono text-[9px] px-3 py-1.5 rounded-full uppercase font-bold backdrop-blur-md shadow-sm">
+                    1º Lote Disponível
+                  </span>
+                </div>
+
+                {/* Ações de Inscrição */}
+                <div className="flex flex-col gap-2.5 z-10">
                   {isRegistered ? (
-                    <>
-                      <CheckCircle2 size={15} />
-                      <span>Pago & Confirmado</span>
-                    </>
+                    <div className="w-full rounded-2xl py-4 bg-accent/10 border border-accent/20 text-accent flex items-center justify-center gap-2 font-display font-black text-sm select-none">
+                      <CheckCircle2 size={16} className="text-accent" />
+                      <span>Presença Confirmada • Ingresso Garantido</span>
+                    </div>
                   ) : (
                     <>
-                      <QrCode size={18} />
-                      <span>Comprar Pix</span>
+                      <button
+                        onClick={() => setShowFreeTicketModal(true)}
+                        className="w-full rounded-2xl py-4 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border cursor-pointer neo-click border-primary/20 bg-gradient-to-r from-primary to-primaryHover text-textDark shadow-glow-primary hover:shadow-glow-primary-lg"
+                      >
+                        Confirmar Presença
+                      </button>
+
+                      {event.hasPixTickets && currentUser?.role === 'admin' ? (
+                        <button
+                          onClick={() => setShowPixModal(true)}
+                          className="rounded-2xl px-5 py-4 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border cursor-pointer neo-click border-success/20 bg-success text-textDark shadow-glow-success hover:shadow-glow-success-lg"
+                        >
+                          <QrCode size={16} />
+                          <span>Comprar Pix</span>
+                        </button>
+                      ) : event.hasTickets ? (() => {
+                        const contacts = event.whatsappContacts && event.whatsappContacts.length > 0 
+                          ? event.whatsappContacts 
+                          : (event.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : []);
+                          
+                        return (
+                          <button
+                            onClick={() => {
+                              if (contacts.length > 1) {
+                                setShowContactsModal(true);
+                              } else if (contacts.length === 1) {
+                                const contact = contacts[0];
+                                const cleanPhone = contact.phone.replace(/\D/g, '');
+                                const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event.title}*`;
+                                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                              }
+                            }}
+                            className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border border-success/20 bg-success text-textDark shadow-glow-success hover:shadow-glow-success-lg cursor-pointer neo-click"
+                          >
+                            <Ticket size={18} />
+                            <div className="flex flex-col items-start leading-none text-left">
+                              <span className="uppercase tracking-wider">Comprar Ingresso</span>
+                              <span className="text-[8px] font-bold opacity-80 mt-1 font-mono">Via WhatsApp</span>
+                            </div>
+                          </button>
+                        );
+                      })() : null}
                     </>
                   )}
-                </button>
-              ) : event.hasTickets ? (() => {
-                const contacts = event.whatsappContacts && event.whatsappContacts.length > 0 
-                  ? event.whatsappContacts 
-                  : (event.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : []);
-                  
-                return (
-                  <button
-                    onClick={() => {
-                      if (contacts.length > 1) {
-                        setShowContactsModal(true);
-                      } else if (contacts.length === 1) {
-                        const contact = contacts[0];
-                        const cleanPhone = contact.phone.replace(/\D/g, '');
-                        const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event.title}*`;
-                        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                      }
-                    }}
-                    className="w-full rounded-xl py-3.5 shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 transition-all duration-300 font-sans font-bold text-sm bg-gradient-to-r from-green-600 to-green-500 text-white cursor-pointer hover:scale-[1.02] active:scale-95"
-                  >
-                    <Ticket size={18} />
-                    <div className="flex flex-col items-start leading-none text-left">
-                      <span>Comprar Ingresso</span>
-                      <span className="text-[10px] font-medium opacity-90 mt-1 font-mono">
-                        {contacts.length === 1 && contacts[0].name ? `Tratar com: ${contacts[0].name}` : contacts.length > 1 ? `${contacts.length} Promoters Disponíveis` : 'Via WhatsApp'}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })() : null}
+                </div>
+              </div>
             </div>
+
+            {/* Consolidado de Informações do Rolê (Data, Hora, Organizador e GPS Curto) */}
+            <div className="glass rounded-[2.5rem] p-6 shadow-glass-shadow border border-glassBorder bg-gradient-to-br from-white/90 to-white/50 text-left space-y-5">
+              <span className="font-mono text-[9px] text-accent uppercase tracking-widest font-bold block mb-1">
+                Informações do Rolê
+              </span>
+              
+              {/* Grid de Data e Horário */}
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-glassBorder/60">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2 text-primary">
+                    <Calendar size={13} />
+                    <span className="font-mono text-[8px] uppercase tracking-wider font-bold">Data</span>
+                  </div>
+                  <p className="text-xs font-display font-black text-textLight leading-tight">{formatDate(event.date)}</p>
+                </div>
+                
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2 text-accent">
+                    <Clock size={13} />
+                    <span className="font-mono text-[8px] uppercase tracking-wider font-bold">Horário</span>
+                  </div>
+                  <p className="text-xs font-display font-black text-textLight leading-tight">{event.time}h</p>
+                </div>
+              </div>
+
+              {/* Bloco do Organizador */}
+              {organizer && (
+                <div className="flex items-center justify-between gap-3 pb-4 border-b border-glassBorder/60">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-surface/85 border border-glassBorder overflow-hidden flex items-center justify-center text-primary">
+                        {organizer.imageUrl ? (
+                          <img src={organizer.imageUrl} className="w-full h-full object-cover" alt={organizer.name} />
+                        ) : (
+                          <User size={16} />
+                        )}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-accent text-textDark border border-black flex items-center justify-center text-[7px] font-black shadow-md">
+                        ✓
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[8px] font-mono font-bold text-accent uppercase tracking-wider">Organizado por</p>
+                      <p className="font-display font-bold text-xs text-textLight mt-0.5 truncate max-w-[110px]">{organizer.name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate(`/agenda/${organizer.id}`)}
+                    className="bg-gradient-to-r from-primary to-primaryHover text-textDark border border-primary/20 font-display font-black text-[9px] px-3.5 py-2 rounded-xl shadow-glow-primary transition-all duration-300 neo-click hover:shadow-glow-primary-lg cursor-pointer shrink-0 uppercase tracking-wider"
+                  >
+                    Ver Perfil
+                  </button>
+                </div>
+              )}
+
+              {/* Endereço / GPS Curto */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-start gap-3">
+                  <MapPin size={16} className="text-accent shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-xs text-textLight truncate">{event.location}</p>
+                    {event.address && <p className="text-[10px] text-textMuted font-mono mt-0.5 leading-snug">{event.address}</p>}
+                  </div>
+                </div>
+                <button
+                  onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.address || event.location)}`, '_blank')}
+                  className="w-full bg-surface/70 hover:bg-surface/90 text-textLight border border-glassBorder hover:border-primary/30 font-display font-black text-[10px] py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all duration-300 neo-click cursor-pointer uppercase tracking-wider"
+                >
+                  📍 Traçar Rota no GPS
+                </button>
+              </div>
+            </div>
+
           </div>
+
         </div>
 
       </div>
 
       {/* Success Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-background p-6 rounded-[2rem] border border-primary/20 shadow-2xl max-w-sm w-full text-center">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-2xl">
+            <div className="w-16 h-16 bg-success/10 text-success border border-success/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-glow-success">
               <CheckCircle2 size={32} />
             </div>
-            <h3 className="font-sans text-2xl font-bold text-textDark mb-2">Presença Confirmada!</h3>
-            <p className="text-sm text-textDark/70 mb-6">
+            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-2">Presença Confirmada!</h3>
+            <p className="text-sm text-textMuted mb-6">
               Sua vaga para {event.title} foi garantida. Aproveite o evento!
             </p>
-            <Button onClick={() => setShowModal(false)} className="w-full rounded-full">
+            <Button onClick={() => setShowModal(false)} className="w-full rounded-xl">
               Entendido
             </Button>
           </div>
@@ -667,10 +702,10 @@ export const EventDetails = () => {
 
       {/* Contacts Modal */}
       {showContactsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-background p-6 rounded-[2rem] border border-primary/20 shadow-2xl max-w-sm w-full text-center max-h-[80vh] flex flex-col">
-            <h3 className="font-sans text-2xl font-bold text-textDark mb-2">Comprar Ingresso</h3>
-            <p className="text-xs text-textDark/70 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center max-h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-2xl">
+            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-2">Comprar Ingresso</h3>
+            <p className="text-xs text-textMuted mb-6">
               Escolha com qual promoter você deseja falar para garantir sua vaga:
             </p>
             <div className="space-y-3 overflow-y-auto pr-2 pb-4">
@@ -684,60 +719,61 @@ export const EventDetails = () => {
                     const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event?.title}*`;
                     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
                   }}
-                  className="w-full bg-primary/5 hover:bg-primary/10 border border-primary/10 rounded-2xl p-4 flex items-center justify-between transition-colors group"
+                  className="w-full glass border border-glassBorder rounded-2xl p-4 flex items-center justify-between group hover:border-primary/40 hover:shadow-glow-primary transition-all duration-300 neo-click cursor-pointer"
                 >
-                  <div className="flex flex-col items-start">
-                    <span className="font-bold text-sm text-textDark group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
-                    <span className="text-[10px] text-textDark/50 font-mono mt-0.5">{contact.phone}</span>
+                  <div className="flex flex-col items-start text-left">
+                    <span className="font-bold text-sm text-textLight group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
+                    <span className="text-[10px] text-textMuted font-mono mt-0.5">{contact.phone}</span>
                   </div>
-                  <Ticket className="text-primary/40 group-hover:text-primary transition-colors" size={18} />
+                  <Ticket className="text-primary/70 group-hover:text-primary transition-colors" size={18} />
                 </button>
               ))}
             </div>
-            <Button onClick={() => setShowContactsModal(false)} variant="outline" className="w-full rounded-full mt-2">
+            <Button onClick={() => setShowContactsModal(false)} variant="outline" className="w-full mt-2 rounded-xl">
               Cancelar
             </Button>
           </div>
         </div>
       )}
+
       {/* Free Ticket Modal */}
       {showFreeTicketModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-[2rem] border border-primary/20 shadow-2xl max-w-sm w-full text-center relative">
-            <button onClick={() => setShowFreeTicketModal(false)} className="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200 transition-colors cursor-pointer">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-2xl">
+            <button onClick={() => setShowFreeTicketModal(false)} className="absolute top-4 right-4 bg-surface/50 border border-glassBorder p-1.5 rounded-xl text-textLight hover:bg-surfaceHover transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="font-sans text-xl font-bold text-gray-800 mb-1">Confirmar Presença</h3>
-            <p className="text-xs text-gray-500 mb-4">Para evitar spam, informe seus dados.</p>
+            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-1">Confirmar Presença</h3>
+            <p className="text-xs text-textMuted mb-4">Para evitar spam, informe seus dados.</p>
             
             <div className="flex flex-col gap-4 text-left">
-              <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
+              <div className="space-y-3 bg-surface/40 p-4 rounded-2xl border border-glassBorder shadow-sm mb-2">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Nome Completo</label>
+                  <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Nome Completo</label>
                   <input 
                     type="text" 
                     placeholder="Seu nome" 
                     value={buyerName}
                     onChange={e => setBuyerName(e.target.value)}
-                    className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-primary transition-colors"
+                    className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all placeholder:text-textMuted/50 font-sans"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone / WhatsApp</label>
+                  <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Telefone / WhatsApp</label>
                   <input 
                     type="tel" 
                     placeholder="(00) 00000-0000" 
                     value={buyerPhone}
                     onChange={e => setBuyerPhone(e.target.value)}
-                    className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-primary transition-colors"
+                    className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all placeholder:text-textMuted/50 font-sans"
                   />
                 </div>
               </div>
               <button 
                   onClick={handleRegister}
                   disabled={!buyerName || !buyerPhone}
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all shadow-md disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-gradient-to-r from-primary to-primaryHover text-textDark border border-primary/20 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-primary hover:shadow-glow-primary-lg active:scale-95 neo-click disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
               >
                   Confirmar Presença
               </button>
@@ -748,61 +784,61 @@ export const EventDetails = () => {
 
       {/* Pix Modal */}
       {showPixModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-background/80 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-[2rem] border border-emerald-100 shadow-2xl max-w-sm w-full text-center relative">
-            <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-2xl">
+            <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 bg-surface/50 border border-glassBorder p-1.5 rounded-xl text-textLight hover:bg-surfaceHover transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="font-sans text-xl font-bold text-gray-800 mb-1">Pagamento via Pix</h3>
-            <p className="text-xs text-gray-500 mb-4">Total: R$ {Number(event?.pixTicketPrice || 0).toFixed(2).replace('.', ',')}</p>
+            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-1">Pagamento via Pix</h3>
+            <p className="text-xs text-textMuted mb-4">Total: R$ {Number(event?.pixTicketPrice || 0).toFixed(2).replace('.', ',')}</p>
             
             {!qrCodeData ? (
               <div className="flex flex-col gap-4 text-left">
-                <div className="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
-                  <p className="text-xs font-bold text-gray-700">Seus Dados de Inscrição</p>
+                <div className="space-y-3 bg-surface/40 p-4 rounded-2xl border border-glassBorder shadow-sm mb-2 max-h-[50vh] overflow-y-auto pr-1">
+                  <p className="text-xs font-mono font-bold text-accent uppercase tracking-wider">Seus Dados de Inscrição</p>
                   
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Nome Completo</label>
+                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Nome Completo</label>
                     <input 
                       type="text" 
                       placeholder="Nome Completo" 
                       value={buyerName}
                       onChange={e => setBuyerName(e.target.value)}
-                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors animate-in fade-in duration-300"
+                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-sans"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">E-mail</label>
+                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">E-mail</label>
                     <input 
                       type="email" 
                       placeholder="Seu melhor email" 
                       value={buyerEmail}
                       onChange={e => setBuyerEmail(e.target.value)}
-                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-sans"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">Telefone</label>
+                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Telefone</label>
                     <input 
                       type="tel" 
                       placeholder="(00) 00000-0000" 
                       value={buyerPhone}
                       onChange={e => setBuyerPhone(e.target.value)}
-                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-sans"
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase">CPF</label>
+                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">CPF</label>
                     <input 
                       type="text" 
                       placeholder="000.000.000-00" 
                       value={buyerCpf}
                       onChange={e => setBuyerCpf(e.target.value)}
-                      className="w-full text-sm p-2.5 rounded-lg border border-gray-200 outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-mono"
                     />
                   </div>
                 </div>
@@ -810,15 +846,15 @@ export const EventDetails = () => {
                 <button 
                     onClick={handlePagarPix}
                     disabled={loadingPix || !buyerName || !buyerEmail || !buyerPhone || !buyerCpf}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-md disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-success text-textDark border border-success/20 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg active:scale-95 neo-click disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-sm uppercase tracking-wider"
                 >
-                    {loadingPix ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <QrCode size={18} />}
+                    {loadingPix ? <div className="w-5 h-5 border-2 border-textDark border-t-transparent rounded-full animate-spin" /> : <QrCode size={16} />}
                     {loadingPix ? 'Gerando QR Code...' : 'Gerar QR Code Pix'}
                 </button>
               </div>
             ) : (
                 <div className="flex flex-col items-center">
-                    <div className="p-3 bg-white border-2 border-emerald-50 rounded-2xl shadow-sm mb-4 w-full flex justify-center">
+                    <div className="p-4 bg-white border border-glassBorder rounded-2xl shadow-glass-shadow mb-5 w-full flex justify-center">
                         {qrCodeData.qr_code_base64 ? (
                             <img 
                                 src={`data:image/jpeg;base64,${qrCodeData.qr_code_base64}`} 
@@ -826,24 +862,24 @@ export const EventDetails = () => {
                                 className="w-48 h-48 rounded-lg object-contain"
                             />
                         ) : (
-                            <div className="w-48 h-48 flex items-center justify-center text-gray-400 bg-gray-50 rounded-lg text-sm">Indisponível</div>
+                            <div className="w-48 h-48 flex items-center justify-center text-textMuted bg-surface rounded-lg text-sm">Indisponível</div>
                         )}
                     </div>
                     
                     <button 
                         onClick={copiarCodigo}
-                        className="w-full bg-gray-50 hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl mb-4 transition-colors border border-gray-200 flex items-center justify-center gap-2 text-sm"
+                        className="w-full bg-surface/60 hover:bg-surface/80 text-textLight border border-glassBorder hover:border-primary/30 font-display font-black py-4 px-4 rounded-xl mb-4 transition-all shadow-glass-shadow hover:shadow-glow-primary active:scale-95 neo-click flex items-center justify-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
                     >
-                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        Copiar Pix Copia e Cola
+                        <svg className="w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        Copiar Código Pix
                     </button>
 
-                    <div className="flex items-center justify-center gap-2 text-xs font-medium text-emerald-600 bg-emerald-50 py-2 px-4 rounded-full w-full">
+                    <div className="flex items-center justify-center gap-2 text-xs font-mono font-bold text-success bg-success/10 py-3 px-4 rounded-xl w-full border border-success/20 shadow-sm">
                         <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
                         </span>
-                        Aguardando pagamento...
+                        AGUARDANDO PAGAMENTO...
                     </div>
                 </div>
             )}

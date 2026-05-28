@@ -63,19 +63,22 @@ export const Search = () => {
   }, []); // Run only once on mount
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4">
+    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4 relative">
+      {/* Ambient glow */}
+      <div className="ambient-glow w-48 h-48 bg-primary/10 top-0 right-0" />
+
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 px-2">
+      <div className="flex justify-between items-center mb-6 px-2 relative z-10 md:hidden">
         <div className="flex items-center gap-2">
           <img 
             src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
             alt="Atchêi" 
-            className="w-auto h-14 object-contain mix-blend-multiply drop-shadow-sm" 
+            className="w-auto h-14 object-contain brightness-110 drop-shadow-sm" 
           />
         </div>
         <button 
           onClick={() => navigate('/profile')}
-          className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-lg font-bold overflow-hidden"
+          className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primaryHover text-textDark border border-primary/20 flex items-center justify-center shadow-glow-primary text-lg font-display font-extrabold overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
           title="Ir para o perfil"
         >
           {user?.imageUrl ? (
@@ -86,23 +89,24 @@ export const Search = () => {
         </button>
       </div>
 
-      <div className="relative mb-6">
+      <div className="relative mb-6 z-10">
         <Input 
           placeholder="Pesquisar..." 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-12"
         />
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={20} />
+        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-accent" size={18} />
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-3 mb-6 overflow-x-auto pt-1 pb-2.5 px-4 -mx-4 scrollbar-hide relative z-10">
         <button 
           onClick={() => setActiveTab('eventos')}
           className={cn(
-            "px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-colors",
-            activeTab === 'eventos' ? "bg-primary text-textLight" : "bg-primary/10 text-primary"
+            "px-5 py-3 rounded-2xl font-display font-black text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 border neo-click",
+            activeTab === 'eventos' 
+              ? "bg-gradient-to-r from-accent to-accentHover text-textDark border-accent/20 shadow-glow-accent scale-105" 
+              : "bg-white/80 border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
           )}
         >
           Eventos
@@ -110,8 +114,10 @@ export const Search = () => {
         <button 
           onClick={() => setActiveTab('estabelecimentos')}
           className={cn(
-            "px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-colors",
-            activeTab === 'estabelecimentos' ? "bg-primary text-textLight" : "bg-primary/10 text-primary"
+            "px-5 py-3 rounded-2xl font-display font-black text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 border neo-click",
+            activeTab === 'estabelecimentos' 
+              ? "bg-gradient-to-r from-accent to-accentHover text-textDark border-accent/20 shadow-glow-accent scale-105" 
+              : "bg-white/80 border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
           )}
         >
           Estabelecimentos
@@ -119,15 +125,17 @@ export const Search = () => {
         <button 
           onClick={() => setActiveTab('atleticas')}
           className={cn(
-            "px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-colors",
-            activeTab === 'atleticas' ? "bg-primary text-textLight" : "bg-primary/10 text-primary"
+            "px-5 py-3 rounded-2xl font-display font-black text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 border neo-click",
+            activeTab === 'atleticas' 
+              ? "bg-gradient-to-r from-accent to-accentHover text-textDark border-accent/20 shadow-glow-accent scale-105" 
+              : "bg-white/80 border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
           )}
         >
           Atléticas
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {activeTab === 'eventos' ? (
           <>
             {filteredEvents.map(event => (
@@ -136,7 +144,7 @@ export const Search = () => {
               </div>
             ))}
             {filteredEvents.length === 0 && (
-              <p className="text-center font-mono text-textDark/50 mt-10">Nenhum evento encontrado para "{query}"</p>
+              <p className="text-center font-mono text-textMuted mt-10">Nenhum evento encontrado para "{query}"</p>
             )}
           </>
         ) : (
@@ -147,7 +155,7 @@ export const Search = () => {
               </div>
             ))}
             {filteredProfiles.length === 0 && (
-              <p className="text-center font-mono text-textDark/50 mt-10">Nenhum perfil encontrado para "{query}"</p>
+              <p className="text-center font-mono text-textMuted mt-10">Nenhum perfil encontrado para "{query}"</p>
             )}
           </>
         )}

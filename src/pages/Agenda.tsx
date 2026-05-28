@@ -48,75 +48,82 @@ export const Agenda = () => {
   }
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-6 px-4">
-      
-      <button onClick={() => navigate(-1)} className="w-10 h-10 mb-4 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary hover:text-textLight transition-colors">
-        <ArrowLeft size={20} />
+    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-6 px-4 relative">
+      {/* Ambient glow */}
+      <div className="ambient-glow w-48 h-48 bg-primary/15 top-20 right-0" />
+
+      <button onClick={() => navigate(-1)} className="w-10 h-10 mb-6 rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10">
+        <ArrowLeft size={18} />
       </button>
 
       {/* Profile Header */}
-      <div className="agenda-header bg-gradient-to-br from-primary to-primary/80 rounded-[2rem] p-8 text-textLight flex flex-col items-center text-center shadow-2xl mb-8 relative overflow-hidden inner-glow">
-        <div className="absolute inset-0 shimmer pointer-events-none opacity-20" />
+      <div className="agenda-header glass rounded-[2.5rem] p-8 text-textLight flex flex-col items-center text-center border border-glassBorder shadow-glass-shadow mb-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 to-primary/5 pointer-events-none" />
         
         {/* Avatar/Logo */}
-        <div className="w-24 h-24 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center mb-4 overflow-hidden relative shadow-lg shrink-0 z-10">
+        <div className="w-24 h-24 rounded-2xl bg-surface/40 border border-glassBorder flex items-center justify-center mb-4 overflow-hidden relative shadow-md shrink-0 z-10">
           {profile.imageUrl ? (
             <img src={profile.imageUrl} className="w-full h-full object-cover" alt={profile.name} />
           ) : profile.type === 'atletica' ? (
-             <Users className="text-textLight" size={40} />
+             <Users className="text-primary" size={36} />
           ) : (
-             <Building2 className="text-textLight" size={40} />
+             <Building2 className="text-primary" size={36} />
           )}
         </div>
         
-        <h1 className="font-sans text-3xl font-bold mb-1 leading-tight z-10">{profile.name}</h1>
-        <p className="font-mono text-xs opacity-75 uppercase tracking-wider mb-3 z-10 px-3 py-1 bg-white/10 rounded-full border border-white/5">
+        <h1 className="font-serifDisplay italic font-bold text-2xl mb-2 text-textLight tracking-wide z-10 leading-tight">{profile.name}</h1>
+        <span className="font-mono text-[9px] text-accent bg-accent/10 border border-accent/20 px-3 py-1 font-bold uppercase tracking-widest rounded-full mb-4 inline-block z-10">
           {profile.type === 'atletica' ? 'Atlética' : 'Estabelecimento'}
-        </p>
+        </span>
         
         {profile.description && (
-          <p className="font-sans text-sm opacity-90 max-w-sm mb-4 leading-relaxed z-10">{profile.description}</p>
+          <p className="font-sans text-sm text-textMuted max-w-sm mb-5 leading-relaxed z-10">{profile.description}</p>
         )}
 
         {/* Redes Sociais */}
         {(profile.instagram || profile.email) && (
-          <div className="flex justify-center gap-3 z-10">
+          <div className="flex justify-center gap-3.5 z-10">
             {profile.instagram && (
               <a
                 href={`https://instagram.com/${profile.instagram.replace('@', '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 hover:bg-white/25 text-textLight flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md"
+                className="w-10 h-10 rounded-2xl bg-surface/50 border border-glassBorder hover:border-primary/40 hover:text-primary flex items-center justify-center shadow-glass-shadow hover:-translate-y-0.5 hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click cursor-pointer"
                 title="Instagram"
               >
-                <InstagramIcon size={18} />
+                <InstagramIcon size={16} />
               </a>
             )}
             {profile.email && (
               <a
                 href={`mailto:${profile.email}`}
-                className="w-10 h-10 rounded-xl bg-white/10 border border-white/10 hover:bg-white/25 text-textLight flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md"
+                className="w-10 h-10 rounded-2xl bg-surface/50 border border-glassBorder hover:border-primary/40 hover:text-primary flex items-center justify-center shadow-glass-shadow hover:-translate-y-0.5 hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click cursor-pointer"
                 title="E-mail"
               >
-                <Mail size={18} />
+                <Mail size={16} />
               </a>
             )}
           </div>
         )}
       </div>
 
-      <h2 className="agenda-event font-sans text-xl font-bold text-textDark mb-4 pl-2 border-l-4 border-primary">
-        Agenda de Eventos
-      </h2>
+      <div className="agenda-event flex items-center gap-2.5 px-1 mb-6 relative z-10">
+        <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
+        <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">
+          Agenda de Eventos
+        </h2>
+      </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {events.map((event) => (
           <div key={event.id} className="agenda-event">
             <EventCard event={event} />
           </div>
         ))}
         {events.length === 0 && (
-          <p className="agenda-event text-center font-mono text-textDark/50 mt-10">Este perfil ainda não tem eventos agendados.</p>
+          <div className="agenda-event flex flex-col items-center justify-center py-12 text-center text-textMuted bg-surface/20 border border-glassBorder rounded-3xl p-6">
+            <p className="font-sans text-sm">Este perfil ainda não tem eventos agendados.</p>
+          </div>
         )}
       </div>
     </div>

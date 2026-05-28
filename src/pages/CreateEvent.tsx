@@ -7,7 +7,11 @@ import type { AppProfile } from '../lib/storage';
 import { cn } from '../lib/utils';
 import { compressImage } from '../lib/imageUtils';
 import gsap from 'gsap';
-import { Image as ImageIcon, MapPin, X, Plus, Calendar as CalendarIcon, Clock, Map as MapIcon, Loader2, Search as SearchIcon } from 'lucide-react';
+import {
+  ArrowLeft, Image as ImageIcon, MapPin, X, Plus, Clock, Loader2,
+  Search as SearchIcon, CalendarPlus, Users2, CheckCircle, Upload,
+  Trash2, AlertTriangle, FileText
+} from 'lucide-react';
 import { useMap, useMapsLibrary, APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -112,6 +116,8 @@ const CreateEventContent = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const isEdit = !!id;
+
   const { register, handleSubmit: formSubmit, watch, setValue, formState: { isSubmitting }, reset } = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
@@ -132,19 +138,21 @@ const CreateEventContent = () => {
       whatsappNumber: ''
     }
   });
-  
+
   const mediaUrls = watch('mediaUrls');
   const hasTickets = watch('hasTickets');
   const hasPixTickets = watch('hasPixTickets');
   const isTestEvent = watch('isTestEvent');
   const location = watch('location');
   const address = watch('address');
+  const publicType = watch('publicType');
+
   const [showMapModal, setShowMapModal] = useState(false);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([- 16.0669, -57.6868]); // Cuiabá center
+  const [mapCenter, setMapCenter] = useState<[number, number]>([-16.0669, -57.6868]); // Cuiabá center
   const [selectedPos, setSelectedPos] = useState<[number, number] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   // Crop States
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string>('');
@@ -204,7 +212,7 @@ const CreateEventContent = () => {
       }
     };
     loadEventData();
-  }, [id]);
+  }, [id, userRole, reset]);
 
   useEffect(() => {
     if (!userId || (userRole !== 'partner' && userRole !== 'admin')) {
@@ -213,16 +221,14 @@ const CreateEventContent = () => {
     }
   }, [userId, userRole, navigate]);
 
-
-
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.from('.form-el', {
-        y: 20,
+      gsap.from('.create-anim', {
+        y: 25,
         opacity: 0,
-        duration: 0.5,
-        stagger: 0.1,
-        ease: 'power2.out',
+        duration: 0.6,
+        stagger: 0.08,
+        ease: 'expo.out',
       });
     }, containerRef);
     return () => ctx.revert();
@@ -237,9 +243,14 @@ const CreateEventContent = () => {
       publicType: data.publicType as any,
       creatorId: id ? (selectedCreatorId || originalCreatorId || targetCreatorId) : targetCreatorId,
     };
-    await storage.saveEvent(eventData as any);
-    toast.success('Evento salvo com sucesso!');
-    navigate('/profile');
+    try {
+      await storage.saveEvent(eventData as any);
+      toast.success('Evento salvo com sucesso!');
+      navigate('/profile');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao salvar o evento.');
+    }
   };
 
   const onError = (errors: any) => {
@@ -247,7 +258,6 @@ const CreateEventContent = () => {
       toast.error(err.message);
     });
   };
-
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -261,7 +271,7 @@ const CreateEventContent = () => {
         toast.error(`A imagem é muito grande (máx 15MB).`);
         return;
       }
-      
+
       const reader = new FileReader();
       reader.onload = () => {
         setImageSrc(reader.result as string);
@@ -272,7 +282,6 @@ const CreateEventContent = () => {
       };
       reader.readAsDataURL(file);
     }
-    // Reseta o input para permitir selecionar a mesma imagem se o modal for fechado
     e.target.value = '';
   };
 
@@ -285,7 +294,7 @@ const CreateEventContent = () => {
     try {
       const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels, currentFile.name);
       const compressedBase64 = await compressImage(croppedFile, 1080, 1080, 0.7);
-      
+
       const res = await fetch(compressedBase64);
       const blob = await res.blob();
       const finalFile = new File([blob], currentFile.name, { type: 'image/jpeg' });
@@ -308,17 +317,15 @@ const CreateEventContent = () => {
     setValue('mediaUrls', mediaUrls.filter((_: string, i: number) => i !== index), { shouldValidate: true });
   };
 
-
-
   const getAddressFromCoords = async (lat: number, lng: number) => {
     setIsSearching(true);
-    // Usando Geocoder do Google se disponível, senão fallback Nominatim
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
       const data = await response.json();
       const addr = data.display_name;
       const name = data.address.road || data.address.suburb || "Local Selecionado";
-      setValue('location', name); setValue('address', addr, { shouldValidate: true });
+      setValue('location', name);
+      setValue('address', addr, { shouldValidate: true });
     } catch (error) {
       console.error("Error fetching address:", error);
     } finally {
@@ -326,7 +333,6 @@ const CreateEventContent = () => {
     }
   };
 
-  // Google Maps Click Handler
   const GoogleMapEvents = () => {
     const map = useMap();
 
@@ -342,260 +348,273 @@ const CreateEventContent = () => {
       const listener = map.addListener('click', async (e: any) => {
         const latlng = e.latLng.toJSON();
         setSelectedPos([latlng.lat, latlng.lng]);
-
-        // Using Nominatim (free) instead of Google Geocoding API
         getAddressFromCoords(latlng.lat, latlng.lng);
       });
 
       return () => {
-        // @ts-ignore
         if (typeof google !== 'undefined') {
-          // @ts-ignore
           google.maps.event.removeListener(listener);
         }
       };
     }, [map]);
 
     if (!map) return null;
-
     return selectedPos ? <AdvancedMarker position={{ lat: selectedPos[0], lng: selectedPos[1] }} /> : null;
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8 px-2">
-        <div className="flex items-center gap-2">
-          <img 
-            src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
-            alt="Atchêi" 
-            className="w-auto h-14 object-contain mix-blend-multiply drop-shadow-sm" 
-          />
+    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-6 px-4 relative">
+      {/* Ambient glow */}
+      <div className="ambient-glow w-48 h-48 bg-primary/10 top-0 right-0 pointer-events-none" />
+
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="w-10 h-10 mb-6 rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
+      >
+        <ArrowLeft size={18} />
+      </button>
+
+      <div className="max-w-2xl mx-auto">
+        <div className="create-anim flex items-center gap-3.5 mb-6 relative z-10 text-left">
+          <div className="w-12 h-12 rounded-2xl bg-accent/15 text-accent flex items-center justify-center border border-accent/20 shadow-glow-accent">
+            <CalendarPlus size={22} />
+          </div>
+          <div>
+            <h1 className="font-serifDisplay italic font-bold text-2xl text-textLight tracking-wide leading-tight animate-fade-in">
+              {isEdit ? 'Editar Evento' : 'Criar Evento'}
+            </h1>
+            <p className="text-xs text-textMuted font-mono uppercase mt-0.5 font-bold">Configure os detalhes do seu rolê</p>
+          </div>
         </div>
-        <button 
-          type="button"
-          onClick={() => navigate('/profile')}
-          className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-primary/70 text-textLight flex items-center justify-center shadow-lg text-sm font-bold overflow-hidden transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-          title="Ir para o perfil"
-        >
-          {user?.imageUrl ? (
-            <img src={user.imageUrl} className="w-full h-full object-cover" alt={user.name} />
-          ) : (
-            user?.name?.charAt(0).toUpperCase() || 'U'
-          )}
-        </button>
-      </div>
 
-      {user ? (
-        <form onSubmit={formSubmit(onSubmit, onError)} className="space-y-4 px-2">
-          {userRole === 'admin' && (
-            <div className="form-el">
-              <label htmlFor="creator-select" className="text-[10px] font-bold text-primary uppercase ml-4 mb-1 block">
-                Criar evento pelo estabelecimento:
-              </label>
-              <select
-                id="creator-select"
-                title="Selecione o estabelecimento criador"
-                className="w-full h-14 bg-background border border-primary/20 rounded-[1.5rem] px-5 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-textDark"
-                value={selectedCreatorId}
-                onChange={e => setSelectedCreatorId(e.target.value)}
-              >
-                <option value="">(Nenhum - Criar como Admin)</option>
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.type})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="form-el">
-            <Input
-              placeholder="Nome do evento..."
-              required
-              {...register('title')}
-            />
-          </div>
-
-          <div className="form-el flex gap-3">
-            <div className="relative flex-1">
-              <Input
-                type="date"
-                required
-                className="pl-10"
-                {...register('date')}
-              />
-              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/60" size={18} />
-            </div>
-            <div className="relative flex-1">
-              <Input
-                type="time"
-                required
-                className="pl-10"
-                {...register('time')}
-              />
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/60" size={18} />
-            </div>
-          </div>
-
-          <div className="form-el flex gap-2">
-            <div className="relative flex-1">
-              <Input
-                placeholder="Local (ex: Centro)..."
-                required
-                {...register('location')}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowMapModal(true)}
-              className="bg-primary/10 text-primary p-3 rounded-full hover:bg-primary/20 transition-all flex items-center justify-center"
-              title="Escolher no Mapa"
-            >
-              <MapIcon size={20} />
-            </button>
-          </div>
-
-          <div className="form-el relative">
-            <Input
-              placeholder="Endereço exato..."
-              required
-              className="pl-10"
-              {...register('address')}
-            />
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/60" size={18} />
-          </div>
-
-
-
-          <div className="form-el">
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              {mediaUrls.map((url: string, index: number) => (
-                <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-primary/20 shadow-sm group">
-                  <img src={url} alt="Upload" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeMedia(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remover Imagem"
-                    aria-label="Remover Imagem"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-              {mediaUrls.length > 0 && mediaUrls.length < 6 && (
-                <label className="aspect-square rounded-xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-primary/5 transition-colors">
-                  {isUploading ? (
-                    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Plus className="text-primary/60" size={24} />
-                  )}
-                  <span className="text-[10px] font-bold text-primary/60 mt-1">{isUploading ? '...' : 'Add'}</span>
-                  <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={handleFileChange} />
+        {user ? (
+          <form onSubmit={formSubmit(onSubmit, onError)} className="space-y-5 relative z-10">
+            {/* Admin Select Partner */}
+            {userRole === 'admin' && (
+              <div className="create-anim space-y-1 text-left">
+                <label htmlFor="creator-select" className="text-[9px] font-mono font-bold text-primary uppercase ml-1 block tracking-wider">
+                  Criar evento pelo estabelecimento:
                 </label>
-              )}
-            </div>
-            {mediaUrls.length === 0 && (
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-primary/40 rounded-2xl cursor-pointer hover:bg-primary/5 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  {isUploading ? (
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-2" />
-                  ) : (
-                    <ImageIcon className="w-8 h-8 text-primary/60 mb-2" />
-                  )}
-                  <p className="text-sm text-textDark/70">
-                    <span className="font-bold">{isUploading ? 'Enviando...' : 'Clique para enviar'}</span> {isUploading ? 'suas imagens' : 'fotos'}
-                  </p>
-                  <p className="text-[10px] text-textDark/40">Recorte de foto disponível. Máximo 6 imagens.</p>
-                </div>
-                <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={handleFileChange} />
-              </label>
+                <select
+                  id="creator-select"
+                  title="Selecione o estabelecimento criador"
+                  className="w-full h-12 bg-surfaceHover/50 border border-glassBorder rounded-xl px-4 text-sm font-sans focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all text-textLight"
+                  value={selectedCreatorId}
+                  onChange={e => setSelectedCreatorId(e.target.value)}
+                >
+                  <option value="">(Nenhum - Criar como Admin)</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id} className="text-stone-900 bg-white">
+                      {p.name} ({p.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
-          </div>
 
-          <div className="form-el pt-2">
-            <textarea
-              placeholder="Descrição..."
-              className="flex min-h-[120px] w-full rounded-[1.5rem] border border-primary/20 bg-background px-4 py-3 text-sm text-textDark transition-colors focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-              required
-              {...register('description')}
-            ></textarea>
-          </div>
+            {/* Media Upload */}
+            <div className="create-anim space-y-2 text-left">
+              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                <ImageIcon size={12} />
+                Fotos do Evento
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {mediaUrls.map((url: string, i: number) => (
+                  <div key={i} className="aspect-square rounded-2xl bg-surface/50 border border-glassBorder shadow-glass-shadow relative overflow-hidden group">
+                    <img src={url} alt={`Mídia ${i + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeMedia(i)}
+                      className="absolute top-2 right-2 w-6 h-6 bg-danger text-textLight border border-danger/20 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer duration-300"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                {mediaUrls.length < 6 && (
+                  <label className="aspect-square rounded-2xl bg-surfaceHover/50 border border-dashed border-primary/45 flex flex-col items-center justify-center text-textMuted cursor-pointer hover:border-accent/60 hover:text-accent transition-all duration-300 hover:bg-surfaceHover">
+                    {isUploading ? (
+                      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Upload size={20} className="text-primary" />
+                        <span className="text-[10px] font-mono font-bold mt-1 uppercase">Upload</span>
+                      </>
+                    )}
+                    <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={handleFileChange} />
+                  </label>
+                )}
+              </div>
+            </div>
 
-          <div className="form-el pt-4 flex flex-col justify-center">
-            <div className="space-y-4 pt-4 border-t border-primary/10 form-el">
-              <div className="flex items-center justify-between p-4 bg-primary/5 rounded-[1.5rem] border border-primary/10">
-                <div>
-                  <p className="font-bold text-textDark text-sm">Venda de Ingressos</p>
-                  <p className="text-[10px] text-textDark/50">Ativar compra via WhatsApp</p>
-                </div>
+            {/* Title */}
+            <div className="create-anim space-y-1 text-left">
+              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                <FileText size={12} />
+                Nome do Evento
+              </label>
+              <Input
+                placeholder="Ex: Sunset Party"
+                className="bg-surface/50 border-glassBorder text-textLight"
+                {...register('title')}
+              />
+            </div>
+
+            {/* Description */}
+            <div className="create-anim space-y-1 text-left">
+              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider">Descrição</label>
+              <textarea
+                placeholder="Descreva o evento..."
+                className="w-full min-h-[120px] bg-surfaceHover/50 border border-glassBorder rounded-xl px-4 py-3 text-sm font-sans text-textLight focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all duration-300 resize-none placeholder:text-textMuted/50"
+                {...register('description')}
+              />
+            </div>
+
+            {/* Date & Time */}
+            <div className="create-anim grid grid-cols-2 gap-3 text-left">
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                  <CalendarPlus size={12} />
+                  Data
+                </label>
+                <Input
+                  type="date"
+                  className="bg-surface/50 border-glassBorder text-textLight"
+                  {...register('date')}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                  <Clock size={12} />
+                  Horário
+                </label>
+                <Input
+                  type="time"
+                  className="bg-surface/50 border-glassBorder text-textLight"
+                  {...register('time')}
+                />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="create-anim grid grid-cols-[1fr_auto] gap-2 items-end text-left">
+              <div className="space-y-1">
+                <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                  <MapPin size={12} />
+                  Local
+                </label>
+                <Input
+                  placeholder="Ex: Pub Aurora"
+                  className="bg-surface/50 border-glassBorder text-textLight"
+                  {...register('location')}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMapModal(true)}
+                className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-all border border-primary/20 shadow-sm cursor-pointer"
+                title="Escolher no Mapa"
+              >
+                <MapPin size={18} />
+              </button>
+            </div>
+
+            {/* Address */}
+            <div className="create-anim space-y-1 text-left">
+              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider">Endereço Completo</label>
+              <Input
+                placeholder="Ex: Rua X, 123 - Bairro - Cidade/UF"
+                className="bg-surface/50 border-glassBorder text-textLight"
+                {...register('address')}
+              />
+            </div>
+
+            {/* Public Type */}
+            <div className="create-anim space-y-1.5 text-left">
+              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                <Users2 size={12} />
+                Tipo de Acesso
+              </label>
+              <div className="flex gap-3.5">
+                {(['Aberto', 'Geral', 'Universitário'] as const).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setValue('publicType', t, { shouldValidate: true })}
+                    className={cn(
+                      "flex-1 py-3.5 rounded-xl font-display uppercase tracking-wider text-xs border transition-all duration-300 neo-click cursor-pointer",
+                      publicType === t
+                        ? 'bg-accent/10 text-accent border-accent/30 shadow-glow-accent font-black'
+                        : 'bg-surface/50 border-glassBorder text-textMuted font-bold hover:text-textLight'
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tickets Toggle */}
+            <div className="create-anim space-y-3.5 glass rounded-[1.8rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-display uppercase tracking-wider font-black text-textLight">Possui Ingressos?</label>
                 <button
                   type="button"
                   onClick={() => setValue('hasTickets', !hasTickets, { shouldValidate: true })}
                   className={cn(
-                    "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
-                    hasTickets ? "bg-primary" : "bg-primary/20"
+                    "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
+                    hasTickets ? 'bg-primary/20 border-primary/45' : 'bg-surfaceHover/50'
                   )}
-                  title="Alternar venda de ingressos"
-                  aria-label="Alternar venda de ingressos"
                 >
-                  <div className={cn(
-                    "w-4 h-4 bg-white rounded-full transition-all shadow-sm",
-                    hasTickets ? "translate-x-6" : "translate-x-0"
-                  )} />
+                  <div
+                    className={cn(
+                      "w-5 h-5 rounded-full absolute top-[3px] transition-all",
+                      hasTickets ? 'right-[3px] bg-primary shadow-glow-primary' : 'left-[3px] bg-textMuted'
+                    )}
+                  />
                 </button>
               </div>
 
-                {hasTickets && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="p-4 border border-primary/10 rounded-[1.5rem] bg-primary/5">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-primary uppercase ml-4">Preço do Ingresso (Opcional)</label>
+              {hasTickets && (
+                <div className="space-y-4 pt-4 border-t border-glassBorder">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider block">Preço do Ingresso</label>
+                    <Input
+                      placeholder="Ex: R$ 30,00 ou Lote 1 R$20 / Lote 2 R$30"
+                      className="bg-surface/50 border-glassBorder text-textLight"
+                      {...register('ticketPrice')}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider block">Promoters de Venda (WhatsApp)</label>
+                    {(watch('whatsappContacts') || []).map((_, i) => (
+                      <div key={i} className="flex items-center gap-2">
                         <Input
-                          placeholder="Ex: R$ 30,00 ou Lote 1 - 40,00"
-                          {...register('ticketPrice')}
-                          className="rounded-[1.5rem] bg-background"
+                          placeholder="Nome"
+                          className="flex-1 text-sm font-sans bg-surface/50 border-glassBorder text-textLight"
+                          {...register(`whatsappContacts.${i}.name` as const)}
                         />
-                      </div>
-                    </div>
-                    {(watch('whatsappContacts') || [{name: '', phone: ''}]).map((_: {name: string, phone: string}, idx: number) => (
-                      <div key={idx} className="p-4 border border-primary/10 rounded-[1.5rem] bg-primary/5 relative">
+                        <Input
+                          placeholder="(00) 00000-0000"
+                          className="flex-1 text-sm font-mono bg-surface/50 border-glassBorder text-textLight"
+                          {...register(`whatsappContacts.${i}.phone` as const)}
+                        />
                         {(watch('whatsappContacts') || []).length > 1 && (
-                          <button 
-                            type="button" 
-                            title="Remover Contato"
-                            aria-label="Remover Contato"
+                          <button
+                            type="button"
                             onClick={() => {
                               const current = watch('whatsappContacts') || [];
-                              setValue('whatsappContacts', current.filter((_: {name: string, phone: string}, i: number) => i !== idx));
+                              setValue('whatsappContacts', current.filter((_, idx) => idx !== i));
                             }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 z-10"
+                            className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface/50 hover:bg-surfaceHover rounded-xl neo-click transition-all duration-300"
                           >
-                            <X size={12} />
+                            <Trash2 size={14} />
                           </button>
                         )}
-                        <div className="space-y-2 mb-3">
-                          <label className="text-xs font-bold text-primary uppercase ml-4">Número do WhatsApp</label>
-                          <Input
-                            type="tel"
-                            placeholder="65 99999-9999"
-                            {...register(`whatsappContacts.${idx}.phone` as const)}
-                            className="rounded-[1.5rem] bg-background"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-primary uppercase ml-4">Tratar com (Nome)</label>
-                          <Input
-                            placeholder="Ex: João Silva ou Diretoria"
-                            {...register(`whatsappContacts.${idx}.name` as const)}
-                            className="rounded-[1.5rem] bg-background"
-                          />
-                        </div>
                       </div>
                     ))}
-                    
                     {(watch('whatsappContacts') || []).length < 5 && (
                       <button
                         type="button"
@@ -603,111 +622,102 @@ const CreateEventContent = () => {
                           const current = watch('whatsappContacts') || [];
                           setValue('whatsappContacts', [...current, { name: '', phone: '' }]);
                         }}
-                        className="w-full py-3 rounded-full border-2 border-dashed border-primary/20 text-primary font-bold text-xs hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-3 rounded-xl border border-dashed border-primary/45 text-primary font-display uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 hover:bg-primary/10 transition-colors cursor-pointer duration-300 shadow-sm"
                       >
-                        <Plus size={16} /> Adicionar outro número
+                        <Plus size={14} />
+                        Adicionar Promoter
                       </button>
                     )}
                   </div>
-                )}
+                </div>
+              )}
             </div>
-            
-            {/* Venda Pix */}
+
+            {/* PIX Section — Admin Only */}
             {userRole === 'admin' && (
-              <div className="space-y-4 pt-4 border-t border-primary/10 form-el">
-                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-[1.5rem] border border-emerald-100">
-                  <div>
-                    <p className="font-bold text-emerald-800 text-sm">Venda Automática via Pix</p>
-                    <p className="text-[10px] text-emerald-600/70">Ativar checkout de pagamento no app</p>
-                  </div>
+              <div className="create-anim space-y-3.5 glass rounded-[1.8rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-display uppercase tracking-wider font-black text-textLight flex items-center gap-2">
+                    <CheckCircle size={16} className="text-success" />
+                    Venda via PIX
+                  </label>
                   <button
                     type="button"
                     onClick={() => setValue('hasPixTickets', !hasPixTickets, { shouldValidate: true })}
                     className={cn(
-                      "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
-                      hasPixTickets ? "bg-emerald-500" : "bg-emerald-200"
+                      "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
+                      hasPixTickets ? 'bg-success/20 border-success/40' : 'bg-surfaceHover/50'
                     )}
-                    title="Alternar venda via Pix"
-                    aria-label="Alternar venda via Pix"
                   >
-                    <div className={cn(
-                      "w-4 h-4 bg-white rounded-full transition-all shadow-sm",
-                      hasPixTickets ? "translate-x-6" : "translate-x-0"
-                    )} />
+                    <div
+                      className={cn(
+                        "w-5 h-5 rounded-full absolute top-[3px] transition-all",
+                        hasPixTickets ? 'right-[3px] bg-success shadow-glow-success' : 'left-[3px] bg-textMuted'
+                      )}
+                    />
                   </button>
                 </div>
 
                 {hasPixTickets && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 p-4 border border-emerald-100 rounded-[1.5rem] bg-emerald-50/50">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-emerald-700 uppercase ml-4">Valor do Ingresso (R$)</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Ex: 50.00"
-                        {...register('pixTicketPrice')}
-                        className="rounded-[1.5rem] bg-white border-emerald-200 focus:border-emerald-500 focus:ring-emerald-500"
-                      />
-                    </div>
+                  <div className="space-y-1.5 pt-4 border-t border-glassBorder">
+                    <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 block">Valor PIX (R$)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="30.00"
+                      className="bg-surface/50 border-glassBorder text-textLight"
+                      {...register('pixTicketPrice')}
+                    />
                   </div>
                 )}
               </div>
             )}
-          </div>
 
-          {/* Evento de Teste (Apenas para Admins) */}
-          {userRole === 'admin' && (
-            <div className="space-y-4 pt-4 border-t border-primary/10 form-el">
-              <div className="flex items-center justify-between p-4 bg-red-50 rounded-[1.5rem] border border-red-100 shadow-inner">
-                <div>
-                  <p className="font-bold text-red-800 text-sm">Evento de Teste (Modo Admin)</p>
-                  <p className="text-[10px] text-red-600/70">Apenas administradores poderão visualizar este evento</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setValue('isTestEvent', !isTestEvent, { shouldValidate: true })}
-                  className={cn(
-                    "w-12 h-6 rounded-full transition-all relative flex items-center px-1 shrink-0",
-                    isTestEvent ? "bg-red-500" : "bg-red-200"
-                  )}
-                  title="Alternar evento de teste"
-                  aria-label="Alternar evento de teste"
-                >
-                  <div className={cn(
-                    "w-4 h-4 bg-white rounded-full transition-all shadow-md transform",
-                    isTestEvent ? "translate-x-6" : "translate-x-0"
-                  )} />
-                </button>
+            {/* Test Event — Admin Only */}
+            {userRole === 'admin' && (
+              <div className="create-anim flex items-center gap-3.5 glass rounded-[1.5rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+                <input
+                  type="checkbox"
+                  id="testEvent"
+                  className="accent-primary w-5 h-5 cursor-pointer border border-glassBorder rounded-md"
+                  checked={!!isTestEvent}
+                  onChange={e => setValue('isTestEvent', e.target.checked, { shouldValidate: true })}
+                />
+                <label htmlFor="testEvent" className="text-sm font-mono text-textMuted uppercase tracking-wider flex items-center gap-2 cursor-pointer select-none font-bold">
+                  <AlertTriangle size={14} className="text-accent" />
+                  Rolê de teste (só admin vê)
+                </label>
               </div>
-            </div>
-          )}
+            )}
 
-          <Button type="submit" disabled={isSubmitting} className="w-full mt-4 rounded-full py-4 shadow-lg text-lg">
-            {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : (id ? 'Salvar Alterações' : 'Publicar Evento')}
-          </Button>
-        </form>
-      ) : (
-        <div className="flex items-center justify-center h-40">
-          <Loader2 className="animate-spin text-primary" size={32} />
-        </div>
-      )}
+            <div className="create-anim pt-4">
+              <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl py-4 font-display uppercase tracking-wider text-base">
+                {isSubmitting ? (isEdit ? 'Salvando...' : 'Criando...') : (isEdit ? 'Salvar Alterações' : 'Criar Evento')}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="flex items-center justify-center h-40">
+            <Loader2 className="animate-spin text-primary" size={32} />
+          </div>
+        )}
+      </div>
 
       {/* Modal do Mapa */}
       {showMapModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-background w-full max-w-lg h-[80vh] rounded-[2.5rem] border border-primary/20 shadow-2xl flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
+        <div className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-lg h-[80vh] rounded-[2.5rem] border border-glassBorder shadow-2xl flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="font-sans text-xl font-black text-textDark">Escolher Localização</h3>
-                <p className="text-[10px] font-mono text-textDark/50 uppercase tracking-wider">Busque ou clique no mapa para marcar</p>
+              <div className="text-left">
+                <h3 className="font-serifDisplay italic font-bold text-xl text-textLight">Escolher Localização</h3>
+                <p className="text-[10px] font-mono text-textMuted uppercase tracking-wider">Busque ou clique no mapa para marcar</p>
               </div>
-              <button 
-                type="button" 
-                onClick={() => setShowMapModal(false)} 
-                className="bg-primary/10 p-2.5 rounded-full text-primary hover:bg-primary/20 hover:scale-110 active:scale-95 transition-all cursor-pointer" 
-                title="Fechar Mapa" 
+              <button
+                type="button"
+                onClick={() => setShowMapModal(false)}
+                className="bg-primary/10 p-2.5 rounded-full text-primary hover:bg-primary/20 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                title="Fechar Mapa"
                 aria-label="Fechar Mapa"
               >
                 <X size={18} />
@@ -715,7 +725,7 @@ const CreateEventContent = () => {
             </div>
 
             {/* Map Container */}
-            <div className="relative flex-1 rounded-[2rem] overflow-hidden border border-primary/15 bg-primary/5 shadow-inner flex flex-col">
+            <div className="relative flex-1 rounded-[2rem] overflow-hidden border border-glassBorder bg-primary/5 shadow-inner flex flex-col">
               <div className="absolute top-4 left-4 right-4 z-20">
                 <PlaceAutocomplete
                   onPlaceSelect={(place) => {
@@ -730,7 +740,7 @@ const CreateEventContent = () => {
                   }}
                 />
               </div>
-              
+
               <Map
                 style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
                 mapId={GOOGLE_MAP_ID}
@@ -755,11 +765,11 @@ const CreateEventContent = () => {
 
             {/* Address Preview */}
             {address && (
-              <div className="mt-4 p-3.5 bg-primary/5 border border-primary/10 rounded-2xl flex items-start gap-2.5 text-left">
+              <div className="mt-4 p-3.5 bg-surface/50 border border-glassBorder rounded-2xl flex items-start gap-2.5 text-left">
                 <MapPin className="text-primary shrink-0 mt-0.5" size={16} />
                 <div className="min-w-0">
                   <span className="text-[9px] font-bold text-primary/70 uppercase block tracking-wider">Endereço Selecionado</span>
-                  <p className="font-sans font-bold text-xs text-textDark truncate leading-snug">{address}</p>
+                  <p className="font-sans font-bold text-xs text-textLight truncate leading-snug">{address}</p>
                 </div>
               </div>
             )}
@@ -777,18 +787,23 @@ const CreateEventContent = () => {
 
       {/* Crop Modal */}
       {cropModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-md flex flex-col pt-12 pb-6 px-4">
+        <div className="fixed inset-0 z-[99999] bg-background/95 backdrop-blur-md flex flex-col pt-12 pb-6 px-4">
           <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="font-sans font-bold text-xl text-textDark">Ajustar Imagem</h2>
-              <p className="text-xs text-textDark/50">Recorte para exibição perfeita no Feed</p>
+            <div className="text-left">
+              <h2 className="font-serifDisplay italic font-bold text-xl text-textLight">Ajustar Imagem</h2>
+              <p className="text-xs text-textMuted">Recorte para exibição perfeita no Feed</p>
             </div>
-            <button type="button" onClick={() => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); }} className="bg-primary/10 p-2 rounded-full text-primary" title="Cancelar">
+            <button
+              type="button"
+              onClick={() => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); }}
+              className="bg-primary/10 p-2 rounded-full text-primary"
+              title="Cancelar"
+            >
               <X size={20} />
             </button>
           </div>
-          
-          <div className="relative flex-1 bg-black/5 rounded-3xl overflow-hidden mb-6 border border-primary/20 shadow-inner">
+
+          <div className="relative flex-1 bg-black/5 rounded-3xl overflow-hidden mb-6 border border-glassBorder shadow-inner">
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -803,7 +818,7 @@ const CreateEventContent = () => {
           <div className="flex gap-4">
             <button
               type="button"
-              className="flex-1 rounded-full py-4 border-2 border-primary/20 text-primary font-bold hover:bg-primary/5 transition-all"
+              className="flex-1 rounded-full py-4 border border-glassBorder text-textLight font-bold hover:bg-surfaceHover transition-all neo-click"
               onClick={() => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); }}
             >
               Cancelar
@@ -841,7 +856,6 @@ const PlaceAutocomplete = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
     }
 
     const { AutocompleteSuggestion } = places;
-
     const request: google.maps.places.AutocompleteRequest = {
       input,
       sessionToken: sessionToken!,
@@ -885,7 +899,7 @@ const PlaceAutocomplete = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
             setInputValue(e.target.value);
             fetchPredictions(e.target.value);
           }}
-          className="w-full h-12 bg-white/90 backdrop-blur-md border border-primary/20 rounded-2xl px-12 text-sm shadow-xl focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          className="w-full h-12 bg-white/90 backdrop-blur-md border border-glassBorder rounded-2xl px-12 text-sm shadow-xl focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-textLight"
         />
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
         {inputValue && (
@@ -901,14 +915,14 @@ const PlaceAutocomplete = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
       </div>
 
       {predictions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-primary/10 rounded-[1.5rem] shadow-2xl z-[120] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-glassBorder rounded-[1.5rem] shadow-2xl z-[120] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           {predictions.map((p, idx) => (
             <button
               key={p.placePrediction?.placeId || idx}
-              className="w-full text-left px-5 py-3 hover:bg-primary/5 text-xs border-b border-primary/5 last:border-0 flex flex-col gap-0.5"
+              className="w-full text-left px-5 py-3 hover:bg-primary/5 text-xs border-b border-glassBorder last:border-0 flex flex-col gap-0.5"
               onClick={() => handleSelect(p)}
             >
-              <span className="font-bold text-textDark">{p.placePrediction?.text.text}</span>
+              <span className="font-bold text-textLight">{p.placePrediction?.text.text}</span>
             </button>
           ))}
         </div>

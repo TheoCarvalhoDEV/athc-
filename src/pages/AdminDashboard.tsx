@@ -221,110 +221,117 @@ export const AdminDashboard = () => {
 
   return (
     <>
-    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4">
+    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4 relative">
+      {/* Ambient glow */}
+      <div className="ambient-glow w-48 h-48 bg-primary/10 top-0 left-0" />
+
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6 admin-anim">
-        <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-          <Settings size={24} />
+      <div className="flex items-center gap-3.5 mb-6 admin-anim relative z-10 text-left">
+        <div className="w-12 h-12 rounded-2xl bg-accent/15 text-accent flex items-center justify-center border border-accent/20 shadow-glow-accent">
+          <Settings size={22} />
         </div>
         <div>
-          <h1 className="font-sans text-2xl font-bold text-textDark">Painel de Controle</h1>
-          <p className="text-sm text-textDark/60">Gerencie seus eventos e inscrições</p>
+          <h1 className="font-serifDisplay italic font-bold text-2xl text-textLight tracking-wide leading-tight">Painel de Controle</h1>
+          <p className="text-xs text-textMuted font-mono uppercase mt-0.5">Gerencie seus eventos e parceiros</p>
         </div>
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-2 gap-3 mb-6 admin-anim">
-        <div className="bg-background border border-primary/10 rounded-[1.5rem] p-4 shadow-sm">
+      <div className="grid grid-cols-2 gap-3.5 mb-6 admin-anim relative z-10 text-left">
+        <div className="glass p-4 rounded-2xl border border-glassBorder/80 shadow-glass-shadow">
           <div className="flex items-center gap-2 text-primary mb-2">
-            <Calendar size={18} />
-            <span className="font-bold text-sm">Total Eventos</span>
+            <Calendar size={15} />
+            <span className="font-mono text-[9px] uppercase tracking-wider font-bold">Total Eventos</span>
           </div>
-          <span className="font-sans text-3xl font-bold text-textDark">{events.length}</span>
+          <span className="font-display text-3xl font-black text-textLight leading-none">{events.length}</span>
         </div>
-        <div className="bg-background border border-primary/10 rounded-[1.5rem] p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-primary mb-2">
-            <Users size={18} />
-            <span className="font-bold text-sm">Inscrições</span>
+        <div className="glass p-4 rounded-2xl border border-glassBorder/80 shadow-glass-shadow">
+          <div className="flex items-center gap-2 text-accent mb-2">
+            <Users size={15} />
+            <span className="font-mono text-[9px] uppercase tracking-wider font-bold">Inscrições</span>
           </div>
-          <span className="font-sans text-3xl font-bold text-textDark">{totalRegistrations}</span>
+          <span className="font-display text-3xl font-black text-textLight leading-none">{totalRegistrations}</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 admin-anim">
+      <div className="flex gap-3 mb-6 admin-anim relative z-10">
         <button 
           onClick={() => setActiveTab('events')}
           className={cn(
-            "flex-1 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2",
-            activeTab === 'events' ? "bg-primary text-textLight shadow-lg" : "bg-primary/5 text-textDark/60"
+            "flex-1 py-3.5 rounded-xl font-display uppercase tracking-wider text-xs transition-all duration-300 flex items-center justify-center gap-2 border neo-click cursor-pointer",
+            activeTab === 'events' 
+              ? "bg-primary/10 text-primary border-primary/30 shadow-glow-primary font-black" 
+              : "bg-surface/50 border-glassBorder text-textMuted font-bold hover:text-textLight"
           )}
         >
-          <Calendar size={18} />
+          <Calendar size={16} />
           Eventos
         </button>
         <button 
           onClick={() => setActiveTab('partners')}
           className={cn(
-            "flex-1 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2",
-            activeTab === 'partners' ? "bg-primary text-textLight shadow-lg" : "bg-primary/5 text-textDark/60"
+            "flex-1 py-3.5 rounded-xl font-display uppercase tracking-wider text-xs transition-all duration-300 flex items-center justify-center gap-2 border neo-click cursor-pointer",
+            activeTab === 'partners' 
+              ? "bg-accent/10 text-accent border-accent/30 shadow-glow-accent font-black" 
+              : "bg-surface/50 border-glassBorder text-textMuted font-bold hover:text-textLight"
           )}
         >
-          <Building2 size={18} />
+          <Building2 size={16} />
           Parceiros
         </button>
       </div>
 
-      <div className="relative mb-4 admin-anim">
+      <div className="relative mb-4 admin-anim z-10">
         <Input 
           placeholder={activeTab === 'events' ? "Buscar eventos..." : "Buscar parceiros..."} 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-12"
         />
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/50" size={18} />
+        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={18} />
       </div>
 
       {activeTab === 'events' ? (
         <>
-          <div className="flex justify-between items-center mb-3 admin-anim">
-            <h2 className="font-sans font-bold text-textDark">Gerenciar Eventos</h2>
-            <Button onClick={() => navigate('/create')} className="text-xs px-3 py-1.5 h-auto rounded-full">
+          <div className="flex justify-between items-center mb-4 admin-anim relative z-10">
+            <h2 className="font-display text-lg font-black text-textLight uppercase tracking-wider">Gerenciar Eventos</h2>
+            <Button onClick={() => navigate('/create')} variant="primary" size="sm" className="rounded-xl">
               + Novo Evento
             </Button>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
             {filteredEvents.map(event => {
               const eventRegs = registrations.filter(r => r.eventId === event.id).length;
               
               return (
-                <div key={event.id} className="bg-background border border-primary/10 p-4 rounded-2xl flex flex-col gap-3 admin-anim shadow-sm">
+                <div key={event.id} className="glass p-5 rounded-[1.5rem] border border-glassBorder flex flex-col gap-3.5 admin-anim hover:border-primary/30 hover:shadow-glass-shadow transition-all duration-300 text-left">
                   <div className="flex justify-between items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-textDark truncate">{event.title}</h3>
-                      <p className="text-xs text-textDark/60 font-mono mt-0.5">{formatDateBR(event.date)}</p>
+                      <h3 className="font-serifDisplay font-extrabold text-base text-textLight truncate uppercase tracking-wider">{event.title}</h3>
+                      <p className="text-xs text-textMuted font-mono mt-1.5 uppercase tracking-wider">{formatDateBR(event.date)}</p>
                     </div>
-                    <div className="bg-primary/5 px-2 py-1 rounded-md flex items-center gap-1.5 shrink-0">
+                    <div className="bg-primary/10 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shrink-0 border border-primary/20 shadow-sm">
                       <Users size={12} className="text-primary" />
                       <span className="font-mono text-xs font-bold text-primary">{eventRegs}</span>
                     </div>
                   </div>
                   
-                  <div className="flex gap-2 pt-2 border-t border-primary/5">
+                  <div className="flex gap-2 pt-3 border-t border-glassBorder">
                     <button 
                       onClick={() => navigate(`/event/${event.id}`)}
-                      className="flex-1 py-1.5 text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors"
+                      className="flex-1 py-2 rounded-xl text-xs font-display uppercase tracking-wider font-black text-textLight bg-surface/50 border border-glassBorder hover:border-accent/40 hover:text-accent hover:shadow-glow-accent transition-all duration-300 neo-click cursor-pointer"
                     >
                       Ver Página
                     </button>
                     <button 
                       onClick={() => handleDelete(event.id)}
-                      className="px-3 text-textDark/40 hover:text-red-500 transition-colors"
+                      className="px-4 py-2 text-textMuted hover:text-danger border border-glassBorder hover:border-danger/40 rounded-xl bg-surface/50 hover:bg-danger/10 transition-all duration-300 neo-click cursor-pointer"
                       title="Excluir Evento"
                       aria-label="Excluir Evento"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -333,49 +340,49 @@ export const AdminDashboard = () => {
             
             {filteredEvents.length === 0 && (
               <div className="text-center py-10 admin-anim">
-                <p className="text-textDark/50 text-sm">Nenhum evento encontrado.</p>
+                <p className="text-textMuted font-mono text-sm uppercase">Nenhum evento encontrado.</p>
               </div>
             )}
           </div>
         </>
       ) : (
         <>
-          <div className="flex justify-between items-center mb-3 admin-anim">
-            <h2 className="font-sans font-bold text-textDark">Gerenciar Parceiros</h2>
-            <Button onClick={() => { setLastGenerated(null); setShowPartnerModal(true); }} className="text-xs px-3 py-1.5 h-auto rounded-full">
+          <div className="flex justify-between items-center mb-4 admin-anim relative z-10">
+            <h2 className="font-display text-lg font-black text-textLight uppercase tracking-wider">Gerenciar Parceiros</h2>
+            <Button onClick={() => { setLastGenerated(null); setShowPartnerModal(true); }} variant="primary" size="sm" className="rounded-xl">
               + Novo Parceiro
             </Button>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
             {filteredProfiles.map(profile => (
-              <div key={profile.id} className="bg-background border border-primary/10 p-4 rounded-2xl flex items-center gap-4 admin-anim shadow-sm">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden shrink-0">
-                  {profile.imageUrl ? <img src={profile.imageUrl} alt={`Foto de ${profile.name}`} className="w-full h-full object-cover" /> : <Building2 size={24} />}
+              <div key={profile.id} className="glass p-4 rounded-[1.5rem] flex items-center gap-4 admin-anim hover:border-primary/30 hover:shadow-glass-shadow transition-all border border-glassBorder text-left">
+                <div className="w-12 h-12 rounded-xl bg-surface/50 flex items-center justify-center text-accent overflow-hidden shrink-0 border border-glassBorder shadow-sm">
+                  {profile.imageUrl ? <img src={profile.imageUrl} alt={`Foto de ${profile.name}`} className="w-full h-full object-cover" /> : <Building2 size={20} />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-textDark truncate">{profile.name}</h3>
-                  <p className="text-[10px] text-textDark/40 uppercase tracking-widest font-bold">{profile.type}</p>
+                  <h3 className="font-display text-base font-black text-textLight truncate uppercase tracking-wider leading-tight">{profile.name}</h3>
+                  <p className="text-[9px] text-accent uppercase tracking-wider font-mono font-bold mt-1">{profile.type}</p>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-1 text-[10px] text-primary font-mono bg-primary/5 px-2 py-0.5 rounded mb-1">
+                <div className="flex flex-col items-end gap-1.5">
+                  <div className="flex items-center gap-1.5 text-[9px] text-primary font-mono bg-primary/10 px-2.5 py-0.5 rounded-lg border border-primary/20">
                     <Mail size={10} />
                     {profile.email || 'N/A'}
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1.5">
                     <button 
                       onClick={() => setEditingPartner(profile)}
-                      className="p-1.5 text-textDark/40 hover:text-primary transition-colors bg-textDark/5 rounded-full"
+                      className="p-1.5 text-textLight hover:text-accent transition-all duration-300 bg-surface/50 hover:bg-surfaceHover rounded-xl border border-glassBorder hover:border-accent/40 neo-click cursor-pointer"
                       title="Editar Parceiro"
                     >
-                      <Settings size={14} />
+                      <Settings size={13} />
                     </button>
                     <button 
                       onClick={() => handleDeleteProfile(profile.id)}
-                      className="p-1.5 text-textDark/40 hover:text-red-500 transition-colors bg-textDark/5 rounded-full"
+                      className="p-1.5 text-textLight hover:text-danger transition-all duration-300 bg-surface/50 hover:bg-surfaceHover rounded-xl border border-glassBorder hover:border-danger/40 neo-click cursor-pointer"
                       title="Excluir Parceiro"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
@@ -384,7 +391,7 @@ export const AdminDashboard = () => {
             
             {filteredProfiles.length === 0 && (
               <div className="text-center py-10 admin-anim">
-                <p className="text-textDark/50 text-sm">Nenhum parceiro encontrado.</p>
+                <p className="text-textMuted font-mono text-sm uppercase">Nenhum parceiro encontrado.</p>
               </div>
             )}
           </div>
@@ -393,23 +400,23 @@ export const AdminDashboard = () => {
 
       {/* Modal Editar Parceiro */}
       {editingPartner && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
-          <div className="bg-background border border-primary/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button aria-label="Fechar Modal" title="Fechar Modal" onClick={() => setEditingPartner(null)} className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full">
-              <X size={20} />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop">
+          <div className="glass rounded-[2.5rem] p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto border border-glassBorder backdrop-blur-3xl text-left shadow-glass-shadow">
+            <button aria-label="Fechar Modal" title="Fechar Modal" onClick={() => setEditingPartner(null)} className="absolute top-6 right-6 p-2 border border-glassBorder rounded-xl bg-surface/50 hover:bg-surfaceHover hover:border-accent/40 text-textLight cursor-pointer neo-click transition-all duration-300">
+              <X size={16} />
             </button>
 
             <form onSubmit={handleEditPartner} className="space-y-4 mt-2">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
-                  <Settings size={32} />
+              <div className="text-center mb-6 mt-4">
+                <div className="w-14 h-14 bg-primary/20 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3 shadow-glow-primary">
+                  <Settings size={24} />
                 </div>
-                <h3 className="font-sans text-2xl font-bold text-textDark">Editar Parceiro</h3>
-                <p className="text-xs text-textDark/50">Modifique as informações e acessos</p>
+                <h3 className="font-display text-2xl font-black text-textLight uppercase tracking-wide leading-tight">Editar Parceiro</h3>
+                <p className="text-xs text-textMuted font-mono uppercase mt-1">Modifique as informações e acessos</p>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-primary uppercase ml-2">Nome do Parceiro</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">Nome do Parceiro</label>
                 <Input 
                   required 
                   value={editingPartner.name}
@@ -417,12 +424,12 @@ export const AdminDashboard = () => {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label htmlFor="edit-partner-type" className="text-[10px] font-bold text-primary uppercase ml-2">Tipo</label>
+              <div className="space-y-1.5">
+                <label htmlFor="edit-partner-type" className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">Tipo</label>
                 <select 
                   id="edit-partner-type"
                   title="Tipo de Parceiro"
-                  className="w-full h-12 bg-primary/5 border border-primary/10 rounded-2xl px-4 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full h-12 bg-surfaceHover/50 border border-glassBorder rounded-xl px-4 text-sm font-mono text-textLight focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all duration-300 cursor-pointer"
                   value={editingPartner.type}
                   onChange={e => setEditingPartner(prev => prev ? ({ ...prev, type: e.target.value as any }) : null)}
                 >
@@ -433,8 +440,8 @@ export const AdminDashboard = () => {
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-primary uppercase ml-2">Nova Senha (Opcional)</label>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">Nova Senha (Opcional)</label>
                 <Input 
                   placeholder="Digite para alterar" 
                   value={editingPartner.password || ''}
@@ -442,20 +449,20 @@ export const AdminDashboard = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2 mt-4 px-2">
+              <div className="flex items-center gap-3.5 mt-4 px-1">
                 <input 
                   type="checkbox" 
                   id="mustChangePassword"
                   checked={editingPartner.mustChangePassword}
                   onChange={e => setEditingPartner(prev => prev ? ({ ...prev, mustChangePassword: e.target.checked }) : null)}
-                  className="accent-primary w-4 h-4"
+                  className="accent-primary w-5 h-5 cursor-pointer border border-glassBorder rounded-md"
                 />
-                <label htmlFor="mustChangePassword" className="text-xs text-textDark/80">
-                  Obrigar usuário a redefinir a senha ao logar
+                <label htmlFor="mustChangePassword" className="text-xs font-mono text-textMuted uppercase tracking-wider cursor-pointer font-bold">
+                  Obrigar alteração de senha no login
                 </label>
               </div>
 
-              <Button type="submit" className="w-full rounded-full py-4 mt-6">
+              <Button type="submit" className="w-full rounded-xl py-4 mt-6">
                 Salvar Alterações
               </Button>
             </form>
@@ -465,24 +472,24 @@ export const AdminDashboard = () => {
 
       {/* Modal Novo Parceiro */}
       {showPartnerModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
-          <div className="bg-background border border-primary/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative">
-            <button aria-label="Fechar Modal" title="Fechar Modal" onClick={() => setShowPartnerModal(false)} className="absolute top-6 right-6 p-2 hover:bg-primary/5 rounded-full">
-              <X size={20} />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop">
+          <div className="glass rounded-[2.5rem] p-8 max-w-md w-full relative border border-glassBorder backdrop-blur-3xl text-left shadow-glass-shadow">
+            <button aria-label="Fechar Modal" title="Fechar Modal" onClick={() => setShowPartnerModal(false)} className="absolute top-6 right-6 p-2 border border-glassBorder rounded-xl bg-surface/50 hover:bg-surfaceHover hover:border-accent/40 text-textLight cursor-pointer neo-click transition-all duration-300">
+              <X size={16} />
             </button>
 
             {!lastGenerated ? (
               <form onSubmit={handleAddPartner} className="space-y-4">
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
-                    <UserPlus size={32} />
+                <div className="text-center mb-6 mt-4">
+                  <div className="w-14 h-14 bg-primary/20 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3 shadow-glow-primary">
+                    <UserPlus size={24} />
                   </div>
-                  <h3 className="font-sans text-2xl font-bold text-textDark">Cadastrar Parceiro</h3>
-                  <p className="text-xs text-textDark/50">Crie acesso para novos estabelecimentos</p>
+                  <h3 className="font-display text-2xl font-black text-textLight uppercase tracking-wide leading-tight">Cadastrar Parceiro</h3>
+                  <p className="text-xs text-textMuted font-mono uppercase mt-1">Crie acesso para novos parceiros</p>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-primary uppercase ml-2">Nome do Parceiro</label>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">Nome do Parceiro</label>
                   <Input 
                     required 
                     placeholder="Ex: Velvet Club" 
@@ -491,11 +498,11 @@ export const AdminDashboard = () => {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label htmlFor="partner-type" className="text-[10px] font-bold text-primary uppercase ml-2">Tipo</label>
+                <div className="space-y-1.5">
+                  <label htmlFor="partner-type" className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">Tipo</label>
                   <select 
                     id="partner-type"
-                    className="w-full h-12 bg-primary/5 border border-primary/10 rounded-2xl px-4 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full h-12 bg-surfaceHover/50 border border-glassBorder rounded-xl px-4 text-sm font-mono text-textLight focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all duration-300 cursor-pointer"
                     value={newPartner.type}
                     onChange={e => setNewPartner(prev => ({ ...prev, type: e.target.value as any }))}
                   >
@@ -506,8 +513,8 @@ export const AdminDashboard = () => {
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-primary uppercase ml-2">Descrição Curta</label>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">Descrição Curta</label>
                   <Input 
                     required 
                     placeholder="Ex: O melhor lounge da cidade" 
@@ -516,8 +523,8 @@ export const AdminDashboard = () => {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-primary uppercase ml-2">URL da Imagem (Opcional)</label>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">URL da Imagem (Opcional)</label>
                   <Input 
                     placeholder="https://..." 
                     value={newPartner.imageUrl}
@@ -525,48 +532,48 @@ export const AdminDashboard = () => {
                   />
                 </div>
 
-                <Button type="submit" className="w-full rounded-full py-4 mt-4 shadow-xl">
+                <Button type="submit" className="w-full rounded-xl py-4 mt-6">
                   Gerar Acesso e Salvar
                 </Button>
               </form>
             ) : (
               <div className="text-center py-4">
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-success/10 text-success rounded-2xl border border-success/20 shadow-glow-success flex items-center justify-center mx-auto mb-5">
                   <ShieldCheck size={32} />
                 </div>
-                <h3 className="font-sans text-2xl font-bold text-textDark mb-2">Parceiro Criado!</h3>
-                <p className="text-sm text-textDark/60 mb-6">Salve os dados de acesso abaixo:</p>
+                <h3 className="font-display text-2xl font-black text-textLight uppercase tracking-wide leading-tight mb-2">Parceiro Criado!</h3>
+                <p className="text-sm text-textMuted font-mono uppercase mb-6">Salve os dados de acesso abaixo:</p>
                 
-                <div className="bg-primary/5 p-4 rounded-2xl space-y-3 text-left border border-primary/10 mb-8 relative">
+                <div className="glass p-5 rounded-2xl border border-glassBorder mb-8 relative shadow-glass-shadow space-y-4">
                   <button 
                     onClick={() => {
                       navigator.clipboard.writeText(`Email: ${lastGenerated.email}\nSenha: ${lastGenerated.pass}`);
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     }}
-                    className="absolute top-4 right-4 p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                    className="absolute top-4 right-4 p-2 bg-surface/50 hover:bg-surfaceHover text-primary border border-glassBorder hover:border-primary/40 rounded-xl cursor-pointer neo-click transition-all duration-300"
                     title="Copiar dados"
                   >
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                    {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
                   </button>
                   
                   <div>
-                    <p className="text-[10px] font-bold text-primary uppercase">E-mail de Acesso</p>
-                    <p className="font-mono text-sm font-bold text-textDark flex items-center gap-2">
-                      <Mail size={14} className="text-primary/40" />
+                    <p className="text-[9px] font-bold text-primary uppercase font-mono tracking-wider mb-1">E-mail de Acesso</p>
+                    <p className="font-mono text-sm font-bold text-textLight flex items-center gap-2">
+                      <Mail size={14} className="text-primary" />
                       {lastGenerated.email}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-primary uppercase">Senha Temporária</p>
-                    <p className="font-mono text-sm font-bold text-textDark flex items-center gap-2">
-                      <Lock size={14} className="text-primary/40" />
+                    <p className="text-[9px] font-bold text-accent uppercase font-mono tracking-wider mb-1">Senha Temporária</p>
+                    <p className="font-mono text-sm font-bold text-textLight flex items-center gap-2">
+                      <Lock size={14} className="text-accent" />
                       {lastGenerated.pass}
                     </p>
                   </div>
                 </div>
 
-                <Button onClick={() => setShowPartnerModal(false)} className="w-full rounded-full">
+                <Button onClick={() => setShowPartnerModal(false)} className="w-full rounded-xl py-3.5">
                   Concluído
                 </Button>
               </div>
@@ -580,32 +587,34 @@ export const AdminDashboard = () => {
     {confirmModal.show && (
       <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6" onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>
         <div 
-          className="bg-background rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border border-primary/10 animate-in zoom-in duration-300"
+          className="glass rounded-[2rem] p-8 max-w-sm w-full border border-glassBorder backdrop-blur-3xl text-center shadow-glass-shadow"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex flex-col items-center text-center">
+          <div className="flex flex-col items-center">
             <div className={cn(
-              "w-16 h-16 rounded-2xl flex items-center justify-center mb-6",
-              confirmModal.type === 'danger' ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary"
+              "w-16 h-16 rounded-2xl border flex items-center justify-center mb-6 shadow-[0_0_15px_rgba(0,0,0,0.1)]",
+              confirmModal.type === 'danger' ? "bg-danger/10 border-danger/20 text-danger shadow-md" : "bg-primary/10 border-primary/20 text-primary shadow-glow-primary"
             )}>
-              <Trash2 size={32} />
+              <Trash2 size={26} />
             </div>
-            <h3 className="font-sans text-2xl font-bold text-textDark mb-3">{confirmModal.title}</h3>
-            <p className="text-sm text-textDark/60 mb-8 leading-relaxed">
+            <h3 className="font-display text-xl font-black text-textLight uppercase tracking-wide mb-3">{confirmModal.title}</h3>
+            <p className="text-sm text-textMuted mb-8 font-sans leading-relaxed">
               {confirmModal.message}
             </p>
-            <div className="flex gap-3 w-full">
+            <div className="flex gap-3.5 w-full">
               <button 
                 onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
-                className="flex-1 py-4 rounded-full border border-primary/10 text-textDark font-bold text-sm hover:bg-primary/5 transition-colors"
+                className="flex-1 py-3.5 rounded-xl border border-glassBorder bg-surface/50 text-textLight font-display font-black uppercase tracking-wider text-xs hover:bg-surfaceHover hover:border-accent/40 hover:text-accent transition-all duration-300 neo-click cursor-pointer"
               >
                 Cancelar
               </button>
               <button 
                 onClick={confirmModal.onConfirm}
                 className={cn(
-                  "flex-1 py-4 rounded-full text-white font-bold text-sm shadow-lg transition-all active:scale-95",
-                  confirmModal.type === 'danger' ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
+                  "flex-1 py-3.5 rounded-xl border font-display font-black uppercase tracking-wider text-xs transition-all duration-300 neo-click cursor-pointer shadow-sm",
+                  confirmModal.type === 'danger' 
+                    ? "bg-danger border-danger/20 text-textDark hover:-translate-y-0.5 active:scale-95 shadow-md" 
+                    : "bg-primary border-primary/20 text-textDark hover:shadow-glow-primary-lg hover:shadow-glow-primary hover:-translate-y-0.5 active:scale-95"
                 )}
               >
                 Confirmar

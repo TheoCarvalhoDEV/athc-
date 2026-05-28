@@ -19,23 +19,24 @@ export const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50 px-4">
-      <nav className="bg-white/30 backdrop-blur-lg border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.06)] rounded-full px-5 py-1.5 flex items-center gap-4 md:gap-6">
+    <div className="fixed bottom-6 left-1/2 z-[9999] px-4 md:hidden w-max max-w-[calc(100vw-2rem)]" style={{ transform: 'translate3d(-50%, 0, 0)', backfaceVisibility: 'hidden' }}>
+      <nav className="glass rounded-[2rem] px-5 py-2.5 flex items-center gap-4 md:gap-6 shadow-glass-shadow relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
               cn(
-                "relative flex items-center justify-center p-3 rounded-full transition-all duration-300",
+                "relative flex items-center justify-center p-3 rounded-2xl transition-all duration-300 neo-click z-10",
                 isActive 
-                  ? "text-primary bg-primary/10 scale-105 shadow-[0_0_15px_rgba(106,19,36,0.08)]" 
-                  : "text-primary/60 hover:text-primary hover:bg-white/20"
+                  ? "text-primary bg-primary/10 border border-primary/20 shadow-glow-primary scale-105" 
+                  : "text-textMuted hover:text-primary hover:bg-surfaceHover/40"
               )
             }
           >
             {({ isActive }) => (
-              <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+              <item.icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
             )}
           </NavLink>
         ))}

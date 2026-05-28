@@ -72,3 +72,20 @@ export const dataURLtoBlob = (dataurl: string): Blob => {
   }
   return new Blob([u8arr], { type: mime });
 };
+
+/**
+ * Verifica se uma URL representa um arquivo de vídeo.
+ */
+export const isVideoUrl = (url: string): boolean => {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0].toLowerCase();
+  return (
+    cleanUrl.endsWith('.mp4') ||
+    cleanUrl.endsWith('.mov') ||
+    cleanUrl.endsWith('.webm') ||
+    cleanUrl.endsWith('.avi') ||
+    cleanUrl.endsWith('.mkv') ||
+    cleanUrl.endsWith('.3gp') ||
+    cleanUrl.includes('/video/')
+  );
+};
