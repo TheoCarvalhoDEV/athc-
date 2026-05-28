@@ -30,10 +30,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const email = firebaseUser.email || '';
         const isAppAdmin = storage.isAdminEmail(email);
 
-        // Garantir que admins sempre existam na coleção profiles como type admin
-        if (isAppAdmin) {
-          try {
-            const profile = await storage.getProfileById(firebaseUser.uid);
+        // 1. Carrega rápido do localStorage para não travar a UI inicial
+        const localUser = storage.getCurrentUser();
+        if (localUser && localUser.id === firebaseUser.uid) {
+          const currentRole = isAppAdmin ? 'admin' : localUser.role;
+          if (localUser.role !== currentRole) {
+            localUser.role = currentRole;
+            localStorage.setItem('@atche:user', JSON.stringify(localUser));
+          }
+          setUser(localUser);
+          setIsLoading(false);
+        }
+
+        // 2. Busca o perfil atualizado do Firestore em background
+        try {
+          const profile = await storage.getProfileById(firebaseUser.uid);
+
+          // Garantir que admins sempre existam na coleção profiles como type admin
+          if (isAppAdmin) {
             if (profile && profile.type !== 'admin') {
               await storage.updateProfile(firebaseUser.uid, { type: 'admin', name: profile.name || 'Administrador' });
             } else if (!profile) {
@@ -45,30 +59,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 email: email
               });
             }
-          } catch (error) {
-            console.error("Erro ao sincronizar perfil de admin:", error);
           }
-        }
 
-        // Verifica se a sessão do localStorage confere com o firebase
-        const localUser = storage.getCurrentUser();
-        if (localUser && localUser.id === firebaseUser.uid) {
-          const currentRole = isAppAdmin ? 'admin' : localUser.role;
-          if (localUser.role !== currentRole) {
-            localUser.role = currentRole;
-            localStorage.setItem('@atche:user', JSON.stringify(localUser));
-          }
-          setUser(localUser);
-        } else {
-          // Se não tem no localStorage ou o id não bate (acontece no exato momento do login), 
-          // não desloga! Busca o perfil novamente para restaurar a sessão.
-          const email = firebaseUser.email || '';
-          const isAppAdmin = storage.isAdminEmail(email);
-          const profile = await storage.getProfileById(firebaseUser.uid);
-
-          const newUser: User = {
+          const updatedUser: User = {
             id: firebaseUser.uid,
-            name: profile?.name || firebaseUser.displayName || 'Usuário',
+            name: profile?.name || firebaseUser.displayName || localUser?.name || 'Usuário',
             username: email,
             role: profile?.type === 'admin' || isAppAdmin ? 'admin' : (profile && (profile.type as string) !== 'user' ? 'partner' : 'user'),
             mustChangePassword: profile?.mustChangePassword ?? false,
@@ -76,8 +71,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             profileId: profile?.id
           };
 
-          setUser(newUser);
-          localStorage.setItem('@atche:user', JSON.stringify(newUser));
+          // Verifica se houve alguma alteração real nos dados (ex: nova URL da foto)
+          const hasChanges = !localUser ||
+            localUser.name !== updatedUser.name ||
+            localUser.role !== updatedUser.role ||
+            localUser.imageUrl !== updatedUser.imageUrl ||
+            localUser.mustChangePassword !== updatedUser.mustChangePassword;
+
+          if (hasChanges) {
+            setUser(updatedUser);
+            localStorage.setItem('@atche:user', JSON.stringify(updatedUser));
+          }
+        } catch (error) {
+          console.error("Erro ao sincronizar perfil do Firestore:", error);
         }
       } else {
         setUser(null);
