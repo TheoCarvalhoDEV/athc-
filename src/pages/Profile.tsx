@@ -382,11 +382,6 @@ export const Profile = () => {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="badge-open">
-                          Aberto
-                        </span>
-                      </div>
                       <h3 className="font-sans font-bold text-lg text-textDark leading-tight">{event.title}</h3>
                     </div>
                   </div>

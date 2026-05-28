@@ -429,9 +429,6 @@ export const EventDetails = () => {
           )}
         </div>
 
-        <div className="absolute top-24 right-4 px-3 py-1 bg-primary text-textLight text-[10px] font-bold rounded-full shadow-lg z-20 uppercase tracking-widest">
-          {event.publicType}
-        </div>
 
         <div className="relative z-10 px-5 pt-7 pb-40">
           {/* Título com estilo premium e gradiente refinado */}

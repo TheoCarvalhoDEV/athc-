@@ -113,17 +113,46 @@ export const storage = {
   // Events
   getEvents: async (): Promise<EventItem[]> => {
     const querySnapshot = await getDocs(collection(db, 'events'));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EventItem));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      if (data.publicType === 'VIP' || data.publicType === 'vip') {
+        data.publicType = 'Aberto';
+      }
+      return { id: doc.id, ...data } as EventItem;
+    });
   },
 
   getPaginatedEvents: async (lastVisibleDoc: any = null, pageSize: number = 10) => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
     const eventsRef = collection(db, 'events');
     const q = lastVisibleDoc
-      ? query(eventsRef, orderBy('date', 'asc'), startAfter(lastVisibleDoc), limit(pageSize))
-      : query(eventsRef, orderBy('date', 'asc'), limit(pageSize));
+      ? query(
+          eventsRef,
+          where('date', '>=', todayStr),
+          orderBy('date', 'asc'),
+          startAfter(lastVisibleDoc),
+          limit(pageSize)
+        )
+      : query(
+          eventsRef,
+          where('date', '>=', todayStr),
+          orderBy('date', 'asc'),
+          limit(pageSize)
+        );
 
     const querySnapshot = await getDocs(q);
-    const events = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EventItem));
+    const events = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      if (data.publicType === 'VIP' || data.publicType === 'vip') {
+        data.publicType = 'Aberto';
+      }
+      return { id: doc.id, ...data } as EventItem;
+    });
     const lastDoc = querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
 
     return { events, lastDoc };
@@ -145,7 +174,13 @@ export const storage = {
   getAgendaByProfileId: async (profileId: string): Promise<EventItem[]> => {
     const q = query(collection(db, 'events'), where('creatorId', '==', profileId));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EventItem));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      if (data.publicType === 'VIP' || data.publicType === 'vip') {
+        data.publicType = 'Aberto';
+      }
+      return { id: doc.id, ...data } as EventItem;
+    });
   },
 
   // Auth (Sessão mantida localmente para rapidez, sincronizada com Firebase)
@@ -360,3 +395,5 @@ export const storage = {
     }
   }
 };
+
+

@@ -114,14 +114,20 @@
   }
 
   .badge-open {
-    background: rgba(106, 19, 36, 0.15);
-    color: #6A1324;
-    font-weight: 700;
+    background: rgba(245, 236, 225, 0.85); /* Tom creme do background com opacidade */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #6A1324; /* Burgundy primário */
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    font-size: 0.65rem;
-    padding: 3px 10px;
+    font-size: 0.625rem;
+    padding: 3.5px 11px;
     border-radius: 9999px;
+    border: 1px solid rgba(106, 19, 36, 0.15);
+    box-shadow: 0 2px 8px rgba(42, 31, 29, 0.08); /* Sombra suave usando textDark */
+    display: inline-flex;
+    align-items: center;
   }
 
   /* Modal backdrop */
