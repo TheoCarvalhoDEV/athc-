@@ -100,7 +100,7 @@ export const Login = () => {
               className="w-full py-4 text-sm"
               disabled={isLoading}
             >
-              {isLoading ? 'Entrando...' : 'Entrar na Cena'}
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </div>
         </form>
