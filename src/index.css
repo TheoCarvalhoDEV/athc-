@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-background text-textLight font-sans antialiased;
+    @apply bg-background text-textLight font-sans antialiased font-light;
     margin: 0;
     overflow-x: hidden;
     background-color: #FCFAF7;
@@ -142,7 +142,7 @@
   .badge-open {
     background: rgba(16, 185, 129, 0.08);
     color: #0B4F48;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Poppins', sans-serif;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;

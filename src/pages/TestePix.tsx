@@ -77,7 +77,12 @@ export const TestePix = () => {
         pedidoId,
         valor: 1.50,
         cpf: '12345678909', 
-        email: 'comprador_regular@gmail.com' // Email ficticio para testar no ambiente de testes
+        email: 'comprador_regular@gmail.com', // Email ficticio para testar no ambiente de testes
+        clienteNome: 'Comprador de Teste Silva',
+        clienteTelefone: '11988887777',
+        eventId: 'teste_pix_event',
+        eventTitle: 'Ingresso Teste Pix',
+        eventDescription: 'Ingresso de teste para a funcionalidade de pagamento via Pix'
     };
 
     const handlePagarPix = async () => {

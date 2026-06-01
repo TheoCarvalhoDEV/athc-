@@ -43,6 +43,15 @@ export type User = {
   profileId?: string;
 };
 
+export interface TicketType {
+  id: string;
+  name: string;
+  price: number;
+  capacity: number;
+  sold: number;
+  status: 'active' | 'sold_out' | 'paused';
+}
+
 export type EventItem = {
   id: string;
   title: string;
@@ -63,6 +72,8 @@ export type EventItem = {
   whatsappContacts?: { name: string; phone: string }[];
   isTestEvent?: boolean;
   registrationCount?: number;
+  tickets?: TicketType[]; // Múltiplos tipos de ingressos e lotes
+  hasPresence?: boolean;
 };
 
 export type Registration = {
@@ -75,6 +86,8 @@ export type Registration = {
   userCpf?: string;
   paymentStatus?: string;
   timestamp: string;
+  ticketTypeId?: string;   // ID do tipo de ingresso (lote) adquirido
+  ticketTypeName?: string; // Nome do tipo de ingresso (lote) adquirido
 };
 
 export const storage = {

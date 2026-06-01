@@ -8,6 +8,22 @@ import { InstagramIcon } from '../components/InstagramIcon';
 import { useAuth } from '../contexts/AuthContext';
 import { compressImage, dataURLtoBlob } from '../lib/imageUtils';
 
+const formatCPF = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length !== 11) return value;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const formatPhone = (value: string): string => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  } else if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return value;
+};
+
 export const Profile = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -22,6 +38,7 @@ export const Profile = () => {
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'public' | 'test'>('public');
 
   const [editData, setEditData] = useState({
     name: user?.name || '',
@@ -208,7 +225,12 @@ export const Profile = () => {
       const cpf = p.userCpf || '';
       const status = p.paymentStatus || 'Gratuito';
       const date = new Date(p.timestamp).toLocaleString('pt-BR');
-      return `${name};${email};${phone};${cpf};${status};${date}`;
+      
+      // Formata os campos e envolve com ="..." para forçar o Excel a tratá-los como texto de forma segura
+      const formattedPhone = phone ? `="${formatPhone(phone)}"` : '""';
+      const formattedCpf = cpf ? `="${formatCPF(cpf)}"` : '""';
+      
+      return `${name};${email};${formattedPhone};${formattedCpf};${status};${date}`;
     });
     const csvContent = '\uFEFF' + headers.concat(rows).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -238,6 +260,12 @@ export const Profile = () => {
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
+
+  const filteredEvents = myEvents.filter(event => {
+    if (userRole !== 'admin') return true;
+    if (activeTab === 'public') return !event.isTestEvent;
+    return !!event.isTestEvent;
+  });
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background pb-28 relative">
@@ -366,15 +394,51 @@ export const Profile = () => {
       {/* Events Section - only for logged in users */}
       {user && (
         <div className="relative z-10">
-          <div className="profile-el flex items-center gap-2.5 px-5 mb-4">
-            <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
-            <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">
-              {userRole === 'user' ? 'Minha Agenda' : 'Meus Eventos'}
-            </h2>
-          </div>
+          {userRole === 'admin' ? (
+            <div className="profile-el px-5 mb-6 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-glassBorder/40 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
+                  <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">
+                    Painel de Eventos
+                  </h2>
+                </div>
+                
+                <div className="flex bg-surface/40 p-1 rounded-xl border border-glassBorder self-start sm:self-auto">
+                  <button
+                    onClick={() => setActiveTab('public')}
+                    className={`px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                      activeTab === 'public'
+                        ? 'bg-primary text-textDark shadow-glow-primary font-black'
+                        : 'text-textMuted hover:text-textLight'
+                    }`}
+                  >
+                    Públicos ({myEvents.filter(e => !e.isTestEvent).length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('test')}
+                    className={`px-4 py-2 rounded-lg font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                      activeTab === 'test'
+                        ? 'bg-accent text-textDark shadow-glow-accent font-black'
+                        : 'text-textMuted hover:text-textLight'
+                    }`}
+                  >
+                    Testes ({myEvents.filter(e => !!e.isTestEvent).length})
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="profile-el flex items-center gap-2.5 px-5 mb-4">
+              <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
+              <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">
+                {userRole === 'user' ? 'Minha Agenda' : 'Meus Eventos'}
+              </h2>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-5">
-            {myEvents.map((event) => (
+            {filteredEvents.map((event) => (
               <div key={event.id} className="profile-el glass rounded-[2rem] overflow-hidden shadow-glass-shadow border border-glassBorder/80 hover:border-primary/30 transition-all duration-300 text-left">
                 <div 
                   className="p-5 cursor-pointer hover:bg-surfaceHover/15 transition-colors group/card"
@@ -383,9 +447,15 @@ export const Profile = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="glass border border-glassBorder text-accent font-mono text-[9px] px-2.5 py-0.5 rounded-full uppercase font-bold">
-                          Confirmado
-                        </span>
+                        {event.isTestEvent ? (
+                          <span className="bg-accent/15 border border-accent/30 text-accent font-mono text-[9px] px-2.5 py-0.5 rounded-full uppercase font-black shadow-glow-accent/10">
+                            Rolê de Teste (Admin)
+                          </span>
+                        ) : (
+                          <span className="glass border border-glassBorder text-primary font-mono text-[9px] px-2.5 py-0.5 rounded-full uppercase font-bold">
+                            Confirmado
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-serifDisplay font-extrabold text-lg text-textLight leading-tight uppercase tracking-wider">{event.title}</h3>
                     </div>
@@ -462,15 +532,16 @@ export const Profile = () => {
                 </div>
               </div>
             ))}
-            {myEvents.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+            {filteredEvents.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center px-4 col-span-full">
                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Calendar size={24} className="text-primary/40" />
                 </div>
                 <p className="font-sans text-textMuted text-sm mb-4">
-                  {userRole === 'user' 
-                    ? 'Você ainda não confirmou presença em nenhum evento.' 
-                    : 'Você ainda não criou eventos.'}
+                  {userRole === 'admin'
+                    ? (activeTab === 'public' ? 'Nenhum evento público cadastrado.' : 'Nenhum evento de teste cadastrado.')
+                    : (userRole === 'user' ? 'Você ainda não confirmou presença em nenhum evento.' : 'Você ainda não criou eventos.')
+                  }
                 </p>
                 {userRole === 'user' && (
                   <button
@@ -647,90 +718,101 @@ export const Profile = () => {
       {showParticipantsModal && selectedEventForParticipants && (
         <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6" onClick={() => setShowParticipantsModal(false)}>
           <div
-            className="glass rounded-[2rem] p-6 max-w-md w-full relative flex flex-col max-h-[80vh] border border-glassBorder backdrop-blur-3xl"
+            className="glass rounded-[2rem] p-5 md:p-8 max-w-lg md:max-w-2xl w-full relative flex flex-col max-h-[85vh] border border-glassBorder backdrop-blur-3xl shadow-float bg-surface/98"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="absolute top-6 right-6 flex items-center gap-2">
+            <div className="absolute top-5 right-5 md:top-6 md:right-6 flex items-center gap-1.5 md:gap-2">
               <button 
                 onClick={exportToCSV}
                 disabled={participantsList.length === 0 || isLoadingParticipants}
-                className="p-2 bg-surface/50 border border-glassBorder text-accent rounded-xl hover:bg-surfaceHover hover:border-accent/40 active:scale-95 transition-all duration-300 neo-click cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 md:p-2.5 bg-surface/50 border border-glassBorder text-accent rounded-xl hover:bg-surfaceHover hover:border-accent/40 active:scale-95 transition-all duration-300 neo-click cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Exportar CSV"
               >
-                <Download size={16} />
+                <Download className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
               </button>
               <button 
                 title="Fechar"
                 aria-label="Fechar"
                 onClick={() => setShowParticipantsModal(false)} 
-                className="p-2 bg-surface/50 border border-glassBorder rounded-xl text-textLight hover:bg-surfaceHover hover:border-primary/40 active:scale-95 transition-all duration-300 neo-click cursor-pointer"
+                className="p-2 md:p-2.5 bg-surface/50 border border-glassBorder rounded-xl text-textLight hover:bg-surfaceHover hover:border-primary/40 active:scale-95 transition-all duration-300 neo-click cursor-pointer"
               >
-                <X size={16} />
+                <X className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
               </button>
             </div>
 
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 bg-primary/20 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3 shadow-glow-primary">
-                <Users size={24} />
+            <div className="text-center mb-4 md:mb-6">
+              <div className="w-11 h-11 md:w-16 md:h-16 bg-primary/20 border border-primary/20 rounded-xl md:rounded-2xl flex items-center justify-center text-primary mx-auto mb-2 md:mb-3 shadow-glow-primary">
+                <Users className="w-5 h-5 md:w-7 md:h-7" />
               </div>
-              <h3 className="font-display text-lg font-black text-accent uppercase tracking-wider truncate px-10">{selectedEventForParticipants.title}</h3>
-              <p className="text-xs text-textMuted mt-1 font-mono uppercase tracking-wider">Lista de Presenças Confirmadas</p>
+              <h3 className="font-display text-sm md:text-xl font-black text-accent uppercase tracking-wider truncate px-10 md:px-16">{selectedEventForParticipants.title}</h3>
+              <p className="text-[10px] md:text-xs text-textMuted mt-0.5 font-mono uppercase tracking-wider">Lista de Presenças Confirmadas</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide space-y-3 min-h-[160px] max-h-[40vh] text-left">
+            <div className="flex-1 overflow-y-auto pr-1 scrollbar-hide space-y-3.5 min-h-[160px] max-h-[50vh] md:max-h-[58vh] text-left">
               {isLoadingParticipants ? (
-                <div className="flex flex-col items-center justify-center py-12 text-primary gap-2">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="font-mono text-[10px] font-bold animate-pulse uppercase tracking-wider text-textMuted">Carregando lista...</span>
+                <div className="flex flex-col items-center justify-center py-12 md:py-16 text-primary gap-2">
+                  <div className="w-8 h-8 md:w-10 md:h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="font-mono text-[10px] md:text-xs font-bold animate-pulse uppercase tracking-wider text-textMuted">Carregando lista...</span>
                 </div>
               ) : participantsList.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center text-textMuted">
-                  <div className="w-12 h-12 bg-primary/5 border border-glassBorder rounded-2xl flex items-center justify-center mb-3">
-                    <User size={20} className="text-primary/30" />
+                <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center text-textMuted">
+                  <div className="w-10 h-10 md:w-14 md:h-14 bg-primary/5 border border-glassBorder rounded-2xl flex items-center justify-center mb-3">
+                    <User className="w-5 h-5 md:w-6 md:h-6 text-primary/30" />
                   </div>
-                  <p className="font-sans text-sm font-semibold">Nenhum participante ainda</p>
-                  <p className="font-sans text-[11px] text-textMuted mt-0.5">As confirmações aparecerão aqui</p>
+                  <p className="font-sans text-sm md:text-base font-semibold text-textLight">Nenhum participante ainda</p>
+                  <p className="font-sans text-[10px] md:text-xs text-textMuted mt-1">As confirmações aparecerão aqui</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center px-1 mb-2">
-                    <span className="text-[9px] font-mono font-bold text-accent uppercase tracking-wider">Participante</span>
-                    <span className="font-mono text-[9px] text-textLight bg-surface/50 px-2.5 py-0.5 border border-glassBorder rounded-lg font-bold uppercase">{participantsList.length} confirmado(s)</span>
+                <div className="space-y-2.5 md:space-y-3">
+                  <div className="flex justify-between items-center px-1 mb-1 md:mb-2">
+                    <span className="text-[9px] md:text-[10px] font-mono font-bold text-accent uppercase tracking-wider">Participante</span>
+                    <span className="font-mono text-[10px] md:text-xs text-textLight bg-surface/50 px-2 md:px-3 py-0.5 md:py-1 border border-glassBorder rounded-lg font-bold uppercase">{participantsList.length} confirmado(s)</span>
                   </div>
                   {participantsList.map((reg) => {
-                    const isPaid = reg.paymentStatus === 'Pago';
+                    const isPaid = reg.paymentStatus === 'Pago' || reg.paymentStatus?.includes('Pago');
+                    const hasOverbooking = reg.paymentStatus?.includes('Overbooking');
+                    
                     return (
-                      <div key={reg.id} className="p-4 bg-surface/30 border border-glassBorder rounded-2xl space-y-2 text-left shadow-glass-shadow">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded-xl bg-primary/20 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-                              {reg.userName ? reg.userName.charAt(0).toUpperCase() : <User size={14} />}
+                      <div key={reg.id} className="p-4 md:p-5 bg-white/80 border border-glassBorder/40 rounded-2xl space-y-2.5 md:space-y-3.5 text-left shadow-glass-shadow hover:bg-white/95 transition-colors duration-300">
+                        <div className="flex items-center justify-between gap-2.5 md:gap-3">
+                          <div className="flex items-center gap-2.5 md:gap-3.5 min-w-0">
+                            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-primary/20 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs md:text-sm shrink-0 shadow-sm">
+                              {reg.userName ? reg.userName.charAt(0).toUpperCase() : <User className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-sans font-bold text-sm text-textLight truncate leading-snug">{reg.userName || 'Usuário Anônimo'}</p>
-                              <p className="font-mono text-[9px] text-textMuted truncate leading-none mt-1">{reg.userEmail || 'Sem e-mail'}</p>
+                              <p className="font-sans font-bold text-xs md:text-base text-textLight truncate leading-tight">{reg.userName || 'Usuário Anônimo'}</p>
+                              <p className="font-mono text-[10px] md:text-xs text-textMuted truncate mt-0.5 md:mt-1 leading-none">{reg.userEmail || 'Sem e-mail'}</p>
                             </div>
                           </div>
-                          <span className={`px-2.5 py-1 border rounded-lg text-[8px] font-mono font-black uppercase shrink-0 ${
-                            isPaid 
-                              ? 'bg-success/10 text-success border-success/20' 
-                              : 'bg-surface/50 text-textLight border-glassBorder'
+                          <span className={`px-2 md:px-3 py-0.5 md:py-1 border rounded-lg text-[7px] md:text-[9px] font-mono font-black uppercase shrink-0 shadow-sm ${
+                            hasOverbooking
+                              ? 'bg-danger/10 text-danger border-danger/20'
+                              : isPaid 
+                                ? 'bg-success/10 text-success border-success/20' 
+                                : 'bg-surface/50 text-textLight border-glassBorder'
                           }`}>
                             {reg.paymentStatus || 'Gratuito'}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-glassBorder text-[9px] font-mono text-textMuted">
+                        
+                        {reg.ticketTypeName && (
+                          <div className="px-2 md:px-3 py-1 bg-accent/5 border border-accent/10 rounded-lg md:rounded-xl inline-block">
+                            <span className="text-[8px] md:text-[9px] font-mono font-bold text-accent uppercase tracking-wider">Setor/Lote: {reg.ticketTypeName}</span>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-glassBorder text-[10px] md:text-xs font-mono text-textLight">
                           <div>
-                            <span className="text-[8px] font-bold text-primary/70 uppercase block">Telefone</span>
-                            <span>{reg.userPhone || '-'}</span>
+                            <span className="text-[8px] md:text-[9px] font-bold text-primary/70 uppercase block mb-0.5 tracking-wider">Telefone</span>
+                            <span className="text-[10px] md:text-sm font-semibold">{reg.userPhone ? formatPhone(reg.userPhone) : '-'}</span>
                           </div>
                           <div>
-                            <span className="text-[8px] font-bold text-primary/70 uppercase block">CPF</span>
-                            <span>{reg.userCpf || '-'}</span>
+                            <span className="text-[8px] md:text-[9px] font-bold text-primary/70 uppercase block mb-0.5 tracking-wider">CPF</span>
+                            <span className="text-[10px] md:text-sm font-semibold">{reg.userCpf ? formatCPF(reg.userCpf) : '-'}</span>
                           </div>
                         </div>
-                        <div className="text-[8px] font-mono text-textMuted/60 text-right pt-1 uppercase">
-                          Confirmado: {new Date(reg.timestamp).toLocaleDateString('pt-BR')} {new Date(reg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        <div className="text-[8px] md:text-[9px] font-mono text-textMuted/60 text-right pt-1.5 border-t border-glassBorder/30 uppercase tracking-wider">
+                          Confirmado em: {new Date(reg.timestamp).toLocaleDateString('pt-BR')} {new Date(reg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                     );
@@ -739,10 +821,10 @@ export const Profile = () => {
               )}
             </div>
 
-            <div className="pt-4 border-t border-glassBorder mt-4">
+            <div className="pt-3 md:pt-4 border-t border-glassBorder mt-3 md:mt-4">
               <button
                 onClick={() => setShowParticipantsModal(false)}
-                className="w-full py-3.5 rounded-xl bg-accent text-textDark border border-accent/20 font-display font-black text-xs uppercase tracking-wider shadow-glow-accent hover:shadow-glow-accent-lg hover:-translate-y-0.5 active:scale-95 transition-all duration-300 neo-click cursor-pointer"
+                className="w-full py-3 md:py-4 rounded-xl bg-accent text-textDark border border-accent/20 font-display font-black text-xs md:text-sm uppercase tracking-wider shadow-glow-accent hover:shadow-glow-accent-lg hover:-translate-y-0.5 active:scale-95 transition-all duration-300 neo-click cursor-pointer"
               >
                 Voltar
               </button>

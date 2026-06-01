@@ -32,7 +32,30 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         throw new HttpsError('invalid-argument', 'Dados incompletos para gerar o Pix.');
     }
 
+    const eventId = data.eventId || "ingresso";
+    const itensSelecionados = data.itensSelecionados || [];
+
     try {
+        // Validação preventiva de estoque antes de gerar a cobrança Pix
+        const eventRef = db.collection('events').doc(eventId);
+        const eventDoc = await eventRef.get();
+        if (!eventDoc.exists) {
+            throw new HttpsError('not-found', 'Evento correspondente não foi encontrado.');
+        }
+        const eventData = eventDoc.data();
+        if (eventData.tickets && itensSelecionados.length > 0) {
+            const tickets = eventData.tickets || [];
+            for (const item of itensSelecionados) {
+                const ticketOriginal = tickets.find(t => t.id === item.id);
+                if (ticketOriginal) {
+                    const available = ticketOriginal.capacity - (ticketOriginal.sold || 0);
+                    if (Number(item.quantity) > available) {
+                        throw new HttpsError('failed-precondition', `Desculpe, o ingresso "${ticketOriginal.name}" esgotou ou não possui a quantidade solicitada disponível.`);
+                    }
+                }
+            }
+        }
+
         const idempotencyKey = `${pedidoId}_${Date.now()}`;
 
         // Extrai e formata o nome do comprador
@@ -54,15 +77,72 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         }
 
         const cleanCpf = (cpf || "").replace(/\D/g, "") || "00000000000";
+        const docType = cleanCpf.length === 14 ? 'CNPJ' : 'CPF';
+
+        // Dados opcionais de endereço de cobrança enviados pelo frontend, com fallback padrão
+        const payerAddress = data.payerAddress || {};
+        const zipCode = (payerAddress.zipCode || '01001000').replace(/\D/g, "") || '01001000';
+        const streetName = payerAddress.streetName || 'Praca da Se';
+        const streetNumber = payerAddress.streetNumber ? Number(payerAddress.streetNumber) : 1;
+        const neighborhood = payerAddress.neighborhood || 'Se';
+        const city = payerAddress.city || 'Sao Paulo';
+        const federalUnit = payerAddress.federalUnit || 'SP';
+
         const eventId = data.eventId || "ingresso";
         const eventTitle = data.eventTitle || "Ingresso Atchêi";
         const eventDescription = data.eventDescription || `Ingresso para o evento ID ${eventId}`;
 
+        // Gerar statement_descriptor dinâmico e seguro de no máximo 16 caracteres alfanuméricos
+        const cleanTitleForDescriptor = eventTitle
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+            .replace(/[^a-zA-Z0-9\s]/g, "")  // Remove caracteres especiais exceto espaços
+            .replace(/\s+/g, "")             // Remove espaços
+            .toUpperCase();
+        const statementDescriptor = `ATCHEI*${cleanTitleForDescriptor}`.substring(0, 16);
+
+        // Processar múltiplos ingressos (VIP, Camarote, etc.) e lotes selecionados
+        const itensSelecionados = data.itensSelecionados || [];
+        let valorTotal = Number(valor);
+        let itemsMP = [];
+
+        if (itensSelecionados.length > 0) {
+            let somaValores = 0;
+            for (const item of itensSelecionados) {
+                const qty = Number(item.quantity) || 0;
+                const price = Number(item.price) || 0;
+                somaValores += price * qty;
+
+                itemsMP.push({
+                    id: item.id,
+                    title: (item.name || "Ingresso").substring(0, 30),
+                    description: `Ingresso do lote ${item.name}`.substring(0, 60),
+                    category_id: 'tickets',
+                    quantity: qty,
+                    unit_price: price
+                });
+            }
+            if (somaValores > 0) {
+                valorTotal = somaValores;
+            }
+        } else {
+            // Fallback padrão se não forem enviados itens múltiplos (fluxo de lote único ou teste)
+            itemsMP.push({
+                id: eventId,
+                title: eventTitle.substring(0, 30),
+                description: eventDescription.substring(0, 60),
+                category_id: 'tickets',
+                quantity: 1,
+                unit_price: valorTotal
+            });
+        }
+
         const body = {
-            transaction_amount: Number(valor),
+            transaction_amount: valorTotal,
             description: `Ingresso Atchêi - Pedido ${pedidoId}`.substring(0, 60),
             payment_method_id: 'pix',
             external_reference: pedidoId,
+            statement_descriptor: statementDescriptor,
             payer: {
                 email: email,
                 first_name: firstName,
@@ -72,29 +152,20 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
                     number: phoneNumber
                 },
                 identification: {
-                    type: 'CPF',
+                    type: docType,
                     number: cleanCpf
                 },
                 address: {
-                    zip_code: '01001000',
-                    street_name: 'Praca da Se',
-                    street_number: '1',
-                    neighborhood: 'Se',
-                    city: 'Sao Paulo',
-                    federal_unit: 'SP'
+                    zip_code: zipCode,
+                    street_name: streetName,
+                    street_number: streetNumber,
+                    neighborhood: neighborhood,
+                    city: city,
+                    federal_unit: federalUnit
                 }
             },
             additional_info: {
-                items: [
-                    {
-                        id: eventId,
-                        title: eventTitle.substring(0, 30),
-                        description: eventDescription.substring(0, 60),
-                        category_id: 'tickets',
-                        quantity: 1,
-                        unit_price: Number(valor)
-                    }
-                ],
+                items: itemsMP,
                 payer: {
                     first_name: firstName,
                     last_name: lastName,
@@ -103,12 +174,17 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
                         number: phoneNumber
                     },
                     address: {
-                        zip_code: '01001000',
-                        street_name: 'Praca da Se',
-                        street_number: '1'
+                        zip_code: zipCode,
+                        street_name: streetName,
+                        street_number: streetNumber
                     },
                     registration_date: new Date().toISOString()
                 }
+            },
+            metadata: {
+                pedido_id: pedidoId,
+                event_id: eventId,
+                user_id: data.userId || ''
             },
             notification_url: 'https://webhookmercadopago-dfjumiogoq-uc.a.run.app'
         };
@@ -128,7 +204,7 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
 
         await db.collection('pedidos').doc(pedidoId).set({
             id: pedidoId,
-            valor: Number(valor),
+            valor: valorTotal,
             clienteEmail: email,
             clienteNome: clienteNome,
             clienteTelefone: clienteTelefone,
@@ -136,6 +212,7 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             eventId: eventId,
             userId: data.userId || '',
             status: 'pendente',
+            itensComprados: itensSelecionados, // Grava os ingressos do lote para atualizar estoque na aprovação
             mercadoPagoPaymentId: mpResponse.id,
             dataCriacao: FieldValue.serverTimestamp(),
         }, { merge: true });
@@ -194,26 +271,131 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
                 return;
             }
             
-            if (statusReal === 'approved' && dadosPedido.status !== 'pago') {
-                await pedidoDoc.ref.update({
-                    status: 'pago',
-                    dataPagamento: FieldValue.serverTimestamp()
-                });
-                
-                const registrationId = `reg_${dadosPedido.eventId}_${dadosPedido.userId}_${Date.now()}`;
-                await db.collection('registrations').doc(registrationId).set({
-                    id: registrationId,
-                    eventId: dadosPedido.eventId || '',
-                    userId: dadosPedido.userId || '',
-                    userName: dadosPedido.clienteNome || '',
-                    userEmail: dadosPedido.clienteEmail || '',
-                    userPhone: dadosPedido.clienteTelefone || '',
-                    userCpf: dadosPedido.clienteCpf || '',
-                    paymentStatus: 'Pago',
-                    timestamp: new Date().toISOString()
-                });
-
-                logger.info(`Sucesso: Pedido ${pedidoDoc.id} foi pago! Inscrição ${registrationId} criada.`);
+            let isOverbooked = false;
+            let statusPedidoAtual = '';
+            
+            if (statusReal === 'approved') {
+                // Toda a operação de aprovação ocorre de forma atômica dentro de uma transação
+                try {
+                    await db.runTransaction(async (transaction) => {
+                        const pedidoRef = pedidosRef.doc(pedidoDoc.id);
+                        const currentPedidoDoc = await transaction.get(pedidoRef);
+                        
+                        if (!currentPedidoDoc.exists) {
+                            throw new Error("Pedido não encontrado na transação.");
+                        }
+                        
+                        const currentPedidoData = currentPedidoDoc.data();
+                        statusPedidoAtual = currentPedidoData.status;
+                        
+                        // Se o pedido já estiver marcado como pago, aborta a transação para evitar duplicações
+                        if (statusPedidoAtual === 'pago') {
+                            logger.info(`Pedido ${pedidoDoc.id} já foi pago anteriormente. Abortando transação redundante.`);
+                            return;
+                        }
+                        
+                        // 1. Atualizar o pedido para Pago
+                        transaction.update(pedidoRef, {
+                            status: 'pago',
+                            dataPagamento: FieldValue.serverTimestamp()
+                        });
+                        
+                        const itensComprados = currentPedidoData.itensComprados || [];
+                        
+                        // 2. Decrementar estoque dos ingressos correspondentes no evento
+                        if (currentPedidoData.eventId && itensComprados.length > 0) {
+                            const eventRef = db.collection('events').doc(currentPedidoData.eventId);
+                            const eventDoc = await transaction.get(eventRef);
+                            
+                            if (eventDoc.exists) {
+                                const eventData = eventDoc.data();
+                                const tickets = eventData.tickets || [];
+                                
+                                // Mapear as compras de cada ticketId neste pedido
+                                const vendasMap = {};
+                                for (const item of itensComprados) {
+                                    vendasMap[item.id] = (vendasMap[item.id] || 0) + (Number(item.quantity) || 0);
+                                }
+                                
+                                let alterado = false;
+                                const updatedTickets = tickets.map(ticket => {
+                                    const qtdVendida = vendasMap[ticket.id];
+                                    if (qtdVendida) {
+                                        alterado = true;
+                                        const novoSold = (ticket.sold || 0) + qtdVendida;
+                                        if (novoSold > ticket.capacity) {
+                                            isOverbooked = true; // Houve estouro de estoque (venda simultânea)
+                                        }
+                                        const novoStatus = novoSold >= ticket.capacity ? 'sold_out' : ticket.status;
+                                        return {
+                                            ...ticket,
+                                            sold: novoSold,
+                                            status: novoStatus
+                                        };
+                                    }
+                                    return ticket;
+                                });
+                                
+                                if (alterado) {
+                                    transaction.update(eventRef, { tickets: updatedTickets });
+                                    logger.info(`Estoque atualizado no evento ${currentPedidoData.eventId} para os tickets:`, Object.keys(vendasMap));
+                                }
+                            }
+                        }
+                        
+                        if (isOverbooked) {
+                            transaction.update(pedidoRef, { overbooked: true });
+                            logger.warn(`Alerta de Overbooking detectado no pedido ${pedidoDoc.id}`);
+                        }
+                        
+                        // 3. Criar inscrições na coleção registrations
+                        // O ID da inscrição agora é 100% determinístico e idempotente (usa o id do pedido e o índice), eliminando duplicações
+                        if (itensComprados.length > 0) {
+                            for (const item of itensComprados) {
+                                const qty = Number(item.quantity) || 0;
+                                for (let q = 0; q < qty; q++) {
+                                    const registrationId = `reg_${currentPedidoData.eventId}_${currentPedidoData.userId}_${item.id}_${q}_${pedidoDoc.id}`;
+                                    const regRef = db.collection('registrations').doc(registrationId);
+                                    transaction.set(regRef, {
+                                        id: registrationId,
+                                        eventId: currentPedidoData.eventId || '',
+                                        userId: currentPedidoData.userId || '',
+                                        userName: currentPedidoData.clienteNome || '',
+                                        userEmail: currentPedidoData.clienteEmail || '',
+                                        userPhone: currentPedidoData.clienteTelefone || '',
+                                        userCpf: currentPedidoData.clienteCpf || '',
+                                        paymentStatus: isOverbooked ? 'Overbooking (Pago)' : 'Pago',
+                                        overbooked: isOverbooked,
+                                        ticketTypeId: item.id,
+                                        ticketTypeName: item.name,
+                                        timestamp: new Date().toISOString()
+                                    });
+                                }
+                            }
+                            logger.info(`Transação: Pedido ${pedidoDoc.id} processado! Inscrições criadas.`);
+                        } else {
+                            const registrationId = `reg_${currentPedidoData.eventId}_${currentPedidoData.userId}_${pedidoDoc.id}`;
+                            const regRef = db.collection('registrations').doc(registrationId);
+                            transaction.set(regRef, {
+                                id: registrationId,
+                                eventId: currentPedidoData.eventId || '',
+                                userId: currentPedidoData.userId || '',
+                                userName: currentPedidoData.clienteNome || '',
+                                userEmail: currentPedidoData.clienteEmail || '',
+                                userPhone: currentPedidoData.clienteTelefone || '',
+                                userCpf: currentPedidoData.clienteCpf || '',
+                                paymentStatus: isOverbooked ? 'Overbooking (Pago)' : 'Pago',
+                                overbooked: isOverbooked,
+                                timestamp: new Date().toISOString()
+                            });
+                            logger.info(`Transação: Pedido ${pedidoDoc.id} processado! Inscrição simples criada.`);
+                        }
+                    });
+                } catch (transError) {
+                    logger.error("Erro na transação de aprovação do pedido:", transError);
+                    res.status(500).send('Erro na transação do banco.');
+                    return;
+                }
             }
 
             res.status(200).send('Webhook processado.');

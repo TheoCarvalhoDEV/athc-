@@ -382,7 +382,6 @@ export const Feed = () => {
             ))}
             
             {/* Paginação removida */}
-
             {filteredEvents.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 col-span-full">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

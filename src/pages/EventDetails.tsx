@@ -4,7 +4,39 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, AppProfile, Registration } from '../lib/storage';
 import { Button } from '../components/ui/Button';
-import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode, Mail, Phone, CreditCard } from 'lucide-react';
+
+const formatCPF = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const isValidCPF = (cpf: string): boolean => {
+  const cleanCpf = cpf.replace(/\D/g, '');
+  if (cleanCpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
+  
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
+  }
+  let rest = sum % 11;
+  let digit1 = rest < 2 ? 0 : 11 - rest;
+  if (parseInt(cleanCpf.charAt(9)) !== digit1) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
+  }
+  rest = sum % 11;
+  let digit2 = rest < 2 ? 0 : 11 - rest;
+  if (parseInt(cleanCpf.charAt(10)) !== digit2) return false;
+  
+  return true;
+};
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import gsap from 'gsap';
@@ -34,6 +66,53 @@ export const EventDetails = () => {
   const [loadingPix, setLoadingPix] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<{ qr_code: string, qr_code_base64: string } | null>(null);
   const [pedidoId, setPedidoId] = useState('');
+  const [pixStep, setPixStep] = useState<'select_tickets' | 'buyer_info' | 'qr_code' | 'success'>('buyer_info');
+  const [selectedTickets, setSelectedTickets] = useState<{ [key: string]: number }>({});
+  
+  const handleOpenPixModal = () => {
+    if (event?.tickets && event.tickets.length > 0) {
+      setPixStep('select_tickets');
+      const initial: { [key: string]: number } = {};
+      event.tickets.forEach(t => {
+        initial[t.id] = 0;
+      });
+      setSelectedTickets(initial);
+    } else {
+      setPixStep('buyer_info');
+    }
+    setQrCodeData(null);
+    setShowPixModal(true);
+  };
+
+  const getSelectedTicketsTotal = () => {
+    if (!event?.tickets || event.tickets.length === 0) {
+      return Number(event?.pixTicketPrice || 0);
+    }
+    return event.tickets.reduce((sum, t) => sum + (t.price * (selectedTickets[t.id] || 0)), 0);
+  };
+
+  const getSelectedTicketsCount = () => {
+    if (!event?.tickets || event.tickets.length === 0) return 0;
+    return Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
+  };
+
+  const handleUpdateTicketQty = (ticketId: string, delta: number) => {
+    setSelectedTickets(prev => {
+      const current = prev[ticketId] || 0;
+      const next = Math.max(0, current + delta);
+      
+      const tkt = event?.tickets?.find(t => t.id === ticketId);
+      if (tkt && tkt.capacity !== undefined) {
+        const available = tkt.capacity - (tkt.sold || 0);
+        if (next > available) {
+          alert("Desculpe, restam apenas " + available + " ingressos disponíveis para " + tkt.name + ".");
+          return prev;
+        }
+      }
+      
+      return { ...prev, [ticketId]: next };
+    });
+  };
   
   // BUYER STATES
   const [buyerName, setBuyerName] = useState(currentUser?.name || '');
@@ -126,12 +205,25 @@ export const EventDetails = () => {
         if (docSnap.exists()) {
             const dados = docSnap.data();
             if (dados.status === 'pago') {
-                // Fechar modal Pix e garantir vaga
-                setShowPixModal(false);
+                // Ativar transição de sucesso premium dentro do próprio modal
+                setPixStep('success');
                 setIsRegistered(true);
-                setShowModal(true);
+                
+                // Dispara os confetes virtuais
+                setTimeout(() => {
+                  createConfettiParticles();
+                }, 100);
+
+                // Fecha o modal suavemente e abre o modal principal de sucesso após 4.5 segundos
+                setTimeout(() => {
+                    setShowPixModal(false);
+                    setQrCodeData(null);
+                    setShowModal(true);
+                }, 4500);
             }
         }
+    }, (error) => {
+        console.error("Erro ao monitorar o pagamento do pedido:", error);
     });
 
     return () => unsubscribe();
@@ -144,6 +236,11 @@ export const EventDetails = () => {
         alert("Por favor, preencha todos os campos do formulário para continuar.");
         return;
     }
+
+    if (!isValidCPF(buyerCpf)) {
+        alert("Por favor, informe um CPF válido.");
+        return;
+    }
     
     setLoadingPix(true);
     const buyerId = currentUser ? currentUser.id : `guest-${Date.now()}`;
@@ -151,16 +248,26 @@ export const EventDetails = () => {
     const novoPedidoId = `PIX-${event.id}-${buyerId}-${Date.now()}`;
     setPedidoId(novoPedidoId);
     
-    // Captura o Device Session ID gerado pelo script de segurança do Mercado Pago
-    // Captura o Device Session ID por ordem de prioridade (variável global -> input oculto -> vazio)
     const deviceId = (window as any).MP_DEVICE_SESSION_ID || 
                      (document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement)?.value || 
                      (document.getElementById('deviceId') as HTMLInputElement)?.value || 
                      '';
     
+    // Mapear os ingressos selecionados
+    const itensSelecionados = (event.tickets || [])
+      .filter(t => (selectedTickets[t.id] || 0) > 0)
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        price: t.price,
+        quantity: selectedTickets[t.id]
+      }));
+
+    const valorTotal = getSelectedTicketsTotal();
+
     const pedido = {
         pedidoId: novoPedidoId,
-        valor: Number(event.pixTicketPrice || 0),
+        valor: valorTotal,
         cpf: buyerCpf.replace(/\D/g, ''),
         email: buyerEmail,
         clienteNome: buyerName,
@@ -169,7 +276,8 @@ export const EventDetails = () => {
         eventTitle: event.title,
         eventDescription: event.description || '',
         userId: buyerId,
-        deviceId: deviceId
+        deviceId: deviceId,
+        itensSelecionados: itensSelecionados
     };
 
     try {
@@ -181,11 +289,59 @@ export const EventDetails = () => {
             qr_code: data.qr_code,
             qr_code_base64: data.qr_code_base64
         });
+        setPixStep('qr_code');
     } catch (error: any) {
         console.error("Erro ao gerar Pix:", error);
         alert("Erro ao processar: " + (error.message || "Verifique o console"));
     } finally {
         setLoadingPix(false);
+    }
+  };
+
+  useEffect(() => {
+    if (pixStep === 'success') {
+      gsap.fromTo('.success-circle', 
+        { scale: 0.2, rotation: -60, opacity: 0 },
+        { scale: 1, rotation: 0, opacity: 1, duration: 0.9, ease: 'back.out(2)' }
+      );
+      gsap.fromTo('.success-title', 
+        { y: 25, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, delay: 0.3, ease: 'power3.out' }
+      );
+      gsap.fromTo('.success-text', 
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, delay: 0.5, ease: 'power3.out' }
+      );
+      gsap.fromTo('.success-bar', 
+        { width: '0%' },
+        { width: '100%', duration: 4, ease: 'linear', delay: 0.2 }
+      );
+    }
+  }, [pixStep]);
+
+  const createConfettiParticles = () => {
+    const colors = ['#FFC107', '#E91E63', '#9C27B0', '#00BCD4', '#4CAF50', '#FF5722', '#FFEB3B'];
+    const container = document.querySelector('.success-anim');
+    if (!container) return;
+
+    for (let i = 0; i < 50; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'absolute w-2.5 h-2.5 rounded-full pointer-events-none z-50';
+      particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      particle.style.left = `${Math.random() * 100}%`;
+      particle.style.top = `-10px`;
+      container.appendChild(particle);
+
+      gsap.to(particle, {
+        x: (Math.random() - 0.5) * 200,
+        y: Math.random() * 300 + 200,
+        rotation: Math.random() * 720,
+        opacity: 0,
+        scale: Math.random() * 0.5 + 0.5,
+        duration: Math.random() * 2.5 + 2,
+        ease: 'power2.out',
+        onComplete: () => particle.remove()
+      });
     }
   };
 
@@ -365,7 +521,7 @@ export const EventDetails = () => {
             
             {/* Image Section */}
             <div
-              className="relative h-80 md:h-[420px] w-full overflow-hidden rounded-[2.5rem] border border-glassBorder shadow-glass-shadow group"
+              className="relative h-80 md:h-[420px] w-full overflow-hidden rounded-[2.5rem] shadow-glass-shadow group"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -376,7 +532,7 @@ export const EventDetails = () => {
                   title="Voltar"
                   aria-label="Voltar"
                   onClick={() => navigate(-1)}
-                  className="w-10 h-10 bg-white/75 hover:bg-white border border-glassBorder text-textLight rounded-2xl flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer backdrop-blur-md"
+                  className="w-10 h-10 bg-white/75 hover:bg-white text-textLight rounded-2xl flex items-center justify-center shadow-glass-shadow hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer backdrop-blur-md"
                 >
                   <ArrowLeft size={18} />
                 </button>
@@ -385,7 +541,7 @@ export const EventDetails = () => {
                   title="Compartilhar"
                   aria-label="Compartilhar"
                   onClick={handleShare}
-                  className="w-10 h-10 bg-white/75 hover:bg-white border border-glassBorder text-textLight rounded-2xl flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer backdrop-blur-md"
+                  className="w-10 h-10 bg-white/75 hover:bg-white text-textLight rounded-2xl flex items-center justify-center shadow-glass-shadow hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer backdrop-blur-md"
                 >
                   <Share2 size={18} />
                 </button>
@@ -424,7 +580,7 @@ export const EventDetails = () => {
                   <button
                     type="button"
                     onClick={handlePrevMedia}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-surface/60 border border-glassBorder rounded-xl flex items-center justify-center text-textLight shadow-sm hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-surface/60 rounded-xl flex items-center justify-center text-textLight shadow-sm hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
                     aria-label="Mídia anterior"
                   >
                     <ChevronLeft size={14} />
@@ -432,7 +588,7 @@ export const EventDetails = () => {
                   <button
                     type="button"
                     onClick={handleNextMedia}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-surface/60 border border-glassBorder rounded-xl flex items-center justify-center text-textLight shadow-sm hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-surface/60 rounded-xl flex items-center justify-center text-textLight shadow-sm hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer hidden md:flex"
                     aria-label="Próxima mídia"
                   >
                     <ChevronRight size={14} />
@@ -452,7 +608,7 @@ export const EventDetails = () => {
                   </div>
 
                   {/* Counter Badge */}
-                  <div className="absolute bottom-6 right-6 bg-surface/60 border border-glassBorder rounded-xl px-2.5 py-1 text-[10px] font-mono font-bold text-textLight z-20 pointer-events-none backdrop-blur-md">
+                  <div className="absolute bottom-6 right-6 bg-surface/60 rounded-xl px-2.5 py-1 text-[10px] font-mono font-bold text-textLight z-20 pointer-events-none backdrop-blur-md">
                     {currentMediaIndex + 1} / {mediaList.length}
                   </div>
                 </>
@@ -461,7 +617,7 @@ export const EventDetails = () => {
 
             {/* Public Type Tag */}
             <div className="flex">
-              <span className="bg-accent/15 text-accent text-[10px] font-mono font-bold border border-accent/25 px-3.5 py-1.5 rounded-full uppercase tracking-wider backdrop-blur-md">
+              <span className="bg-accent/15 text-accent text-[10px] font-mono font-bold border-none px-3.5 py-1.5 rounded-full uppercase tracking-wider backdrop-blur-md">
                 Acesso {event.publicType}
               </span>
             </div>
@@ -480,7 +636,7 @@ export const EventDetails = () => {
                 <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
                 <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">Sobre o Evento</h2>
               </div>
-              <div className="relative overflow-hidden glass p-6 rounded-[2rem] shadow-glass-shadow border-glassBorder/60 bg-gradient-to-br from-white/60 to-white/30">
+              <div className="relative overflow-hidden glass p-6 rounded-[2rem] shadow-glass-shadow border-none bg-gradient-to-br from-white/60 to-white/30">
                 <p className="text-textLight/80 text-sm leading-relaxed whitespace-pre-wrap font-sans relative z-10">
                   {event.description}
                 </p>
@@ -493,9 +649,9 @@ export const EventDetails = () => {
                 <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
                 <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">Localização</h2>
               </div>
-              <div className="glass rounded-[2rem] p-6 shadow-glass-shadow border-glassBorder/60">
+              <div className="glass border-none rounded-[2rem] p-6 shadow-glass-shadow">
                 <div className="flex items-start gap-4 mb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-accent/15 text-accent border border-accent/20 flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-2xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
                     <MapPin size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -506,7 +662,7 @@ export const EventDetails = () => {
 
                 <button
                   onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.address || event.location)}`, '_blank')}
-                  className="w-full bg-surface/60 hover:bg-surface/85 text-textLight border border-glassBorder hover:border-primary/40 font-display font-black text-xs py-4 rounded-xl flex items-center justify-center gap-2 shadow-glass-shadow hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click cursor-pointer"
+                  className="w-full bg-surface/60 hover:bg-surface/85 text-textLight font-display font-black text-xs py-4 rounded-xl flex items-center justify-center gap-2 shadow-glass-shadow hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click cursor-pointer"
                 >
                   📍 Ver Rota no Google Maps
                 </button>
@@ -520,7 +676,7 @@ export const EventDetails = () => {
             
             {/* Ticket Actions Card (Floating on Mobile, Static card in Right Column on Desktop) */}
             <div className="fixed bottom-6 left-0 right-0 px-5 z-40 anim-up max-w-2xl mx-auto lg:relative lg:bottom-0 lg:px-0 lg:max-w-none lg:z-10">
-              <div className="glass rounded-[2.5rem] p-6 flex flex-col gap-4 shadow-float lg:shadow-glass-shadow backdrop-blur-xl relative overflow-hidden border border-glassBorder bg-gradient-to-br from-white/90 to-white/50">
+              <div className="glass border-none rounded-[2.5rem] p-6 flex flex-col gap-4 shadow-float lg:shadow-glass-shadow backdrop-blur-xl relative overflow-hidden bg-gradient-to-br from-white/90 to-white/50">
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
                 
                 {/* Info do Ingresso */}
@@ -541,7 +697,7 @@ export const EventDetails = () => {
                       })()}
                     </span>
                   </div>
-                  <span className="glass border border-glassBorder text-accent font-mono text-[9px] px-3 py-1.5 rounded-full uppercase font-bold backdrop-blur-md shadow-sm">
+                  <span className="bg-accent/15 text-accent font-mono text-[9px] px-3 py-1.5 rounded-full uppercase font-bold backdrop-blur-md shadow-sm">
                     1º Lote Disponível
                   </span>
                 </div>
@@ -557,15 +713,15 @@ export const EventDetails = () => {
                     <>
                       <button
                         onClick={() => setShowFreeTicketModal(true)}
-                        className="w-full rounded-2xl py-4 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border cursor-pointer neo-click border-primary/20 bg-gradient-to-r from-primary to-primaryHover text-textDark shadow-glow-primary hover:shadow-glow-primary-lg"
+                        className="w-full rounded-2xl py-4 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border-0 cursor-pointer neo-click bg-gradient-to-r from-primary to-primaryHover text-textDark shadow-glow-primary hover:shadow-glow-primary-lg"
                       >
                         Confirmar Presença
                       </button>
 
                       {event.hasPixTickets && currentUser?.role === 'admin' ? (
                         <button
-                          onClick={() => setShowPixModal(true)}
-                          className="rounded-2xl px-5 py-4 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border cursor-pointer neo-click border-success/20 bg-success text-textDark shadow-glow-success hover:shadow-glow-success-lg"
+                          onClick={handleOpenPixModal}
+                          className="rounded-2xl px-5 py-4 shadow-md flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border-0 cursor-pointer neo-click bg-success text-textDark shadow-glow-success hover:shadow-glow-success-lg"
                         >
                           <QrCode size={16} />
                           <span>Comprar Pix</span>
@@ -587,7 +743,7 @@ export const EventDetails = () => {
                                 window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
                               }
                             }}
-                            className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border border-success/20 bg-success text-textDark shadow-glow-success hover:shadow-glow-success-lg cursor-pointer neo-click"
+                            className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2 transition-all duration-300 font-display font-black text-sm border-0 bg-success text-textDark shadow-glow-success hover:shadow-glow-success-lg cursor-pointer neo-click"
                           >
                             <Ticket size={18} />
                             <div className="flex flex-col items-start leading-none text-left">
@@ -604,13 +760,13 @@ export const EventDetails = () => {
             </div>
 
             {/* Consolidado de Informações do Rolê (Data, Hora, Organizador e GPS Curto) */}
-            <div className="glass rounded-[2.5rem] p-6 shadow-glass-shadow border border-glassBorder bg-gradient-to-br from-white/90 to-white/50 text-left space-y-5">
+            <div className="glass border-none rounded-[2.5rem] p-6 shadow-glass-shadow bg-gradient-to-br from-white/90 to-white/50 text-left space-y-5">
               <span className="font-mono text-[9px] text-accent uppercase tracking-widest font-bold block mb-1">
                 Informações do Rolê
               </span>
               
               {/* Grid de Data e Horário */}
-              <div className="grid grid-cols-2 gap-4 pb-4 border-b border-glassBorder/60">
+              <div className="grid grid-cols-2 gap-4 pb-4">
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2 text-primary">
                     <Calendar size={13} />
@@ -630,10 +786,10 @@ export const EventDetails = () => {
 
               {/* Bloco do Organizador */}
               {organizer && (
-                <div className="flex items-center justify-between gap-3 pb-4 border-b border-glassBorder/60">
+                <div className="flex items-center justify-between gap-3 pb-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-xl bg-surface/85 border border-glassBorder overflow-hidden flex items-center justify-center text-primary">
+                      <div className="w-10 h-10 rounded-xl bg-surface/85 overflow-hidden flex items-center justify-center text-primary">
                         {organizer.imageUrl ? (
                           <img src={organizer.imageUrl} className="w-full h-full object-cover" alt={organizer.name} />
                         ) : (
@@ -651,7 +807,7 @@ export const EventDetails = () => {
                   </div>
                   <button
                     onClick={() => navigate(`/agenda/${organizer.id}`)}
-                    className="bg-gradient-to-r from-primary to-primaryHover text-textDark border border-primary/20 font-display font-black text-[9px] px-3.5 py-2 rounded-xl shadow-glow-primary transition-all duration-300 neo-click hover:shadow-glow-primary-lg cursor-pointer shrink-0 uppercase tracking-wider"
+                    className="bg-gradient-to-r from-primary to-primaryHover text-textDark font-display font-black text-[9px] px-3.5 py-2 rounded-xl shadow-glow-primary transition-all duration-300 neo-click hover:shadow-glow-primary-lg cursor-pointer shrink-0 uppercase tracking-wider"
                   >
                     Ver Perfil
                   </button>
@@ -669,7 +825,7 @@ export const EventDetails = () => {
                 </div>
                 <button
                   onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.address || event.location)}`, '_blank')}
-                  className="w-full bg-surface/70 hover:bg-surface/90 text-textLight border border-glassBorder hover:border-primary/30 font-display font-black text-[10px] py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all duration-300 neo-click cursor-pointer uppercase tracking-wider"
+                  className="w-full bg-surface/70 hover:bg-surface/90 text-textLight font-display font-black text-[10px] py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all duration-300 neo-click cursor-pointer uppercase tracking-wider"
                 >
                   📍 Traçar Rota no GPS
                 </button>
@@ -682,20 +838,23 @@ export const EventDetails = () => {
 
       </div>
 
-      {/* Success Modal */}
+            {/* Success Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-2xl">
-            <div className="w-16 h-16 bg-success/10 text-success border border-success/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-glow-success">
-              <CheckCircle2 size={32} />
+          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+            <div className="w-20 h-20 bg-success/15 text-success rounded-full flex items-center justify-center mx-auto mb-6 shadow-glow-success border border-success/20">
+              <CheckCircle2 size={38} className="animate-pulse" />
             </div>
-            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-2">Presença Confirmada!</h3>
-            <p className="text-sm text-textMuted mb-6">
-              Sua vaga para {event.title} foi garantida. Aproveite o evento!
+            <h3 className="font-display text-2xl font-black text-success uppercase tracking-wider mb-2">Presença Confirmada!</h3>
+            <p className="text-sm text-textLight/90 mb-8 leading-relaxed max-w-[260px] mx-auto">
+              Sua vaga para <strong className="text-primary">{event.title}</strong> foi garantida com sucesso. Aproveite o evento!
             </p>
-            <Button onClick={() => setShowModal(false)} className="w-full rounded-xl">
+            <button 
+              onClick={() => setShowModal(false)} 
+              className="w-full bg-gradient-to-r from-success to-primaryHover text-textDark border-0 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-xs uppercase tracking-wider neo-click"
+            >
               Entendido
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -703,12 +862,16 @@ export const EventDetails = () => {
       {/* Contacts Modal */}
       {showContactsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center max-h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-2xl">
-            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-2">Comprar Ingresso</h3>
-            <p className="text-xs text-textMuted mb-6">
+          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm w-full text-center max-h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+            <button onClick={() => setShowContactsModal(false)} className="absolute top-5 right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
+              <span className="sr-only">Fechar</span>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-1 mt-2">Comprar Ingresso</h3>
+            <p className="text-xs text-textMuted mb-6 leading-relaxed max-w-[240px] mx-auto">
               Escolha com qual promoter você deseja falar para garantir sua vaga:
             </p>
-            <div className="space-y-3 overflow-y-auto pr-2 pb-4">
+            <div className="space-y-3 overflow-y-auto pr-2 pb-4 flex-1">
               {(event?.whatsappContacts && event.whatsappContacts.length > 0 
                 ? event.whatsappContacts 
                 : (event?.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : [])).map((contact, i) => (
@@ -719,7 +882,7 @@ export const EventDetails = () => {
                     const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event?.title}*`;
                     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
                   }}
-                  className="w-full glass border border-glassBorder rounded-2xl p-4 flex items-center justify-between group hover:border-primary/40 hover:shadow-glow-primary transition-all duration-300 neo-click cursor-pointer"
+                  className="w-full bg-white/60 border border-glassBorder/40 hover:border-primary/30 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/80 hover:shadow-glow-primary transition-all duration-300 neo-click cursor-pointer"
                 >
                   <div className="flex flex-col items-start text-left">
                     <span className="font-bold text-sm text-textLight group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
@@ -729,9 +892,12 @@ export const EventDetails = () => {
                 </button>
               ))}
             </div>
-            <Button onClick={() => setShowContactsModal(false)} variant="outline" className="w-full mt-2 rounded-xl">
+            <button 
+              onClick={() => setShowContactsModal(false)} 
+              className="w-full bg-white/40 hover:bg-white/60 text-textLight border border-transparent font-display font-bold py-3.5 rounded-2xl transition-all duration-300 active:scale-95 text-xs uppercase tracking-wider mt-4 cursor-pointer"
+            >
               Cancelar
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -739,41 +905,51 @@ export const EventDetails = () => {
       {/* Free Ticket Modal */}
       {showFreeTicketModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-2xl">
-            <button onClick={() => setShowFreeTicketModal(false)} className="absolute top-4 right-4 bg-surface/50 border border-glassBorder p-1.5 rounded-xl text-textLight hover:bg-surfaceHover transition-all duration-300 cursor-pointer neo-click">
+          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+            <button onClick={() => setShowFreeTicketModal(false)} className="absolute top-5 right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-1">Confirmar Presença</h3>
-            <p className="text-xs text-textMuted mb-4">Para evitar spam, informe seus dados.</p>
+            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-1 mt-2">Confirmar Presença</h3>
+            <p className="text-xs text-textMuted mb-6">Para evitar spam, informe seus dados.</p>
             
             <div className="flex flex-col gap-4 text-left">
-              <div className="space-y-3 bg-surface/40 p-4 rounded-2xl border border-glassBorder shadow-sm mb-2">
+              <div className="space-y-4 bg-white/40 p-5 rounded-[1.75rem] shadow-glass-shadow mb-2 border border-glassBorder/30">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Nome Completo</label>
-                  <input 
-                    type="text" 
-                    placeholder="Seu nome" 
-                    value={buyerName}
-                    onChange={e => setBuyerName(e.target.value)}
-                    className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all placeholder:text-textMuted/50 font-sans"
-                  />
+                  <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block ml-1">Nome Completo</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 text-textMuted/60 pointer-events-none">
+                      <User size={15} />
+                    </span>
+                    <input 
+                      type="text" 
+                      placeholder="Seu nome" 
+                      value={buyerName}
+                      onChange={e => setBuyerName(e.target.value)}
+                      className="w-full text-sm pl-11 pr-4 py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-primary/40 focus:bg-white focus:shadow-glow-primary transition-all duration-300 placeholder:text-textMuted/50 font-sans"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Telefone / WhatsApp</label>
-                  <input 
-                    type="tel" 
-                    placeholder="(00) 00000-0000" 
-                    value={buyerPhone}
-                    onChange={e => setBuyerPhone(e.target.value)}
-                    className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all placeholder:text-textMuted/50 font-sans"
-                  />
+                  <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block ml-1">Telefone / WhatsApp</label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 text-textMuted/60 pointer-events-none">
+                      <Phone size={15} />
+                    </span>
+                    <input 
+                      type="tel" 
+                      placeholder="(00) 00000-0000" 
+                      value={buyerPhone}
+                      onChange={e => setBuyerPhone(e.target.value)}
+                      className="w-full text-sm pl-11 pr-4 py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-primary/40 focus:bg-white focus:shadow-glow-primary transition-all duration-300 placeholder:text-textMuted/50 font-sans"
+                    />
+                  </div>
                 </div>
               </div>
               <button 
                   onClick={handleRegister}
                   disabled={!buyerName || !buyerPhone}
-                  className="w-full bg-gradient-to-r from-primary to-primaryHover text-textDark border border-primary/20 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-primary hover:shadow-glow-primary-lg active:scale-95 neo-click disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full bg-gradient-to-r from-primary to-primaryHover text-textDark border-0 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-primary hover:shadow-glow-primary-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wider neo-click"
               >
                   Confirmar Presença
               </button>
@@ -785,103 +961,212 @@ export const EventDetails = () => {
       {/* Pix Modal */}
       {showPixModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass rounded-[2rem] p-6 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-2xl">
-            <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 bg-surface/50 border border-glassBorder p-1.5 rounded-xl text-textLight hover:bg-surfaceHover transition-all duration-300 cursor-pointer neo-click">
+          <div className="glass border-none rounded-[2.5rem] p-5 md:p-8 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+            <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 md:top-5 md:right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-1">Pagamento via Pix</h3>
-            <p className="text-xs text-textMuted mb-4">Total: R$ {Number(event?.pixTicketPrice || 0).toFixed(2).replace('.', ',')}</p>
+            <h3 className="font-display text-lg md:text-xl font-black text-accent uppercase tracking-wider mb-0.5 md:mb-1 mt-1 md:mt-2">Pagamento via Pix</h3>
+            <p className="text-[11px] md:text-xs text-textMuted mb-4 md:mb-5 font-mono">Total: R$ {getSelectedTicketsTotal().toFixed(2).replace('.', ',')}</p>
             
-            {!qrCodeData ? (
-              <div className="flex flex-col gap-4 text-left">
-                <div className="space-y-3 bg-surface/40 p-4 rounded-2xl border border-glassBorder shadow-sm mb-2 max-h-[50vh] overflow-y-auto pr-1">
-                  <p className="text-xs font-mono font-bold text-accent uppercase tracking-wider">Seus Dados de Inscrição</p>
+            {pixStep === 'select_tickets' && (
+              <div className="flex flex-col gap-3 md:gap-4 text-left">
+                <div className="space-y-2.5 md:space-y-3 bg-white/40 p-3 md:p-4 rounded-[1.75rem] shadow-glass-shadow mb-2 max-h-[35vh] md:max-h-[45vh] overflow-y-auto pr-1 border border-glassBorder/30">
+                  <p className="text-[10px] md:text-xs font-mono font-bold text-accent uppercase tracking-wider ml-1 mb-1.5 md:mb-2">Selecione seus Ingressos</p>
+                  
+                  {(event?.tickets || []).map((t) => {
+                    const available = t.capacity - (t.sold || 0);
+                    const isSoldOut = t.status === 'sold_out' || available <= 0;
+                    const qty = selectedTickets[t.id] || 0;
+                    
+                    return (
+                      <div key={t.id} className="flex justify-between items-center bg-white/80 p-2.5 md:p-3.5 rounded-2xl gap-2.5 md:gap-3 border border-glassBorder/20">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-sans font-bold text-xs md:text-sm text-textLight truncate">{t.name}</p>
+                          <p className="text-[10px] md:text-[11px] text-primary font-bold font-display mt-0.5">R$ {t.price.toFixed(2).replace('.', ',')}</p>
+                          <p className="text-[7px] md:text-[8px] text-textMuted font-mono mt-0.5 uppercase tracking-wide">Restam {available} de {t.capacity}</p>
+                        </div>
+                        
+                        {isSoldOut ? (
+                          <span className="text-[7px] md:text-[8px] font-mono font-bold text-danger bg-danger/10 px-2 py-1 md:py-1.5 rounded-lg uppercase tracking-wider">Esgotado</span>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateTicketQty(t.id, -1)}
+                              className="w-6 h-6 md:w-7 md:h-7 rounded-xl bg-surface/85 hover:bg-surface border border-glassBorder/40 active:scale-95 transition-all cursor-pointer flex items-center justify-center text-textLight font-bold text-xs md:text-sm"
+                            >
+                              -
+                            </button>
+                            <span className="font-mono text-xs md:text-sm font-bold w-4 text-center text-textLight">{qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateTicketQty(t.id, 1)}
+                              className="w-6 h-6 md:w-7 md:h-7 rounded-xl bg-surface/85 hover:bg-surface border border-glassBorder/40 active:scale-95 transition-all cursor-pointer flex items-center justify-center text-textLight font-bold text-xs md:text-sm"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => setPixStep('buyer_info')}
+                  disabled={getSelectedTicketsCount() === 0}
+                  className="w-full bg-success text-textDark border-0 font-display font-black py-3 md:py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs uppercase tracking-wider"
+                >
+                  Avançar ({getSelectedTicketsCount()} {getSelectedTicketsCount() === 1 ? 'ingresso' : 'ingressos'})
+                </button>
+              </div>
+            )}
+
+            {pixStep === 'buyer_info' && (
+              <div className="flex flex-col gap-3 md:gap-4 text-left">
+                <div className="space-y-3.5 md:space-y-4 bg-white/40 p-4 md:p-5 rounded-[1.75rem] shadow-glass-shadow mb-2 max-h-[35vh] md:max-h-[45vh] overflow-y-auto pr-1 border border-glassBorder/30">
+                  <p className="text-[10px] md:text-xs font-mono font-bold text-accent uppercase tracking-wider ml-1 mb-1.5 md:mb-2">Seus Dados de Inscrição</p>
                   
                   <div className="space-y-1">
-                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Nome Completo</label>
-                    <input 
-                      type="text" 
-                      placeholder="Nome Completo" 
-                      value={buyerName}
-                      onChange={e => setBuyerName(e.target.value)}
-                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-sans"
-                    />
+                    <label className="text-[8px] md:text-[9px] font-mono font-bold text-primary uppercase tracking-wider block ml-1">Nome Completo</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
+                        <User className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
+                      </span>
+                      <input 
+                        type="text" 
+                        placeholder="Nome Completo" 
+                        value={buyerName}
+                        onChange={e => setBuyerName(e.target.value)}
+                        className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-sans"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">E-mail</label>
-                    <input 
-                      type="email" 
-                      placeholder="Seu melhor email" 
-                      value={buyerEmail}
-                      onChange={e => setBuyerEmail(e.target.value)}
-                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-sans"
-                    />
+                    <label className="text-[8px] md:text-[9px] font-mono font-bold text-primary uppercase tracking-wider block ml-1">E-mail</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
+                        <Mail className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
+                      </span>
+                      <input 
+                        type="email" 
+                        placeholder="Seu melhor e-mail" 
+                        value={buyerEmail}
+                        onChange={e => setBuyerEmail(e.target.value)}
+                        className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-sans"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">Telefone</label>
-                    <input 
-                      type="tel" 
-                      placeholder="(00) 00000-0000" 
-                      value={buyerPhone}
-                      onChange={e => setBuyerPhone(e.target.value)}
-                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-sans"
-                    />
+                    <label className="text-[8px] md:text-[9px] font-mono font-bold text-primary uppercase tracking-wider block ml-1">Telefone</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
+                        <Phone className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
+                      </span>
+                      <input 
+                        type="tel" 
+                        placeholder="(00) 00000-0000" 
+                        value={buyerPhone}
+                        onChange={e => setBuyerPhone(e.target.value)}
+                        className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-sans"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider block">CPF</label>
-                    <input 
-                      type="text" 
-                      placeholder="000.000.000-00" 
-                      value={buyerCpf}
-                      onChange={e => setBuyerCpf(e.target.value)}
-                      className="w-full text-sm p-3 rounded-xl border border-glassBorder bg-surfaceHover/60 text-textLight outline-none focus:border-success/40 focus:shadow-glow-success transition-all placeholder:text-textMuted/50 font-mono"
-                    />
+                    <label className="text-[8px] md:text-[9px] font-mono font-bold text-primary uppercase tracking-wider block ml-1">CPF</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
+                        <CreditCard className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
+                      </span>
+                      <input 
+                        type="text" 
+                        placeholder="000.000.000-00" 
+                        value={buyerCpf}
+                        onChange={e => setBuyerCpf(formatCPF(e.target.value))}
+                        className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
                 
+                {event?.tickets && event.tickets.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPixStep('select_tickets')}
+                    className="w-full bg-white/50 hover:bg-white/70 text-textLight border border-glassBorder/20 font-display font-bold py-2.5 md:py-3 rounded-2xl transition-all duration-300 active:scale-95 text-[9px] md:text-[10px] uppercase tracking-wider mb-1 cursor-pointer"
+                  >
+                    Voltar para seleção de ingressos
+                  </button>
+                )}
+
                 <button 
                     onClick={handlePagarPix}
                     disabled={loadingPix || !buyerName || !buyerEmail || !buyerPhone || !buyerCpf}
-                    className="w-full bg-success text-textDark border border-success/20 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg active:scale-95 neo-click disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-sm uppercase tracking-wider"
+                    className="w-full bg-success text-textDark border-0 font-display font-black py-3.5 md:py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-xs md:text-sm uppercase tracking-wider"
                 >
-                    {loadingPix ? <div className="w-5 h-5 border-2 border-textDark border-t-transparent rounded-full animate-spin" /> : <QrCode size={16} />}
+                    {loadingPix ? <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-textDark border-t-transparent rounded-full animate-spin" /> : <QrCode className="w-3.5 h-3.5 md:w-4 md:h-4" />}
                     {loadingPix ? 'Gerando QR Code...' : 'Gerar QR Code Pix'}
                 </button>
               </div>
-            ) : (
-                <div className="flex flex-col items-center">
-                    <div className="p-4 bg-white border border-glassBorder rounded-2xl shadow-glass-shadow mb-5 w-full flex justify-center">
-                        {qrCodeData.qr_code_base64 ? (
-                            <img 
-                                src={`data:image/jpeg;base64,${qrCodeData.qr_code_base64}`} 
-                                alt="QR Code Pix" 
-                                className="w-48 h-48 rounded-lg object-contain"
-                            />
-                        ) : (
-                            <div className="w-48 h-48 flex items-center justify-center text-textMuted bg-surface rounded-lg text-sm">Indisponível</div>
-                        )}
-                    </div>
-                    
-                    <button 
-                        onClick={copiarCodigo}
-                        className="w-full bg-surface/60 hover:bg-surface/80 text-textLight border border-glassBorder hover:border-primary/30 font-display font-black py-4 px-4 rounded-xl mb-4 transition-all shadow-glass-shadow hover:shadow-glow-primary active:scale-95 neo-click flex items-center justify-center gap-2 text-xs uppercase tracking-wider cursor-pointer"
-                    >
-                        <svg className="w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        Copiar Código Pix
-                    </button>
+            )}
 
-                    <div className="flex items-center justify-center gap-2 text-xs font-mono font-bold text-success bg-success/10 py-3 px-4 rounded-xl w-full border border-success/20 shadow-sm">
-                        <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
-                        </span>
-                        AGUARDANDO PAGAMENTO...
-                    </div>
+            {pixStep === 'qr_code' && qrCodeData && (
+              <div className="flex flex-col items-center">
+                <div className="p-4 md:p-5 bg-white border border-transparent rounded-[1.75rem] shadow-glass-shadow mb-4 md:mb-6 w-full flex justify-center">
+                    {qrCodeData.qr_code_base64 ? (
+                        <img 
+                            src={`data:image/jpeg;base64,${qrCodeData.qr_code_base64}`} 
+                            alt="QR Code Pix" 
+                            className="w-40 h-40 md:w-48 md:h-48 rounded-lg object-contain"
+                        />
+                    ) : (
+                        <div className="w-40 h-40 md:w-48 md:h-48 flex items-center justify-center text-textMuted bg-surface rounded-lg text-sm">Indisponível</div>
+                    )}
                 </div>
+                
+                <button 
+                    onClick={copiarCodigo}
+                    className="w-full bg-white/50 hover:bg-white/70 text-textLight border border-glassBorder/20 font-display font-black py-3 md:py-4 px-3 md:px-4 rounded-2xl mb-3 md:mb-4 transition-all shadow-glass-shadow hover:shadow-glow-primary hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-[10px] md:text-xs uppercase tracking-wider cursor-pointer"
+                >
+                    <svg className="w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    Copiar Código Pix
+                </button>
+
+                <div className="flex items-center justify-center gap-2 text-[10px] md:text-xs font-mono font-bold text-success bg-success/10 py-3 md:py-3.5 px-3 md:px-4 rounded-2xl w-full border border-success/10 shadow-sm">
+                    <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 md:h-2.5 md:w-2.5 bg-success"></span>
+                    </span>
+                    AGUARDANDO PAGAMENTO...
+                </div>
+              </div>
+            )}
+
+            {pixStep === 'success' && (
+              <div className="flex flex-col items-center justify-center py-4 md:py-6 success-anim relative min-h-[220px] md:min-h-[300px]">
+                {/* Círculo animado com o checkmark */}
+                <div className="success-circle w-14 h-14 md:w-20 md:h-20 bg-success/15 border border-success/30 rounded-full flex items-center justify-center mb-4 md:mb-6 shadow-glow-success">
+                  <CheckCircle2 className="w-7 h-7 md:w-10 md:h-10 text-success" />
+                </div>
+                
+                <h3 className="success-title font-display text-lg md:text-2xl font-black text-success uppercase tracking-wider mb-1 md:mb-2">
+                  Pagamento Confirmado!
+                </h3>
+                
+                <p className="success-text text-[11px] md:text-sm text-textLight max-w-[240px] mb-6 md:mb-8 leading-relaxed font-sans">
+                  Sua vaga está garantida. Preparando seus ingressos...
+                </p>
+
+                {/* Barra de progresso horizontal simulando o encerramento do modal */}
+                <div className="w-full h-1.5 bg-surface/50 rounded-full overflow-hidden border border-glassBorder/30">
+                  <div className="success-bar h-full bg-gradient-to-r from-success to-primaryHover rounded-full" />
+                </div>
+              </div>
             )}
           </div>
         </div>

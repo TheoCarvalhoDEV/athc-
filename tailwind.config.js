@@ -23,10 +23,10 @@ export default {
         success: "#10B981",
       },
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'sans-serif'],
-        display: ['Plus Jakarta Sans', 'sans-serif'],
-        serifDisplay: ['Plus Jakarta Sans', 'sans-serif'],
-        mono: ['Plus Jakarta Sans', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif'],
+        display: ['Poppins', 'sans-serif'],
+        serifDisplay: ['Poppins', 'sans-serif'],
+        mono: ['Poppins', 'sans-serif'],
       },
       boxShadow: {
         'glow-primary': '0 4px 20px rgba(90, 18, 46, 0.15)',

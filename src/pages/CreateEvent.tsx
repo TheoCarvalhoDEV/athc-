@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { storage } from '../lib/storage';
-import type { AppProfile } from '../lib/storage';
+import type { AppProfile, TicketType } from '../lib/storage';
 import { cn } from '../lib/utils';
 import { compressImage } from '../lib/imageUtils';
 import gsap from 'gsap';
@@ -81,6 +81,7 @@ const eventSchema = z.object({
   ticketPrice: z.string().optional(),
   pixTicketPrice: z.string().optional(),
   isTestEvent: z.boolean().optional(),
+  hasPresence: z.boolean().optional(),
   whatsappContacts: z.array(z.object({ name: z.string(), phone: z.string() })).optional(),
   whatsappNumber: z.string().optional(),
   mediaUrls: z.array(z.string())
@@ -134,6 +135,7 @@ const CreateEventContent = () => {
       ticketPrice: '',
       pixTicketPrice: '',
       isTestEvent: false,
+      hasPresence: true,
       whatsappContacts: [{ name: '', phone: '' }],
       whatsappNumber: ''
     }
@@ -146,6 +148,39 @@ const CreateEventContent = () => {
   const location = watch('location');
   const address = watch('address');
   const publicType = watch('publicType');
+  const hasPresence = watch('hasPresence') ?? true;
+
+  const [tickets, setTickets] = useState<TicketType[]>([]);
+
+  const handleAddTicketType = () => {
+    setTickets(prev => [
+      ...prev,
+      {
+        id: `tkt-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        name: '',
+        price: 0,
+        capacity: 100,
+        sold: 0,
+        status: 'active'
+      }
+    ]);
+  };
+
+  const handleRemoveTicketType = (index: number) => {
+    setTickets(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateTicketType = (index: number, field: keyof TicketType, value: any) => {
+    setTickets(prev => prev.map((t, i) => {
+      if (i === index) {
+        if (field === 'price' || field === 'capacity') {
+          return { ...t, [field]: Number(value) || 0 };
+        }
+        return { ...t, [field]: value };
+      }
+      return t;
+    }));
+  };
 
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapCenter, setMapCenter] = useState<[number, number]>([-16.0669, -57.6868]); // Cuiabá center
@@ -200,9 +235,11 @@ const CreateEventContent = () => {
               hasPixTickets: ev.hasPixTickets || false,
               pixTicketPrice: ev.pixTicketPrice || '',
               isTestEvent: ev.isTestEvent || false,
+              hasPresence: ev.hasPresence ?? true,
               whatsappContacts: ev.whatsappContacts || (ev.whatsappNumber ? [{ name: ev.whatsappName || '', phone: ev.whatsappNumber }] : [{ name: '', phone: '' }]),
               whatsappNumber: ev.whatsappNumber || ''
             });
+            setTickets(ev.tickets || []);
             setOriginalCreatorId(ev.creatorId);
             setSelectedCreatorId(ev.creatorId);
           }
@@ -239,6 +276,7 @@ const CreateEventContent = () => {
     const eventData = {
       id: id || Date.now().toString(),
       ...data,
+      tickets: data.hasPixTickets ? tickets : [],
       whatsappContacts: data.whatsappContacts?.filter(c => c.phone.trim() !== '') || [],
       publicType: data.publicType as any,
       creatorId: id ? (selectedCreatorId || originalCreatorId || targetCreatorId) : targetCreatorId,
@@ -559,6 +597,30 @@ const CreateEventContent = () => {
               </div>
             </div>
 
+            {/* Presence Toggle */}
+            <div className="create-anim space-y-3.5 glass rounded-[1.8rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-display uppercase tracking-wider font-black text-textLight">Habilitar Confirmação de Presença?</label>
+                <button
+                  type="button"
+                  onClick={() => setValue('hasPresence', !hasPresence, { shouldValidate: true })}
+                  title="Habilitar Confirmação de Presença"
+                  aria-label="Habilitar Confirmação de Presença"
+                  className={cn(
+                    "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
+                    hasPresence ? 'bg-primary/20 border-primary/45' : 'bg-surfaceHover/50'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-5 h-5 rounded-full absolute top-[3px] transition-all",
+                      hasPresence ? 'right-[3px] bg-primary shadow-glow-primary' : 'left-[3px] bg-textMuted'
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
+
             {/* Tickets Toggle */}
             <div className="create-anim space-y-3.5 glass rounded-[1.8rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
               <div className="flex items-center justify-between">
@@ -669,15 +731,82 @@ const CreateEventContent = () => {
                 </div>
 
                 {hasPixTickets && (
-                  <div className="space-y-1.5 pt-4 border-t border-glassBorder">
-                    <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 block">Valor PIX (R$)</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="30.00"
-                      className="bg-surface/50 border-glassBorder text-textLight"
-                      {...register('pixTicketPrice')}
-                    />
+                  <div className="space-y-4 pt-4 border-t border-glassBorder">
+                    <div className="space-y-1.5 mb-3">
+                      <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 block">Valor PIX Padrão (R$)</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="30.00"
+                        className="bg-surface/50 border-glassBorder text-textLight"
+                        {...register('pixTicketPrice')}
+                      />
+                      <p className="text-[10px] text-textMuted font-mono mt-1 opacity-80">Usado como valor fallback caso não existam lotes específicos cadastrados abaixo.</p>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-glassBorder/40">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider block font-bold">Setores e Lotes de Ingressos</label>
+                        <button
+                          type="button"
+                          onClick={handleAddTicketType}
+                          className="py-1.5 px-3 bg-success/15 border border-success/35 text-success rounded-xl font-mono text-[10px] font-bold uppercase hover:bg-success/20 transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus size={10} /> Adicionar Lote/Setor
+                        </button>
+                      </div>
+                      
+                      {tickets.length > 0 ? (
+                        <div className="space-y-3">
+                          {tickets.map((t, idx) => (
+                            <div key={t.id || idx} className="flex gap-2 items-end bg-surface/30 p-3 rounded-[1.2rem] border border-glassBorder">
+                              <div className="flex-1 space-y-1">
+                                <label className="text-[9px] font-mono font-bold text-textMuted uppercase ml-1 block">Nome / Lote</label>
+                                <Input
+                                  placeholder="Ex: VIP - 1º Lote"
+                                  className="text-xs bg-surface/50 border-glassBorder text-textLight"
+                                  value={t.name}
+                                  onChange={e => handleUpdateTicketType(idx, 'name', e.target.value)}
+                                />
+                              </div>
+                              <div className="w-24 space-y-1">
+                                <label className="text-[9px] font-mono font-bold text-textMuted uppercase ml-1 block">Preço (R$)</label>
+                                <Input
+                                  type="number"
+                                  placeholder="0.00"
+                                  className="text-xs bg-surface/50 border-glassBorder text-textLight"
+                                  value={t.price || ''}
+                                  onChange={e => handleUpdateTicketType(idx, 'price', e.target.value)}
+                                />
+                              </div>
+                              <div className="w-20 space-y-1">
+                                <label className="text-[9px] font-mono font-bold text-textMuted uppercase ml-1 block">Capacidade</label>
+                                <Input
+                                  type="number"
+                                  placeholder="100"
+                                  className="text-xs bg-surface/50 border-glassBorder text-textLight"
+                                  value={t.capacity || ''}
+                                  onChange={e => handleUpdateTicketType(idx, 'capacity', e.target.value)}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTicketType(idx)}
+                                title="Remover lote"
+                                aria-label="Remover lote"
+                                className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface/50 hover:bg-surfaceHover rounded-xl neo-click transition-all duration-300 cursor-pointer"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 bg-surfaceHover/30 rounded-xl border border-dashed border-glassBorder text-[10px] text-textMuted font-mono">
+                          Nenhum lote ou setor configurado. Cadastre lotes para habilitar múltiplos preços.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

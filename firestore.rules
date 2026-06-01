@@ -51,12 +51,8 @@ service cloud.firestore {
     }
 
     match /pedidos/{pedidoId} {
-      // Um pedido só pode ser lido se:
-      // 1. O solicitante for administrador
-      // 2. O solicitante for o comprador (userId)
-      // 3. O solicitante for um visitante (guest) buscando seu próprio ID de pedido
-      allow read: if (isAuthed() && (resource.data.userId == request.auth.uid || isAdmin())) ||
-                     (!isAuthed() && resource.data.userId.matches('^guest-.*'));
+      // Um pedido pode ser lido por qualquer visitante (necessário para escutar confirmação de Pix)
+      allow read: if true;
       // Escrita direta pelo cliente é proibida (apenas Cloud Functions do backend criam/alteram)
       allow write: if false;
     }
