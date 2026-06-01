@@ -285,9 +285,9 @@ export const Feed = () => {
             <div className="shrink-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary to-primaryHover text-textDark border border-primary/20 rounded-[2rem] w-24 h-24 shadow-glow-primary relative overflow-hidden group hover:scale-[1.03] active:scale-[0.98] transition-all duration-300">
               <div className="absolute inset-0 bg-gradient-to-tr from-primaryHover/60 via-transparent to-transparent opacity-80 pointer-events-none" />
               <div className="relative z-10 flex flex-col items-center justify-center">
-                <span className="text-[8px] font-mono font-bold text-textDark/70 uppercase tracking-widest leading-none">Na Cena</span>
+                <span className="text-[8px] font-mono font-bold text-textDark/70 uppercase tracking-widest leading-none">Acontecendo</span>
                 <span className="text-3xl font-serifDisplay font-bold text-textDark mt-1.5 leading-none">{events.length}</span>
-                <span className="text-[7px] font-mono font-bold text-textDark/85 uppercase mt-1.5 tracking-wider">rolês</span>
+                <span className="text-[7px] font-mono font-bold text-textDark/85 uppercase mt-1.5 tracking-wider">eventos</span>
               </div>
             </div>
           </div>
@@ -302,7 +302,7 @@ export const Feed = () => {
               Em Destaque
             </h2>
             <span className="text-[9px] font-mono text-textMuted uppercase tracking-widest mt-1.5 flex items-center gap-1 opacity-80">
-              <Flame size={10} className="text-primary animate-pulse" /> Rolês mais quentes da semana
+              <Flame size={10} className="text-primary animate-pulse" /> Eventos mais quentes da semana
             </span>
           </div>
         </div>
