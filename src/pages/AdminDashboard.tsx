@@ -9,6 +9,9 @@ import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
 import type { AppProfile } from '../lib/storage';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { firebaseConfig } from '../lib/firebase';
 
 const formatDateBR = (dateStr: string): string => {
   if (!dateStr) return '';
@@ -153,15 +156,12 @@ export const AdminDashboard = () => {
 
   const handleAddPartner = async (e: React.FormEvent) => {
     e.preventDefault();
-    const email = `${newPartner.name.toLowerCase().replace(/\s+/g, '')}@atche.com.br`;
+    // Remove acentos e espaços do nome para gerar e-mail válido no Firebase Auth
+    const email = `${newPartner.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}@atche.com.br`;
     const password = Math.random().toString(36).slice(-8);
 
     try {
       // 1. Criar usuário no Firebase Auth usando instância secundária para não deslogar o Admin
-      const { initializeApp } = await import('firebase/app');
-      const { getAuth, createUserWithEmailAndPassword, signOut } = await import('firebase/auth');
-      const { firebaseConfig } = await import('../lib/firebase');
-      
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
       const secondaryAuth = getAuth(secondaryApp);
       
