@@ -10,7 +10,7 @@ import gsap from 'gsap';
 import {
   ArrowLeft, Image as ImageIcon, MapPin, X, Plus, Clock, Loader2,
   Search as SearchIcon, CalendarPlus, CheckCircle, Upload,
-  Trash2, AlertTriangle, FileText
+  Trash2, AlertTriangle, FileText, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useMap, useMapsLibrary, APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useAuth } from '../contexts/AuthContext';
@@ -151,8 +151,7 @@ const CreateEventContent = () => {
   const dateValue = watch('date');
   const timeValue = watch('time');
 
-  const [dateFocused, setDateFocused] = useState(false);
-  const [timeFocused, setTimeFocused] = useState(false);
+
 
   const [tickets, setTickets] = useState<TicketType[]>([]);
 
@@ -199,6 +198,132 @@ const CreateEventContent = () => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+
+  // Date Picker States
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [selectedTempDate, setSelectedTempDate] = useState<Date | null>(null);
+  const [selectedTempTime, setSelectedTempTime] = useState<string>('20:00');
+
+  useEffect(() => {
+    if (showDatePickerModal) {
+      if (dateValue) {
+        const parts = dateValue.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          setSelectedTempDate(new Date(year, month, day));
+          setCurrentMonth(new Date(year, month, 1));
+        }
+      } else {
+        const today = new Date();
+        setSelectedTempDate(today);
+        setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+      }
+
+      if (timeValue) {
+        setSelectedTempTime(timeValue);
+      } else {
+        setSelectedTempTime('20:00');
+      }
+    }
+  }, [showDatePickerModal, dateValue, timeValue]);
+
+  const formatDateToLocal = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+  };
+
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (year: number, month: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const generateCalendarCells = (monthDate: Date) => {
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    const totalDays = getDaysInMonth(year, month);
+    const firstDayIndex = getFirstDayOfMonth(year, month);
+
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const prevTotalDays = getDaysInMonth(prevYear, prevMonth);
+
+    const cells = [];
+
+    // Prev month days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      cells.push({
+        day: prevTotalDays - i,
+        month: prevMonth,
+        year: prevYear,
+        isCurrentMonth: false,
+        date: new Date(prevYear, prevMonth, prevTotalDays - i)
+      });
+    }
+
+    // Current month days
+    for (let d = 1; d <= totalDays; d++) {
+      cells.push({
+        day: d,
+        month: month,
+        year: year,
+        isCurrentMonth: true,
+        date: new Date(year, month, d)
+      });
+    }
+
+    // Next month days
+    const remaining = 42 - cells.length;
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    for (let d = 1; d <= remaining; d++) {
+      cells.push({
+        day: d,
+        month: nextMonth,
+        year: nextYear,
+        isCurrentMonth: false,
+        date: new Date(nextYear, nextMonth, d)
+      });
+    }
+
+    return cells;
+  };
+
+  const handleMonthPrev = () => {
+    setCurrentMonth(prev => {
+      const year = prev.getFullYear();
+      const month = prev.getMonth();
+      return month === 0 ? new Date(year - 1, 11, 1) : new Date(year, month - 1, 1);
+    });
+  };
+
+  const handleMonthNext = () => {
+    setCurrentMonth(prev => {
+      const year = prev.getFullYear();
+      const month = prev.getMonth();
+      return month === 11 ? new Date(year + 1, 0, 1) : new Date(year, month + 1, 1);
+    });
+  };
+
+  const handleDatePickerConfirm = () => {
+    if (selectedTempDate) {
+      const y = selectedTempDate.getFullYear();
+      const m = String(selectedTempDate.getMonth() + 1).padStart(2, '0');
+      const d = String(selectedTempDate.getDate()).padStart(2, '0');
+      const formattedDate = `${y}-${m}-${d}`;
+      setValue('date', formattedDate, { shouldValidate: true });
+    }
+    setValue('time', selectedTempTime, { shouldValidate: true });
+    setShowDatePickerModal(false);
+  };
 
   const { user } = useAuth();
   const userId = user?.id;
@@ -525,30 +650,34 @@ const CreateEventContent = () => {
                   <CalendarPlus size={12} />
                   Data
                 </label>
-                <Input
-                  type={dateFocused || dateValue ? "date" : "text"}
-                  placeholder="Selecione a data"
-                  className="bg-surface/50 border-glassBorder text-textLight"
-                  {...register('date', {
-                    onBlur: () => setDateFocused(false)
-                  })}
-                  onFocus={() => setDateFocused(true)}
-                />
+                <div 
+                  onClick={() => setShowDatePickerModal(true)}
+                  className="cursor-pointer"
+                >
+                  <Input
+                    readOnly
+                    placeholder="Selecione a data"
+                    className="bg-surface/50 border-glassBorder text-textLight cursor-pointer pointer-events-none"
+                    value={dateValue ? formatDateToLocal(dateValue) : ''}
+                  />
+                </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
                   <Clock size={12} />
                   Horário
                 </label>
-                <Input
-                  type={timeFocused || timeValue ? "time" : "text"}
-                  placeholder="Selecione o horário"
-                  className="bg-surface/50 border-glassBorder text-textLight"
-                  {...register('time', {
-                    onBlur: () => setTimeFocused(false)
-                  })}
-                  onFocus={() => setTimeFocused(true)}
-                />
+                <div 
+                  onClick={() => setShowDatePickerModal(true)}
+                  className="cursor-pointer"
+                >
+                  <Input
+                    readOnly
+                    placeholder="Selecione o horário"
+                    className="bg-surface/50 border-glassBorder text-textLight cursor-pointer pointer-events-none"
+                    value={timeValue || ''}
+                  />
+                </div>
               </div>
             </div>
 
@@ -963,6 +1092,124 @@ const CreateEventContent = () => {
           </div>
         </div>
       )}
+
+      {/* Custom Date Picker Modal */}
+      {showDatePickerModal && (() => {
+        const MONTHS_PT = [
+          'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+          'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ];
+        const WEEKDAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+        return (
+          <div className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-background w-full max-w-sm rounded-[2.5rem] border border-glassBorder shadow-2xl flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-5">
+                <div className="text-left">
+                  <h3 className="font-serifDisplay italic font-bold text-xl text-textLight">Escolher Data/Horário</h3>
+                  <p className="text-[10px] font-mono text-textMuted uppercase tracking-wider">Defina o dia e a hora do evento</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDatePickerModal(false)}
+                  className="bg-primary/10 p-2.5 rounded-full text-primary hover:bg-primary/20 hover:scale-110 active:scale-95 transition-all cursor-pointer border-0"
+                  title="Fechar"
+                  aria-label="Fechar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Calendar Controls */}
+              <div className="flex justify-between items-center mb-4">
+                <button
+                  type="button"
+                  onClick={handleMonthPrev}
+                  className="p-1.5 rounded-full hover:bg-surfaceHover text-textLight transition-all border-0 bg-transparent cursor-pointer"
+                  title="Mês Anterior"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <span className="font-display font-black text-sm text-textLight uppercase tracking-wider">
+                  {MONTHS_PT[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleMonthNext}
+                  className="p-1.5 rounded-full hover:bg-surfaceHover text-textLight transition-all border-0 bg-transparent cursor-pointer"
+                  title="Próximo Mês"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+
+              {/* Calendar Grid Weekdays */}
+              <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                {WEEKDAYS_PT.map((day) => (
+                  <span key={day} className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider">
+                    {day}
+                  </span>
+                ))}
+              </div>
+
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7 gap-1.5 text-center mb-6">
+                {generateCalendarCells(currentMonth).map((cell, idx) => {
+                  const isSelected = selectedTempDate &&
+                    cell.date.getDate() === selectedTempDate.getDate() &&
+                    cell.date.getMonth() === selectedTempDate.getMonth() &&
+                    cell.date.getFullYear() === selectedTempDate.getFullYear();
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTempDate(cell.date);
+                        if (!cell.isCurrentMonth) {
+                          setCurrentMonth(new Date(cell.year, cell.month, 1));
+                        }
+                      }}
+                      className={cn(
+                        "w-9 h-9 flex items-center justify-center text-xs font-sans rounded-full transition-all mx-auto cursor-pointer border-0 bg-transparent",
+                        !cell.isCurrentMonth && "text-textMuted/40 hover:bg-surfaceHover/50",
+                        cell.isCurrentMonth && !isSelected && "text-textLight hover:bg-surfaceHover font-medium",
+                        isSelected && "bg-[#1C1917] text-white font-bold shadow-md hover:bg-[#1C1917]"
+                      )}
+                    >
+                      {cell.day}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Time Picker */}
+              <div className="bg-[#1C1917] text-white rounded-[1.5rem] p-4 flex flex-col items-center justify-center gap-2 mb-5 shadow-inner border border-white/5">
+                <label className="text-[9px] uppercase font-mono font-bold text-white/50 tracking-wider flex items-center gap-1.5">
+                  <Clock size={12} />
+                  Horário
+                </label>
+                <input
+                  type="time"
+                  value={selectedTempTime}
+                  onChange={(e) => setSelectedTempTime(e.target.value)}
+                  className="bg-transparent text-white font-display text-3xl font-black focus:outline-none text-center border-b border-white/20 pb-1 w-28 [color-scheme:dark]"
+                />
+              </div>
+
+              {/* Confirm Button */}
+              <Button
+                type="button"
+                className="w-full rounded-2xl py-4 shadow-xl"
+                onClick={handleDatePickerConfirm}
+              >
+                Confirmar Horário
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

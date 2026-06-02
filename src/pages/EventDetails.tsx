@@ -837,8 +837,13 @@ export const EventDetails = () => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
           <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
-            <div className="w-20 h-20 bg-success/15 text-success rounded-full flex items-center justify-center mx-auto mb-6 shadow-glow-success border border-success/20">
-              <CheckCircle2 size={38} className="animate-pulse" />
+            {/* Animação premium do Checkmark */}
+            <div className="payment-success-icon-wrapper mx-auto mb-6">
+              <div className="payment-success-pulse-ring"></div>
+              <svg className="payment-success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle className="payment-success-checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+                <path className="payment-success-checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+              </svg>
             </div>
             <h3 className="font-display text-2xl font-black text-success uppercase tracking-wider mb-2">Presença Confirmada!</h3>
             <p className="text-sm text-textLight/90 mb-8 leading-relaxed max-w-[260px] mx-auto">
@@ -1144,9 +1149,13 @@ export const EventDetails = () => {
 
             {pixStep === 'success' && (
               <div className="flex flex-col items-center justify-center py-4 md:py-6 success-anim relative min-h-[220px] md:min-h-[300px]">
-                {/* Círculo animado com o checkmark */}
-                <div className="success-circle w-14 h-14 md:w-20 md:h-20 bg-success/15 border border-success/30 rounded-full flex items-center justify-center mb-4 md:mb-6 shadow-glow-success">
-                  <CheckCircle2 className="w-7 h-7 md:w-10 md:h-10 text-success" />
+                {/* Animação premium do Checkmark */}
+                <div className="payment-success-icon-wrapper">
+                  <div className="payment-success-pulse-ring"></div>
+                  <svg className="payment-success-checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                    <circle className="payment-success-checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+                    <path className="payment-success-checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                  </svg>
                 </div>
                 
                 <h3 className="success-title font-display text-lg md:text-2xl font-black text-success uppercase tracking-wider mb-1 md:mb-2">
