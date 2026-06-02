@@ -73,6 +73,7 @@ function App() {
                 <Route path="/" element={<Feed />} />
                 <Route path="/feed" element={<Navigate to="/" replace />} />
                 <Route path="/search" element={<Search />} />
+                <Route path="/agenda/:id" element={<Agenda />} />
               </Route>
 
               {/* Rotas Protegidas (Exigem Autenticação) */}
@@ -81,7 +82,6 @@ function App() {
                 <Route path="/edit/:id" element={<CreateEvent />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/agenda/:id" element={<Agenda />} />
               </Route>
             </Routes>
           </Suspense>
