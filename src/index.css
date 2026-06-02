@@ -155,9 +155,9 @@
 
   /* Modal Backdrop Claro Suave */
   .modal-backdrop {
-    background: rgba(28, 25, 23, 0.25);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    background: rgba(28, 25, 23, 0.45);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
   }
 
   /* Glassmorphism Editorial de Alta Fidelidade */
@@ -292,3 +292,27 @@
     -webkit-backface-visibility: hidden;
   }
 }
+
+/* ─── Correções de Data e Hora para iOS Safari ─── */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 2.75rem; /* ~ h-11 no mobile */
+}
+
+@media (min-width: 768px) {
+  input[type="date"],
+  input[type="time"] {
+    min-height: 3.5rem; /* ~ h-14 no desktop */
+  }
+}
+
+/* Garante visibilidade e alinhamento do texto interno do date/time no WebKit */
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  min-height: 1.5em;
+  display: block;
+  text-align: left;
+  color: inherit;
+}

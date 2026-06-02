@@ -759,10 +759,10 @@ export const EventDetails = () => {
               </div>
             </div>
 
-            {/* Consolidado de Informações do Rolê (Data, Hora, Organizador e GPS Curto) */}
+            {/* Consolidado de Informações do Evento (Data, Hora, Organizador e GPS Curto) */}
             <div className="glass border-none rounded-[2.5rem] p-6 shadow-glass-shadow bg-gradient-to-br from-white/90 to-white/50 text-left space-y-5">
               <span className="font-mono text-[9px] text-accent uppercase tracking-widest font-bold block mb-1">
-                Informações do Rolê
+                Informações do Evento
               </span>
               
               {/* Grid de Data e Horário */}
@@ -841,7 +841,7 @@ export const EventDetails = () => {
             {/* Success Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             <div className="w-20 h-20 bg-success/15 text-success rounded-full flex items-center justify-center mx-auto mb-6 shadow-glow-success border border-success/20">
               <CheckCircle2 size={38} className="animate-pulse" />
             </div>
@@ -862,7 +862,7 @@ export const EventDetails = () => {
       {/* Contacts Modal */}
       {showContactsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm w-full text-center max-h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center max-h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             <button onClick={() => setShowContactsModal(false)} className="absolute top-5 right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -885,8 +885,8 @@ export const EventDetails = () => {
                   className="w-full bg-white/60 border border-glassBorder/40 hover:border-primary/30 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/80 hover:shadow-glow-primary transition-all duration-300 neo-click cursor-pointer"
                 >
                   <div className="flex flex-col items-start text-left">
-                    <span className="font-bold text-sm text-textLight group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
-                    <span className="text-[10px] text-textMuted font-mono mt-0.5">{contact.phone}</span>
+                    <span className="font-bold text-sm md:text-base text-textLight group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
+                    <span className="text-xs md:text-sm text-textMuted font-mono mt-0.5">{contact.phone}</span>
                   </div>
                   <Ticket className="text-primary/70 group-hover:text-primary transition-colors" size={18} />
                 </button>
@@ -905,7 +905,7 @@ export const EventDetails = () => {
       {/* Free Ticket Modal */}
       {showFreeTicketModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+          <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             <button onClick={() => setShowFreeTicketModal(false)} className="absolute top-5 right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -961,7 +961,7 @@ export const EventDetails = () => {
       {/* Pix Modal */}
       {showPixModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
-          <div className="glass border-none rounded-[2.5rem] p-5 md:p-8 max-w-sm w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
+          <div className="glass border-none rounded-[2.5rem] p-5 md:p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 md:top-5 md:right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>

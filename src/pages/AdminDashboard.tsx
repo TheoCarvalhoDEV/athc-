@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration } from '../lib/storage';
 import { Button } from '../components/ui/Button';
-import { Calendar, Users, Settings, Trash2, Search as SearchIcon, Building2, UserPlus, Mail, Lock, ShieldCheck, X, Copy, Check } from 'lucide-react';
+import { Calendar, Users, Settings, Trash2, Search as SearchIcon, Building2, UserPlus, Mail, Lock, ShieldCheck, X, Copy, Check, Upload } from 'lucide-react';
 import gsap from 'gsap';
 import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
@@ -40,6 +40,28 @@ export const AdminDashboard = () => {
   const [copied, setCopied] = useState(false);
   const [editingPartner, setEditingPartner] = useState<AppProfile | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handlePartnerImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        alert("A imagem é muito grande (máx 5MB).");
+        return;
+      }
+      setIsUploading(true);
+      try {
+        const url = await storage.uploadFile(file, 'profiles');
+        setNewPartner(prev => ({ ...prev, imageUrl: url }));
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao fazer upload da imagem.");
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
     title: string;
@@ -287,7 +309,7 @@ export const AdminDashboard = () => {
           placeholder={activeTab === 'events' ? "Buscar eventos..." : "Buscar parceiros..."} 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pl-12"
+          className="pl-12 md:pl-12"
         />
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={18} />
       </div>
@@ -523,13 +545,37 @@ export const AdminDashboard = () => {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider">URL da Imagem (Opcional)</label>
-                  <Input 
-                    placeholder="https://..." 
-                    value={newPartner.imageUrl}
-                    onChange={e => setNewPartner(prev => ({ ...prev, imageUrl: e.target.value }))}
-                  />
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[9px] font-bold text-primary uppercase ml-1 font-mono tracking-wider block">Foto do Parceiro (Opcional)</label>
+                  <div className="flex items-center gap-3.5 bg-surface/30 p-3 rounded-xl border border-glassBorder">
+                    {newPartner.imageUrl ? (
+                      <div className="relative w-14 h-14 rounded-lg border border-glassBorder overflow-hidden shrink-0 group">
+                        <img src={newPartner.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+                        <button
+                          type="button"
+                          onClick={() => setNewPartner(prev => ({ ...prev, imageUrl: '' }))}
+                          className="absolute inset-0 bg-danger/80 opacity-0 group-hover:opacity-100 flex items-center justify-center text-textDark transition-opacity duration-300 text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="w-14 h-14 rounded-lg border border-dashed border-primary/45 flex flex-col items-center justify-center text-textMuted cursor-pointer hover:border-accent hover:text-accent transition-all duration-300 bg-surface/50 hover:bg-surfaceHover">
+                        {isUploading ? (
+                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Upload size={16} className="text-primary" />
+                            <span className="text-[8px] font-mono font-bold mt-1 uppercase">Upload</span>
+                          </>
+                        )}
+                        <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={handlePartnerImageUpload} />
+                      </label>
+                    )}
+                    <div className="text-[10px] text-textMuted font-mono leading-relaxed">
+                      {newPartner.imageUrl ? "Foto pronta para salvar!" : "Selecione uma imagem JPG/PNG de até 5MB."}
+                    </div>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full rounded-xl py-4 mt-6">

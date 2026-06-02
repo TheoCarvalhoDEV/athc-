@@ -449,7 +449,7 @@ export const Profile = () => {
                       <div className="flex items-center gap-2 mb-2">
                         {event.isTestEvent ? (
                           <span className="bg-accent/15 border border-accent/30 text-accent font-mono text-[9px] px-2.5 py-0.5 rounded-full uppercase font-black shadow-glow-accent/10">
-                            Rolê de Teste (Admin)
+                            Evento de Teste (Admin)
                           </span>
                         ) : (
                           <span className="glass border border-glassBorder text-primary font-mono text-[9px] px-2.5 py-0.5 rounded-full uppercase font-bold">
@@ -801,7 +801,7 @@ export const Profile = () => {
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 border-t border-glassBorder text-[10px] md:text-xs font-mono text-textLight">
+                        <div className="grid grid-cols-2 gap-3 md:gap-4 pt-2 md:pt-3 text-[10px] md:text-xs font-mono text-textLight">
                           <div>
                             <span className="text-[8px] md:text-[9px] font-bold text-primary/70 uppercase block mb-0.5 tracking-wider">Telefone</span>
                             <span className="text-[10px] md:text-sm font-semibold">{reg.userPhone ? formatPhone(reg.userPhone) : '-'}</span>
@@ -811,7 +811,7 @@ export const Profile = () => {
                             <span className="text-[10px] md:text-sm font-semibold">{reg.userCpf ? formatCPF(reg.userCpf) : '-'}</span>
                           </div>
                         </div>
-                        <div className="text-[8px] md:text-[9px] font-mono text-textMuted/60 text-right pt-1.5 border-t border-glassBorder/30 uppercase tracking-wider">
+                        <div className="text-[8px] md:text-[9px] font-mono text-textMuted/60 text-right pt-1.5 uppercase tracking-wider">
                           Confirmado em: {new Date(reg.timestamp).toLocaleDateString('pt-BR')} {new Date(reg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>

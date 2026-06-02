@@ -94,7 +94,7 @@ export const Search = () => {
           placeholder="Pesquisar..." 
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pl-12"
+          className="pl-12 md:pl-12"
         />
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-accent" size={18} />
       </div>

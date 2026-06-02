@@ -149,6 +149,11 @@ const CreateEventContent = () => {
   const address = watch('address');
   const publicType = watch('publicType');
   const hasPresence = watch('hasPresence') ?? true;
+  const dateValue = watch('date');
+  const timeValue = watch('time');
+
+  const [dateFocused, setDateFocused] = useState(false);
+  const [timeFocused, setTimeFocused] = useState(false);
 
   const [tickets, setTickets] = useState<TicketType[]>([]);
 
@@ -401,7 +406,7 @@ const CreateEventContent = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-6 px-4 relative">
+    <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-4 md:pt-6 px-3 md:px-4 relative">
       {/* Ambient glow */}
       <div className="ambient-glow w-48 h-48 bg-primary/10 top-0 right-0 pointer-events-none" />
 
@@ -410,26 +415,27 @@ const CreateEventContent = () => {
         onClick={() => navigate(-1)}
         title="Voltar"
         aria-label="Voltar"
-        className="w-10 h-10 mb-6 rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
+        className="w-9 h-9 md:w-10 md:h-10 mb-4 md:mb-6 rounded-xl md:rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
       >
         <ArrowLeft size={18} />
       </button>
 
       <div className="max-w-2xl mx-auto">
-        <div className="create-anim flex items-center gap-3.5 mb-6 relative z-10 text-left">
-          <div className="w-12 h-12 rounded-2xl bg-accent/15 text-accent flex items-center justify-center border border-accent/20 shadow-glow-accent">
-            <CalendarPlus size={22} />
+        <div className="create-anim flex items-center gap-2.5 md:gap-3.5 mb-4 md:mb-6 relative z-10 text-left">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-accent/15 text-accent flex items-center justify-center border border-accent/20 shadow-glow-accent">
+            <CalendarPlus size={18} className="md:hidden" />
+            <CalendarPlus size={22} className="hidden md:block" />
           </div>
           <div>
-            <h1 className="font-serifDisplay italic font-bold text-2xl text-textLight tracking-wide leading-tight animate-fade-in">
+            <h1 className="font-serifDisplay italic font-bold text-lg md:text-2xl text-textLight tracking-wide leading-tight animate-fade-in">
               {isEdit ? 'Editar Evento' : 'Criar Evento'}
             </h1>
-            <p className="text-xs text-textMuted font-mono uppercase mt-0.5 font-bold">Configure os detalhes do seu rolê</p>
+            <p className="text-[9px] md:text-xs text-textMuted font-mono uppercase mt-0.5 font-bold">Configure os detalhes do seu evento</p>
           </div>
         </div>
 
         {user ? (
-          <form onSubmit={formSubmit(onSubmit, onError)} className="space-y-5 relative z-10">
+          <form onSubmit={formSubmit(onSubmit, onError)} className="space-y-3.5 md:space-y-5 relative z-10">
             {/* Admin Select Partner */}
             {userRole === 'admin' && (
               <div className="create-anim space-y-1 text-left">
@@ -439,7 +445,7 @@ const CreateEventContent = () => {
                 <select
                   id="creator-select"
                   title="Selecione o estabelecimento criador"
-                  className="w-full h-12 bg-surfaceHover/50 border border-glassBorder rounded-xl px-4 text-sm font-sans focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all text-textLight"
+                  className="w-full h-10 md:h-12 bg-surfaceHover/50 border border-glassBorder rounded-xl px-3 md:px-4 text-xs md:text-sm font-sans focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all text-textLight"
                   value={selectedCreatorId}
                   onChange={e => setSelectedCreatorId(e.target.value)}
                 >
@@ -459,9 +465,9 @@ const CreateEventContent = () => {
                 <ImageIcon size={12} />
                 Fotos do Evento
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 md:gap-3">
                 {mediaUrls.map((url: string, i: number) => (
-                  <div key={i} className="aspect-square rounded-2xl bg-surface/50 border border-glassBorder shadow-glass-shadow relative overflow-hidden group">
+                  <div key={i} className="aspect-square rounded-xl md:rounded-2xl bg-surface/50 border border-glassBorder shadow-glass-shadow relative overflow-hidden group">
                     <img src={url} alt={`Mídia ${i + 1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
@@ -475,7 +481,7 @@ const CreateEventContent = () => {
                   </div>
                 ))}
                 {mediaUrls.length < 6 && (
-                  <label className="aspect-square rounded-2xl bg-surfaceHover/50 border border-dashed border-primary/45 flex flex-col items-center justify-center text-textMuted cursor-pointer hover:border-accent/60 hover:text-accent transition-all duration-300 hover:bg-surfaceHover">
+                  <label className="aspect-square rounded-xl md:rounded-2xl bg-surfaceHover/50 border border-dashed border-primary/45 flex flex-col items-center justify-center text-textMuted cursor-pointer hover:border-accent/60 hover:text-accent transition-all duration-300 hover:bg-surfaceHover">
                     {isUploading ? (
                       <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     ) : (
@@ -508,22 +514,26 @@ const CreateEventContent = () => {
               <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider">Descrição</label>
               <textarea
                 placeholder="Descreva o evento..."
-                className="w-full min-h-[120px] bg-surfaceHover/50 border border-glassBorder rounded-xl px-4 py-3 text-sm font-sans text-textLight focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all duration-300 resize-none placeholder:text-textMuted/50"
+                className="w-full min-h-[90px] md:min-h-[120px] bg-surfaceHover/50 border border-glassBorder rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-sans text-textLight focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all duration-300 resize-none placeholder:text-textMuted/50"
                 {...register('description')}
               />
             </div>
 
             {/* Date & Time */}
-            <div className="create-anim grid grid-cols-2 gap-3 text-left">
+            <div className="create-anim grid grid-cols-2 gap-2 md:gap-3 text-left">
               <div className="space-y-1">
                 <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
                   <CalendarPlus size={12} />
                   Data
                 </label>
                 <Input
-                  type="date"
+                  type={dateFocused || dateValue ? "date" : "text"}
+                  placeholder="Selecione a data"
                   className="bg-surface/50 border-glassBorder text-textLight"
-                  {...register('date')}
+                  {...register('date', {
+                    onBlur: () => setDateFocused(false)
+                  })}
+                  onFocus={() => setDateFocused(true)}
                 />
               </div>
               <div className="space-y-1">
@@ -532,9 +542,13 @@ const CreateEventContent = () => {
                   Horário
                 </label>
                 <Input
-                  type="time"
+                  type={timeFocused || timeValue ? "time" : "text"}
+                  placeholder="Selecione o horário"
                   className="bg-surface/50 border-glassBorder text-textLight"
-                  {...register('time')}
+                  {...register('time', {
+                    onBlur: () => setTimeFocused(false)
+                  })}
+                  onFocus={() => setTimeFocused(true)}
                 />
               </div>
             </div>
@@ -555,7 +569,7 @@ const CreateEventContent = () => {
               <button
                 type="button"
                 onClick={() => setShowMapModal(true)}
-                className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-all border border-primary/20 shadow-sm cursor-pointer"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-all border border-primary/20 shadow-sm cursor-pointer"
                 title="Escolher no Mapa"
               >
                 <MapPin size={18} />
@@ -578,14 +592,14 @@ const CreateEventContent = () => {
                 <Users2 size={12} />
                 Tipo de Acesso
               </label>
-              <div className="flex gap-3.5">
+              <div className="flex gap-2 md:gap-3.5">
                 {(['Aberto', 'Geral', 'Universitário'] as const).map(t => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setValue('publicType', t, { shouldValidate: true })}
                     className={cn(
-                      "flex-1 py-3.5 rounded-xl font-display uppercase tracking-wider text-xs border transition-all duration-300 neo-click cursor-pointer",
+                      "flex-1 py-2.5 md:py-3.5 rounded-lg md:rounded-xl font-display uppercase tracking-wider text-[10px] md:text-xs border transition-all duration-300 neo-click cursor-pointer",
                       publicType === t
                         ? 'bg-accent/10 text-accent border-accent/30 shadow-glow-accent font-black'
                         : 'bg-surface/50 border-glassBorder text-textMuted font-bold hover:text-textLight'
@@ -598,9 +612,9 @@ const CreateEventContent = () => {
             </div>
 
             {/* Presence Toggle */}
-            <div className="create-anim space-y-3.5 glass rounded-[1.8rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+            <div className="create-anim space-y-2.5 md:space-y-3.5 glass rounded-[1.2rem] md:rounded-[1.8rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-display uppercase tracking-wider font-black text-textLight">Habilitar Confirmação de Presença?</label>
+                <label className="text-xs md:text-sm font-display uppercase tracking-wider font-black text-textLight">Habilitar Confirmação de Presença?</label>
                 <button
                   type="button"
                   onClick={() => setValue('hasPresence', !hasPresence, { shouldValidate: true })}
@@ -622,9 +636,9 @@ const CreateEventContent = () => {
             </div>
 
             {/* Tickets Toggle */}
-            <div className="create-anim space-y-3.5 glass rounded-[1.8rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+            <div className="create-anim space-y-2.5 md:space-y-3.5 glass rounded-[1.2rem] md:rounded-[1.8rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-display uppercase tracking-wider font-black text-textLight">Possui Ingressos?</label>
+                <label className="text-xs md:text-sm font-display uppercase tracking-wider font-black text-textLight">Possui Ingressos?</label>
                 <button
                   type="button"
                   onClick={() => setValue('hasTickets', !hasTickets, { shouldValidate: true })}
@@ -705,9 +719,9 @@ const CreateEventContent = () => {
 
             {/* PIX Section — Admin Only */}
             {userRole === 'admin' && (
-              <div className="create-anim space-y-3.5 glass rounded-[1.8rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+              <div className="create-anim space-y-2.5 md:space-y-3.5 glass rounded-[1.2rem] md:rounded-[1.8rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-display uppercase tracking-wider font-black text-textLight flex items-center gap-2">
+                  <label className="text-xs md:text-sm font-display uppercase tracking-wider font-black text-textLight flex items-center gap-1.5 md:gap-2">
                     <CheckCircle size={16} className="text-success" />
                     Venda via PIX
                   </label>
@@ -814,23 +828,23 @@ const CreateEventContent = () => {
 
             {/* Test Event — Admin Only */}
             {userRole === 'admin' && (
-              <div className="create-anim flex items-center gap-3.5 glass rounded-[1.5rem] p-5 border border-glassBorder shadow-glass-shadow text-left">
+              <div className="create-anim flex items-center gap-2.5 md:gap-3.5 glass rounded-[1.2rem] md:rounded-[1.5rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
                 <input
                   type="checkbox"
                   id="testEvent"
-                  className="accent-primary w-5 h-5 cursor-pointer border border-glassBorder rounded-md"
+                  className="accent-primary w-4 h-4 md:w-5 md:h-5 cursor-pointer border border-glassBorder rounded-md"
                   checked={!!isTestEvent}
                   onChange={e => setValue('isTestEvent', e.target.checked, { shouldValidate: true })}
                 />
-                <label htmlFor="testEvent" className="text-sm font-mono text-textMuted uppercase tracking-wider flex items-center gap-2 cursor-pointer select-none font-bold">
+                <label htmlFor="testEvent" className="text-xs md:text-sm font-mono text-textMuted uppercase tracking-wider flex items-center gap-1.5 md:gap-2 cursor-pointer select-none font-bold">
                   <AlertTriangle size={14} className="text-accent" />
-                  Rolê de teste (só admin vê)
+                  Evento de teste (só admin vê)
                 </label>
               </div>
             )}
 
-            <div className="create-anim pt-4">
-              <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl py-4 font-display uppercase tracking-wider text-base">
+            <div className="create-anim pt-3 md:pt-4">
+              <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl py-3 md:py-4 font-display uppercase tracking-wider text-sm md:text-base">
                 {isSubmitting ? (isEdit ? 'Salvando...' : 'Criando...') : (isEdit ? 'Salvar Alterações' : 'Criar Evento')}
               </Button>
             </div>
