@@ -34,6 +34,11 @@ export const Feed = () => {
   const [filter, setFilter] = useState<FilterType>('todos');
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  
+  // Estados para Paginação de Eventos
+  const [lastDoc, setLastDoc] = useState<any>(null);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
 
   // Pull to Refresh States & Refs
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -87,9 +92,12 @@ export const Feed = () => {
 
   const loadEvents = async () => {
     setIsLoading(true);
+    setLastDoc(null);
+    setHasMore(true);
     
     try {
-      const newEvents = await storage.getUpcomingEvents();
+      // Busca a primeira página de 10 eventos
+      const { events: newEvents, lastDoc: nextLastDoc } = await storage.getPaginatedEvents(null, 10);
 
       const isUserAdmin = user?.role === 'admin';
       const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
@@ -101,10 +109,43 @@ export const Feed = () => {
       });
 
       setEvents(upcomingEvents);
+      setLastDoc(nextLastDoc);
+      if (newEvents.length < 10) {
+        setHasMore(false);
+      }
     } catch (error) {
       console.error("Erro ao carregar eventos:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLoadMoreEvents = async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    
+    try {
+      // Busca a próxima página de 10 eventos a partir do lastDoc
+      const { events: newEvents, lastDoc: nextLastDoc } = await storage.getPaginatedEvents(lastDoc, 10);
+
+      const isUserAdmin = user?.role === 'admin';
+      const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
+
+      const now = new Date();
+      const upcomingEvents = visibleEvents.filter(e => {
+        const eventDateTime = new Date(`${e.date}T${e.time || '00:00'}`);
+        return eventDateTime >= now;
+      });
+
+      setEvents(prev => [...prev, ...upcomingEvents]);
+      setLastDoc(nextLastDoc);
+      if (newEvents.length < 10) {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar mais eventos:", error);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -381,7 +422,24 @@ export const Feed = () => {
               </div>
             ))}
             
-            {/* Paginação removida */}
+            
+            {/* Botão Carregar Mais para Paginação de Eventos */}
+            {hasMore && filteredEvents.length > 0 && (
+              <div className="flex justify-center w-full col-span-full mt-6 mb-4">
+                <button
+                  onClick={handleLoadMoreEvents}
+                  disabled={isLoadingMore}
+                  className="px-8 py-3.5 bg-surface hover:bg-primary text-primary hover:text-textDark border border-glassBorder hover:border-primary/20 rounded-2xl font-display font-black text-xs uppercase tracking-wider transition-all duration-300 shadow-glass-shadow hover:shadow-glow-primary hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center gap-2 cursor-pointer neo-click"
+                >
+                  {isLoadingMore ? (
+                    <div className="w-4 h-4 border-2 border-textDark border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    'Carregar Mais Eventos'
+                  )}
+                </button>
+              </div>
+            )}
+
             {filteredEvents.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 col-span-full">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">

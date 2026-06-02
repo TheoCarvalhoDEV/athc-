@@ -1,24 +1,33 @@
-import { useEffect } from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Feed } from './pages/Feed';
 import { Search } from './pages/Search';
-import { CreateEvent } from './pages/CreateEvent';
-import { EventDetails } from './pages/EventDetails';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { Profile } from './pages/Profile';
-import { Agenda } from './pages/Agenda';
-import { ChangePassword } from './pages/ChangePassword';
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
 import { BottomNav } from './components/BottomNav';
 import { Sidebar } from './components/Sidebar';
 import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { loadMercadoPago } from '@mercadopago/sdk-js';
 
-// MainLayout agora é apenas para rotas que têm Nav Bar mas não são necessariamente protegidas
+// CARREGAMENTO PREGUIÇOSO (LAZY LOADING)
+// Importações dinâmicas sob demanda para reduzir o tamanho inicial do bundle do app
+const CreateEvent = React.lazy(() => import('./pages/CreateEvent').then(m => ({ default: m.CreateEvent })));
+const EventDetails = React.lazy(() => import('./pages/EventDetails').then(m => ({ default: m.EventDetails })));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const Profile = React.lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
+const Agenda = React.lazy(() => import('./pages/Agenda').then(m => ({ default: m.Agenda })));
+const ChangePassword = React.lazy(() => import('./pages/ChangePassword').then(m => ({ default: m.ChangePassword })));
+
+// Spinner simples de carregamento exibido enquanto uma página lazy é baixada
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
+// Layout principal unificado para páginas com barra de navegação lateral/inferior
 const MainLayout = () => {
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-background w-full">
@@ -32,49 +41,50 @@ const MainLayout = () => {
 };
 
 function App() {
-  useEffect(() => {
-    const initMP = async () => {
-      const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
-      if (publicKey && publicKey !== 'APP_USR-COLOQUE_SUA_PUBLIC_KEY_AQUI') {
-        try {
-          await loadMercadoPago();
-          new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
-          console.log("Mercado Pago SDK global inicializado com sucesso.");
-        } catch (err) {
-          console.error("Erro ao inicializar o Mercado Pago SDK global:", err);
-        }
-      }
-    };
-    initMP();
-  }, []);
-
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Toaster position="top-center" toastOptions={{ duration: 4000, style: { borderRadius: '16px', background: '#13131A', color: '#F0EDE8', border: '1px solid rgba(212,168,75,0.12)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' } }} />
+        {/* Notificações Toaster customizadas com visual premium */}
+        <Toaster 
+          position="top-center" 
+          toastOptions={{ 
+            duration: 4000, 
+            style: { 
+              borderRadius: '16px', 
+              background: '#13131A', 
+              color: '#F0EDE8', 
+              border: '1px solid rgba(212,168,75,0.12)', 
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)' 
+            } 
+          }} 
+        />
         <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/change-password" element={<ChangePassword />} />
-            <Route path="/event/:id" element={<EventDetails />} />
-            
-            {/* Rotas Públicas com Nav */}
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Feed />} />
-              <Route path="/feed" element={<Navigate to="/" replace />} />
-              <Route path="/search" element={<Search />} />
-            </Route>
+          {/* Suspense envolve todas as rotas para tratar carregamentos lazy de forma assíncrona */}
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              {/* Rotas autônomas (sem barra de navegação) */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/change-password" element={<ChangePassword />} />
+              <Route path="/event/:id" element={<EventDetails />} />
+              
+              {/* Rotas Públicas com barra de navegação */}
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<Feed />} />
+                <Route path="/feed" element={<Navigate to="/" replace />} />
+                <Route path="/search" element={<Search />} />
+              </Route>
 
-            {/* Rotas Protegidas (Exigem Login e têm Nav) */}
-            <Route element={<PrivateRoute />}>
-              <Route path="/create" element={<CreateEvent />} />
-              <Route path="/edit/:id" element={<CreateEvent />} />
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/agenda/:id" element={<Agenda />} />
-            </Route>
-          </Routes>
+              {/* Rotas Protegidas (Exigem Autenticação) */}
+              <Route element={<PrivateRoute />}>
+                <Route path="/create" element={<CreateEvent />} />
+                <Route path="/edit/:id" element={<CreateEvent />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/agenda/:id" element={<Agenda />} />
+              </Route>
+            </Routes>
+          </Suspense>
         </Router>
       </AuthProvider>
     </ErrorBoundary>

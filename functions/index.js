@@ -239,6 +239,56 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
             return;
         }
 
+        const signatureHeader = req.headers['x-signature'] || req.headers['X-Signature'] || '';
+        const requestIdHeader = req.headers['x-request-id'] || req.headers['X-Request-Id'] || '';
+        
+        // Obter o segredo do Webhook das variáveis de ambiente do Firebase Functions
+        const webhookSecret = process.env.MP_WEBHOOK_SECRET;
+        
+        if (webhookSecret && signatureHeader && requestIdHeader) {
+            try {
+                // O cabeçalho x-signature vem no formato: ts=NUMERO,v1=HASH
+                const parts = signatureHeader.split(',');
+                let ts = '';
+                let hashReceived = '';
+                for (const part of parts) {
+                    const [key, val] = part.split('=');
+                    if (key === 'ts') ts = val;
+                    if (key === 'v1') hashReceived = val;
+                }
+                
+                if (!ts || !hashReceived) {
+                    logger.warn("Webhook recebido com formato de x-signature inválido.");
+                    res.status(400).send('Assinatura inválida.');
+                    return;
+                }
+                
+                // Formato do manifest exigido pelo Mercado Pago para validação:
+                // id:[ID_DO_RECURSO];request-id:[X-REQUEST-ID];ts:[TIMESTAMP_DO_CABECALHO];
+                const crypto = require('crypto');
+                const manifest = `id:${paymentId};request-id:${requestIdHeader};ts:${ts};`;
+                
+                // Gerar HMAC SHA256 usando o segredo configurado e o manifest
+                const hmac = crypto.createHmac('sha256', webhookSecret);
+                hmac.update(manifest);
+                const hashCalculated = hmac.digest('hex');
+                
+                // Comparar hashes de forma segura
+                if (hashCalculated !== hashReceived) {
+                    logger.error("Assinatura do webhook inválida. Acesso não autorizado.");
+                    res.status(401).send('Assinatura não autorizada.');
+                    return;
+                }
+                logger.info("Assinatura do webhook do Mercado Pago validada com sucesso!");
+            } catch (sigError) {
+                logger.error("Erro ao processar assinatura do webhook:", sigError);
+                res.status(500).send('Erro interno na validação de assinatura.');
+                return;
+            }
+        } else if (!webhookSecret) {
+            logger.warn("Aviso: MP_WEBHOOK_SECRET não configurado. Validação de assinatura ignorada.");
+        }
+
         try {
             const mpPaymentInfo = await getPaymentClient().get({ id: paymentId });
             const statusReal = mpPaymentInfo.status;
@@ -416,14 +466,19 @@ exports.adminResetPassword = onCall({ cors: true }, async (request) => {
         throw new HttpsError('unauthenticated', 'Apenas usuários autenticados podem redefinir senhas.');
     }
     
-    // 2. Verificar se o solicitante é um dos administradores permitidos
+    // 2. Verificar se o solicitante é um dos administradores permitidos (via claims de admin ou fallback de e-mail)
     const callerEmail = request.auth.token.email || '';
     const adminEmails = [
       'admin@atche.com.br',
       'theotheteo@gmail.com',
       'allanjipa123@gmail.com'
     ];
-    if (!adminEmails.includes(callerEmail.toLowerCase())) {
+    
+    // ATENÇÃO: O fallback por e-mail deve ser mantido temporariamente até a migração completa
+    const isCallerAdmin = request.auth.token.admin === true || 
+                          adminEmails.includes(callerEmail.toLowerCase());
+                          
+    if (!isCallerAdmin) {
         throw new HttpsError('permission-denied', 'Apenas administradores podem redefinir senhas de parceiros.');
     }
     
@@ -447,6 +502,44 @@ exports.adminResetPassword = onCall({ cors: true }, async (request) => {
     } catch (error) {
         logger.error(`Erro ao redefinir senha do usuário ${uid}:`, error);
         throw new HttpsError('internal', 'Erro interno ao redefinir senha.');
+    }
+});
+
+// Nova Cloud Function para definir claims de administrador nos usuários
+exports.setAdminClaim = onCall({ cors: true }, async (request) => {
+    // 1. Verificar se quem está chamando está autenticado
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Apenas usuários autenticados podem definir permissões.');
+    }
+    
+    // 2. Verificar se o solicitante é um dos administradores permitidos (claims de admin ou e-mail de fallback)
+    const callerEmail = request.auth.token.email || '';
+    const adminEmails = [
+      'admin@atche.com.br',
+      'theotheteo@gmail.com',
+      'allanjipa123@gmail.com'
+    ];
+    
+    const isCallerAdmin = request.auth.token.admin === true || 
+                          adminEmails.includes(callerEmail.toLowerCase());
+                          
+    if (!isCallerAdmin) {
+        throw new HttpsError('permission-denied', 'Apenas administradores podem definir novos administradores.');
+    }
+    
+    const { uid, admin: shouldBeAdmin } = request.data;
+    if (!uid) {
+        throw new HttpsError('invalid-argument', 'O UID do usuário alvo é obrigatório.');
+    }
+    
+    try {
+        // 3. Definir claim de admin no Firebase Authentication
+        await admin.auth().setCustomClaims(uid, { admin: shouldBeAdmin === true });
+        logger.info(`Claim admin definido como ${shouldBeAdmin === true} para o usuário ${uid} por ${callerEmail}.`);
+        return { success: true, uid, admin: shouldBeAdmin === true };
+    } catch (error) {
+        logger.error(`Erro ao definir claim admin para o usuário ${uid}:`, error);
+        throw new HttpsError('internal', 'Erro interno ao definir permissão de administrador.');
     }
 });
 
