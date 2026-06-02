@@ -10,7 +10,8 @@ import gsap from 'gsap';
 import {
   ArrowLeft, Image as ImageIcon, MapPin, X, Plus, Clock, Loader2,
   Search as SearchIcon, CalendarPlus, CheckCircle, Upload,
-  Trash2, AlertTriangle, FileText, ChevronLeft, ChevronRight
+  Trash2, AlertTriangle, FileText, ChevronLeft, ChevronRight,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 import { useMap, useMapsLibrary, APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useAuth } from '../contexts/AuthContext';
@@ -1192,36 +1193,71 @@ const CreateEventContent = () => {
                   <Clock size={12} className="text-primary" />
                   Horário do Evento
                 </label>
-                <div className="flex items-center justify-center gap-3 bg-white/5 px-6 py-2.5 rounded-2xl border border-white/10">
-                  <select 
-                    value={tempHour}
-                    onChange={(e) => {
-                      const h = e.target.value;
-                      setSelectedTempTime(`${h}:${tempMinute}`);
-                    }}
-                    className="bg-transparent text-white font-display text-4xl font-black focus:outline-none cursor-pointer text-center w-14 border-0 select-none appearance-none"
-                    style={{ textAlignLast: 'center' }}
-                  >
-                    {Array.from({ length: 24 }).map((_, i) => {
-                      const h = String(i).padStart(2, '0');
-                      return <option key={h} value={h} className="bg-[#1C1917] text-white text-base font-sans">{h}</option>;
-                    })}
-                  </select>
-                  <span className="text-white/40 font-display text-3xl font-black animate-pulse">:</span>
-                  <select 
-                    value={tempMinute}
-                    onChange={(e) => {
-                      const m = e.target.value;
-                      setSelectedTempTime(`${tempHour}:${m}`);
-                    }}
-                    className="bg-transparent text-white font-display text-4xl font-black focus:outline-none cursor-pointer text-center w-14 border-0 select-none appearance-none"
-                    style={{ textAlignLast: 'center' }}
-                  >
-                    {Array.from({ length: 60 }).map((_, i) => {
-                      const m = String(i).padStart(2, '0');
-                      return <option key={m} value={m} className="bg-[#1C1917] text-white text-base font-sans">{m}</option>;
-                    })}
-                  </select>
+                <div className="flex items-center justify-center gap-6 bg-white/5 px-8 py-2 rounded-2xl border border-white/10">
+                  {/* Hour Control */}
+                  <div className="flex flex-col items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        let h = parseInt(tempHour, 10) + 1;
+                        if (h > 23) h = 0;
+                        setSelectedTempTime(`${String(h).padStart(2, '0')}:${tempMinute}`);
+                      }}
+                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
+                      title="Aumentar Hora"
+                    >
+                      <ChevronUp size={18} />
+                    </button>
+                    <span className="font-display text-4xl font-black text-white select-none w-12 text-center leading-none">
+                      {tempHour}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        let h = parseInt(tempHour, 10) - 1;
+                        if (h < 0) h = 23;
+                        setSelectedTempTime(`${String(h).padStart(2, '0')}:${tempMinute}`);
+                      }}
+                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
+                      title="Diminuir Hora"
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                  </div>
+
+                  {/* Colon */}
+                  <span className="text-white/40 font-display text-3xl font-black mb-1 select-none">:</span>
+
+                  {/* Minute Control */}
+                  <div className="flex flex-col items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        let m = parseInt(tempMinute, 10) + 5;
+                        if (m > 59) m = 0;
+                        setSelectedTempTime(`${tempHour}:${String(m).padStart(2, '0')}`);
+                      }}
+                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
+                      title="Aumentar Minuto"
+                    >
+                      <ChevronUp size={18} />
+                    </button>
+                    <span className="font-display text-4xl font-black text-white select-none w-12 text-center leading-none">
+                      {tempMinute}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        let m = parseInt(tempMinute, 10) - 5;
+                        if (m < 0) m = 55;
+                        setSelectedTempTime(`${tempHour}:${String(m).padStart(2, '0')}`);
+                      }}
+                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
+                      title="Diminuir Minuto"
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
