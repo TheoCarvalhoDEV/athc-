@@ -71,7 +71,7 @@ export const Search = () => {
       <div className="flex justify-between items-center mb-6 px-2 relative z-10 md:hidden">
         <div className="flex items-center gap-2">
           <img 
-            src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
+            src={`${import.meta.env.BASE_URL}logo.png?v=5`} 
             alt="Atchêi" 
             className="w-auto h-14 object-contain brightness-110 drop-shadow-sm" 
           />

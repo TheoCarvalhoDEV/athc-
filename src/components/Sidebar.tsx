@@ -40,7 +40,7 @@ export const Sidebar = () => {
         {/* Logo Section */}
         <div className="flex items-center gap-3 px-2 pt-2">
           <img 
-            src={`${import.meta.env.BASE_URL}logo.png?v=3`} 
+            src={`${import.meta.env.BASE_URL}logo.png?v=5`} 
             alt="Atchêi" 
             className="w-auto h-16 object-contain brightness-110 drop-shadow-sm" 
           />

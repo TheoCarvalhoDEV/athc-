@@ -56,7 +56,7 @@ export const Register = () => {
 
       <div className="w-full max-w-sm flex flex-col items-center relative z-10">
         <div className="flex flex-col items-center gap-2 stagger-el mb-8">
-          <img src={`${import.meta.env.BASE_URL}logo.png?v=3`} alt="Atchêi" className="w-24 h-24 object-contain brightness-110 drop-shadow-[0_4px_20px_rgba(255,79,24,0.15)]" />
+          <img src={`${import.meta.env.BASE_URL}logo.png?v=5`} alt="Atchêi" className="w-24 h-24 object-contain brightness-110 drop-shadow-[0_4px_20px_rgba(255,79,24,0.15)]" />
           <h2 className="font-display font-black text-2xl uppercase tracking-widest text-accent mt-2">Cadastro</h2>
         </div>
 
