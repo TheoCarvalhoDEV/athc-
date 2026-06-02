@@ -1100,6 +1100,8 @@ const CreateEventContent = () => {
           'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
         ];
         const WEEKDAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const tempHour = selectedTempTime.split(':')[0] || '20';
+        const tempMinute = selectedTempTime.split(':')[1] || '00';
 
         return (
           <div className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
@@ -1122,32 +1124,32 @@ const CreateEventContent = () => {
               </div>
 
               {/* Calendar Controls */}
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex justify-between items-center mb-5 bg-surfaceHover/40 p-1.5 rounded-2xl border border-glassBorder/40">
                 <button
                   type="button"
                   onClick={handleMonthPrev}
-                  className="p-1.5 rounded-full hover:bg-surfaceHover text-textLight transition-all border-0 bg-transparent cursor-pointer"
+                  className="p-1.5 rounded-xl hover:bg-white text-textLight transition-all border-0 bg-transparent cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
                   title="Mês Anterior"
                 >
-                  <ChevronLeft size={20} />
+                  <ChevronLeft size={18} />
                 </button>
-                <span className="font-display font-black text-sm text-textLight uppercase tracking-wider">
+                <span className="font-display font-black text-xs text-textLight uppercase tracking-widest">
                   {MONTHS_PT[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </span>
                 <button
                   type="button"
                   onClick={handleMonthNext}
-                  className="p-1.5 rounded-full hover:bg-surfaceHover text-textLight transition-all border-0 bg-transparent cursor-pointer"
+                  className="p-1.5 rounded-xl hover:bg-white text-textLight transition-all border-0 bg-transparent cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
                   title="Próximo Mês"
                 >
-                  <ChevronRight size={20} />
+                  <ChevronRight size={18} />
                 </button>
               </div>
 
               {/* Calendar Grid Weekdays */}
-              <div className="grid grid-cols-7 gap-1 text-center mb-2">
+              <div className="grid grid-cols-7 gap-1 text-center mb-3">
                 {WEEKDAYS_PT.map((day) => (
-                  <span key={day} className="text-[9px] font-mono font-bold text-primary uppercase tracking-wider">
+                  <span key={day} className="text-[9px] font-mono font-bold text-textMuted uppercase tracking-widest opacity-60">
                     {day}
                   </span>
                 ))}
@@ -1172,10 +1174,10 @@ const CreateEventContent = () => {
                         }
                       }}
                       className={cn(
-                        "w-9 h-9 flex items-center justify-center text-xs font-sans rounded-full transition-all mx-auto cursor-pointer border-0 bg-transparent",
-                        !cell.isCurrentMonth && "text-textMuted/40 hover:bg-surfaceHover/50",
+                        "w-9.5 h-9.5 flex items-center justify-center text-xs font-sans rounded-xl transition-all mx-auto cursor-pointer border-0 bg-transparent",
+                        !cell.isCurrentMonth && "text-textMuted/30 hover:bg-surfaceHover/30",
                         cell.isCurrentMonth && !isSelected && "text-textLight hover:bg-surfaceHover font-medium",
-                        isSelected && "bg-[#1C1917] text-white font-bold shadow-md hover:bg-[#1C1917]"
+                        isSelected && "bg-black text-white font-bold shadow-md hover:bg-black"
                       )}
                     >
                       {cell.day}
@@ -1185,17 +1187,42 @@ const CreateEventContent = () => {
               </div>
 
               {/* Time Picker */}
-              <div className="bg-[#1C1917] text-white rounded-[1.5rem] p-4 flex flex-col items-center justify-center gap-2 mb-5 shadow-inner border border-white/5">
-                <label className="text-[9px] uppercase font-mono font-bold text-white/50 tracking-wider flex items-center gap-1.5">
-                  <Clock size={12} />
-                  Horário
+              <div className="bg-[#1C1917] text-white rounded-[2rem] p-4 flex flex-col items-center justify-center gap-3 mb-6 shadow-xl border border-white/5">
+                <label className="text-[10px] uppercase font-mono font-bold text-white/40 tracking-wider flex items-center gap-1.5">
+                  <Clock size={12} className="text-primary" />
+                  Horário do Evento
                 </label>
-                <input
-                  type="time"
-                  value={selectedTempTime}
-                  onChange={(e) => setSelectedTempTime(e.target.value)}
-                  className="bg-transparent text-white font-display text-3xl font-black focus:outline-none text-center border-b border-white/20 pb-1 w-28 [color-scheme:dark]"
-                />
+                <div className="flex items-center justify-center gap-3 bg-white/5 px-6 py-2.5 rounded-2xl border border-white/10">
+                  <select 
+                    value={tempHour}
+                    onChange={(e) => {
+                      const h = e.target.value;
+                      setSelectedTempTime(`${h}:${tempMinute}`);
+                    }}
+                    className="bg-transparent text-white font-display text-4xl font-black focus:outline-none cursor-pointer text-center w-14 border-0 select-none appearance-none"
+                    style={{ textAlignLast: 'center' }}
+                  >
+                    {Array.from({ length: 24 }).map((_, i) => {
+                      const h = String(i).padStart(2, '0');
+                      return <option key={h} value={h} className="bg-[#1C1917] text-white text-base font-sans">{h}</option>;
+                    })}
+                  </select>
+                  <span className="text-white/40 font-display text-3xl font-black animate-pulse">:</span>
+                  <select 
+                    value={tempMinute}
+                    onChange={(e) => {
+                      const m = e.target.value;
+                      setSelectedTempTime(`${tempHour}:${m}`);
+                    }}
+                    className="bg-transparent text-white font-display text-4xl font-black focus:outline-none cursor-pointer text-center w-14 border-0 select-none appearance-none"
+                    style={{ textAlignLast: 'center' }}
+                  >
+                    {Array.from({ length: 60 }).map((_, i) => {
+                      const m = String(i).padStart(2, '0');
+                      return <option key={m} value={m} className="bg-[#1C1917] text-white text-base font-sans">{m}</option>;
+                    })}
+                  </select>
+                </div>
               </div>
 
               {/* Confirm Button */}

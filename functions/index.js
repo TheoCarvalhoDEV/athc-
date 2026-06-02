@@ -88,7 +88,6 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         const city = payerAddress.city || 'Sao Paulo';
         const federalUnit = payerAddress.federalUnit || 'SP';
 
-        const eventId = data.eventId || "ingresso";
         const eventTitle = data.eventTitle || "Ingresso Atchêi";
         const eventDescription = data.eventDescription || `Ingresso para o evento ID ${eventId}`;
 
@@ -102,7 +101,6 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         const statementDescriptor = `ATCHEI*${cleanTitleForDescriptor}`.substring(0, 16);
 
         // Processar múltiplos ingressos (VIP, Camarote, etc.) e lotes selecionados
-        const itensSelecionados = data.itensSelecionados || [];
         let valorTotal = Number(valor);
         let itemsMP = [];
 
