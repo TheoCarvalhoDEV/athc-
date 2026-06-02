@@ -18,7 +18,7 @@ const isValidCPF = (cpf: string): boolean => {
   const cleanCpf = cpf.replace(/\D/g, '');
   if (cleanCpf.length !== 11) return false;
   if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
-  
+
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
@@ -26,7 +26,7 @@ const isValidCPF = (cpf: string): boolean => {
   let rest = sum % 11;
   let digit1 = rest < 2 ? 0 : 11 - rest;
   if (parseInt(cleanCpf.charAt(9)) !== digit1) return false;
-  
+
   sum = 0;
   for (let i = 0; i < 10; i++) {
     sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
@@ -34,7 +34,7 @@ const isValidCPF = (cpf: string): boolean => {
   rest = sum % 11;
   let digit2 = rest < 2 ? 0 : 11 - rest;
   if (parseInt(cleanCpf.charAt(10)) !== digit2) return false;
-  
+
   return true;
 };
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
@@ -68,7 +68,7 @@ export const EventDetails = () => {
   const [pedidoId, setPedidoId] = useState('');
   const [pixStep, setPixStep] = useState<'select_tickets' | 'buyer_info' | 'qr_code' | 'success'>('buyer_info');
   const [selectedTickets, setSelectedTickets] = useState<{ [key: string]: number }>({});
-  
+
   const handleOpenPixModal = () => {
     if (event?.tickets && event.tickets.length > 0) {
       setPixStep('select_tickets');
@@ -100,7 +100,7 @@ export const EventDetails = () => {
     setSelectedTickets(prev => {
       const current = prev[ticketId] || 0;
       const next = Math.max(0, current + delta);
-      
+
       const tkt = event?.tickets?.find(t => t.id === ticketId);
       if (tkt && tkt.capacity !== undefined) {
         const available = tkt.capacity - (tkt.sold || 0);
@@ -109,11 +109,11 @@ export const EventDetails = () => {
           return prev;
         }
       }
-      
+
       return { ...prev, [ticketId]: next };
     });
   };
-  
+
   // BUYER STATES
   const [buyerName, setBuyerName] = useState(currentUser?.name || '');
   const [buyerEmail, setBuyerEmail] = useState(currentUser?.username || '');
@@ -145,9 +145,9 @@ export const EventDetails = () => {
     initMP();
 
     // Injeta o script de segurança do Mercado Pago dinamicamente como fallback se não estiver carregado
-    const isAlreadyLoaded = !!(window as any).MP_DEVICE_SESSION_ID || 
-                            !!document.querySelector('script[src*="mercadopago.com/v2/security.js"]');
-    
+    const isAlreadyLoaded = !!(window as any).MP_DEVICE_SESSION_ID ||
+      !!document.querySelector('script[src*="mercadopago.com/v2/security.js"]');
+
     if (!isAlreadyLoaded) {
       const scriptId = 'mp-security-script';
       const script = document.createElement('script');
@@ -170,14 +170,14 @@ export const EventDetails = () => {
         console.log("Script de segurança do Mercado Pago (security.js) injetado dinamicamente no checkout.");
         try {
           delete (document as any).currentScript;
-        } catch (e) {}
+        } catch (e) { }
       };
 
       script.onerror = () => {
         console.error("Erro ao carregar script de segurança dinamicamente no checkout.");
         try {
           delete (document as any).currentScript;
-        } catch (e) {}
+        } catch (e) { }
       };
 
       document.body.appendChild(script);
@@ -189,41 +189,41 @@ export const EventDetails = () => {
   // Firebase Instances
   const functions = getFunctions();
   if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && import.meta.env.VITE_USE_EMULATORS === 'true') {
-      try {
-          connectFunctionsEmulator(functions, "127.0.0.1", 5001);
-      } catch (e) {
-          // Ignore
-      }
+    try {
+      connectFunctionsEmulator(functions, "127.0.0.1", 5001);
+    } catch (e) {
+      // Ignore
+    }
   }
   const db = getFirestore();
 
   useEffect(() => {
-    if (!qrCodeData || !pedidoId) return; 
-    
+    if (!qrCodeData || !pedidoId) return;
+
     const docRef = doc(db, 'pedidos', pedidoId);
     const unsubscribe = onSnapshot(docRef, async (docSnap) => {
-        if (docSnap.exists()) {
-            const dados = docSnap.data();
-            if (dados.status === 'pago') {
-                // Ativar transição de sucesso premium dentro do próprio modal
-                setPixStep('success');
-                setIsRegistered(true);
-                
-                // Dispara os confetes virtuais
-                setTimeout(() => {
-                  createConfettiParticles();
-                }, 100);
+      if (docSnap.exists()) {
+        const dados = docSnap.data();
+        if (dados.status === 'pago') {
+          // Ativar transição de sucesso premium dentro do próprio modal
+          setPixStep('success');
+          setIsRegistered(true);
 
-                // Fecha o modal suavemente e abre o modal principal de sucesso após 4.5 segundos
-                setTimeout(() => {
-                    setShowPixModal(false);
-                    setQrCodeData(null);
-                    setShowModal(true);
-                }, 4500);
-            }
+          // Dispara os confetes virtuais
+          setTimeout(() => {
+            createConfettiParticles();
+          }, 100);
+
+          // Fecha o modal suavemente e abre o modal principal de sucesso após 4.5 segundos
+          setTimeout(() => {
+            setShowPixModal(false);
+            setQrCodeData(null);
+            setShowModal(true);
+          }, 4500);
         }
+      }
     }, (error) => {
-        console.error("Erro ao monitorar o pagamento do pedido:", error);
+      console.error("Erro ao monitorar o pagamento do pedido:", error);
     });
 
     return () => unsubscribe();
@@ -231,28 +231,28 @@ export const EventDetails = () => {
 
   const handlePagarPix = async () => {
     if (!event) return;
-    
+
     if (!buyerName || !buyerEmail || !buyerPhone || !buyerCpf) {
-        alert("Por favor, preencha todos os campos do formulário para continuar.");
-        return;
+      alert("Por favor, preencha todos os campos do formulário para continuar.");
+      return;
     }
 
     if (!isValidCPF(buyerCpf)) {
-        alert("Por favor, informe um CPF válido.");
-        return;
+      alert("Por favor, informe um CPF válido.");
+      return;
     }
-    
+
     setLoadingPix(true);
     const buyerId = currentUser ? currentUser.id : `guest-${Date.now()}`;
 
     const novoPedidoId = `PIX-${event.id}-${buyerId}-${Date.now()}`;
     setPedidoId(novoPedidoId);
-    
-    const deviceId = (window as any).MP_DEVICE_SESSION_ID || 
-                     (document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement)?.value || 
-                     (document.getElementById('deviceId') as HTMLInputElement)?.value || 
-                     '';
-    
+
+    const deviceId = (window as any).MP_DEVICE_SESSION_ID ||
+      (document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement)?.value ||
+      (document.getElementById('deviceId') as HTMLInputElement)?.value ||
+      '';
+
     // Mapear os ingressos selecionados
     const itensSelecionados = (event.tickets || [])
       .filter(t => (selectedTickets[t.id] || 0) > 0)
@@ -266,53 +266,53 @@ export const EventDetails = () => {
     const valorTotal = getSelectedTicketsTotal();
 
     const pedido = {
-        pedidoId: novoPedidoId,
-        valor: valorTotal,
-        cpf: buyerCpf.replace(/\D/g, ''),
-        email: buyerEmail,
-        clienteNome: buyerName,
-        clienteTelefone: buyerPhone,
-        eventId: event.id,
-        eventTitle: event.title,
-        eventDescription: event.description || '',
-        userId: buyerId,
-        deviceId: deviceId,
-        itensSelecionados: itensSelecionados
+      pedidoId: novoPedidoId,
+      valor: valorTotal,
+      cpf: buyerCpf.replace(/\D/g, ''),
+      email: buyerEmail,
+      clienteNome: buyerName,
+      clienteTelefone: buyerPhone,
+      eventId: event.id,
+      eventTitle: event.title,
+      eventDescription: event.description || '',
+      userId: buyerId,
+      deviceId: deviceId,
+      itensSelecionados: itensSelecionados
     };
 
     try {
-        const criarCobrancaPix = httpsCallable(functions, 'criarCobrancaPix');
-        const result = await criarCobrancaPix(pedido);
-        const data = result.data as any;
-        
-        setQrCodeData({
-            qr_code: data.qr_code,
-            qr_code_base64: data.qr_code_base64
-        });
-        setPixStep('qr_code');
+      const criarCobrancaPix = httpsCallable(functions, 'criarCobrancaPix');
+      const result = await criarCobrancaPix(pedido);
+      const data = result.data as any;
+
+      setQrCodeData({
+        qr_code: data.qr_code,
+        qr_code_base64: data.qr_code_base64
+      });
+      setPixStep('qr_code');
     } catch (error: any) {
-        console.error("Erro ao gerar Pix:", error);
-        alert("Erro ao processar: " + (error.message || "Verifique o console"));
+      console.error("Erro ao gerar Pix:", error);
+      alert("Erro ao processar: " + (error.message || "Verifique o console"));
     } finally {
-        setLoadingPix(false);
+      setLoadingPix(false);
     }
   };
 
   useEffect(() => {
     if (pixStep === 'success') {
-      gsap.fromTo('.success-circle', 
+      gsap.fromTo('.success-circle',
         { scale: 0.2, rotation: -60, opacity: 0 },
         { scale: 1, rotation: 0, opacity: 1, duration: 0.9, ease: 'back.out(2)' }
       );
-      gsap.fromTo('.success-title', 
+      gsap.fromTo('.success-title',
         { y: 25, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.7, delay: 0.3, ease: 'power3.out' }
       );
-      gsap.fromTo('.success-text', 
+      gsap.fromTo('.success-text',
         { y: 20, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.7, delay: 0.5, ease: 'power3.out' }
       );
-      gsap.fromTo('.success-bar', 
+      gsap.fromTo('.success-bar',
         { width: '0%' },
         { width: '100%', duration: 4, ease: 'linear', delay: 0.2 }
       );
@@ -347,8 +347,8 @@ export const EventDetails = () => {
 
   const copiarCodigo = () => {
     if (qrCodeData?.qr_code) {
-        navigator.clipboard.writeText(qrCodeData.qr_code);
-        alert("Código Pix copiado com sucesso!");
+      navigator.clipboard.writeText(qrCodeData.qr_code);
+      alert("Código Pix copiado com sucesso!");
     }
   };
 
@@ -455,7 +455,9 @@ export const EventDetails = () => {
 
   const mediaList = event.mediaUrls && event.mediaUrls.length > 0
     ? event.mediaUrls
-    : ['https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=1000'];
+    : [`${import.meta.env.BASE_URL}placeholder-logo.png`];
+
+  const isPlaceholder = mediaList[currentMediaIndex]?.includes('placeholder-logo.png');
 
   const handleNextMedia = () => {
     setCurrentMediaIndex((prev) => (prev + 1) % mediaList.length);
@@ -515,10 +517,10 @@ export const EventDetails = () => {
 
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
+
           {/* LEFT COLUMN: Media Carousel, Title, About, Location */}
           <div className="lg:col-span-2 space-y-6">
-            
+
             {/* Image Section */}
             <div
               className="relative h-80 md:h-[420px] w-full overflow-hidden rounded-[2.5rem] shadow-glass-shadow group"
@@ -557,18 +559,24 @@ export const EventDetails = () => {
                   />
                 </div>
               ) : (
-                <div className="w-full h-full relative flex items-center justify-center overflow-hidden bg-black/5">
+                <div className={`w-full h-full relative flex items-center justify-center overflow-hidden ${isPlaceholder ? 'bg-gradient-to-br from-surface via-surfaceHover to-surface p-12' : 'bg-black/5'}`}>
                   {/* Intelligent Blurred Background */}
-                  <img
-                    src={mediaList[currentMediaIndex]}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-105 pointer-events-none"
-                  />
+                  {!isPlaceholder && (
+                    <img
+                      src={mediaList[currentMediaIndex]}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-105 pointer-events-none"
+                    />
+                  )}
                   {/* Clean Crisp Image */}
                   <img
                     src={mediaList[currentMediaIndex]}
-                    alt={`${event.title} - Foto ${currentMediaIndex + 1}`}
-                    className="relative w-full h-full object-contain z-10 select-none transition-all duration-300"
+                    alt={isPlaceholder ? event.title : `${event.title} - Foto ${currentMediaIndex + 1}`}
+                    className={`relative z-10 select-none transition-all duration-300 ${
+                      isPlaceholder 
+                        ? 'w-auto h-24 md:h-32 object-contain opacity-50' 
+                        : 'w-full h-full object-contain'
+                    }`}
                     draggable="false"
                   />
                 </div>
@@ -668,12 +676,12 @@ export const EventDetails = () => {
 
           {/* RIGHT COLUMN: Ticket Info/Actions (Sticky on Desktop), Date/Time/Organizer Info */}
           <div className="space-y-6 lg:sticky lg:top-6">
-            
+
             {/* Ticket Actions Card (Floating on Mobile, Static card in Right Column on Desktop) */}
             <div className="fixed bottom-6 left-0 right-0 px-5 z-40 anim-up max-w-2xl mx-auto lg:relative lg:bottom-0 lg:px-0 lg:max-w-none lg:z-10">
               <div className="glass border-none rounded-[2.5rem] p-6 flex flex-col gap-4 shadow-float lg:shadow-glass-shadow backdrop-blur-xl relative overflow-hidden bg-gradient-to-br from-white/90 to-white/50">
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none" />
-                
+
                 {/* Info do Ingresso */}
                 <div className="flex items-center justify-between z-10 text-left">
                   <div className="flex flex-col">
@@ -722,10 +730,10 @@ export const EventDetails = () => {
                           <span>Comprar Pix</span>
                         </button>
                       ) : event.hasTickets ? (() => {
-                        const contacts = event.whatsappContacts && event.whatsappContacts.length > 0 
-                          ? event.whatsappContacts 
+                        const contacts = event.whatsappContacts && event.whatsappContacts.length > 0
+                          ? event.whatsappContacts
                           : (event.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : []);
-                          
+
                         return (
                           <button
                             onClick={() => {
@@ -759,7 +767,7 @@ export const EventDetails = () => {
               <span className="font-mono text-[9px] text-accent uppercase tracking-widest font-bold block mb-1">
                 Informações do Evento
               </span>
-              
+
               {/* Grid de Data e Horário */}
               <div className="grid grid-cols-2 gap-4 pb-4">
                 <div className="flex flex-col gap-1.5">
@@ -769,7 +777,7 @@ export const EventDetails = () => {
                   </div>
                   <p className="text-xs font-display font-black text-textLight leading-tight">{formatDate(event.date)}</p>
                 </div>
-                
+
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2 text-accent">
                     <Clock size={13} />
@@ -833,7 +841,7 @@ export const EventDetails = () => {
 
       </div>
 
-            {/* Success Modal */}
+      {/* Success Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
           <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
@@ -849,8 +857,8 @@ export const EventDetails = () => {
             <p className="text-sm text-textLight/90 mb-8 leading-relaxed max-w-[260px] mx-auto">
               Sua vaga para <strong className="text-primary">{event.title}</strong> foi garantida com sucesso. Aproveite o evento!
             </p>
-            <button 
-              onClick={() => setShowModal(false)} 
+            <button
+              onClick={() => setShowModal(false)}
               className="w-full bg-gradient-to-r from-success to-primaryHover text-textDark border-0 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg hover:scale-[1.02] active:scale-[0.98] cursor-pointer text-xs uppercase tracking-wider neo-click"
             >
               Entendido
@@ -872,28 +880,28 @@ export const EventDetails = () => {
               Escolha com qual promoter você deseja falar para garantir sua vaga:
             </p>
             <div className="space-y-3 overflow-y-auto pr-2 pb-4 flex-1">
-              {(event?.whatsappContacts && event.whatsappContacts.length > 0 
-                ? event.whatsappContacts 
+              {(event?.whatsappContacts && event.whatsappContacts.length > 0
+                ? event.whatsappContacts
                 : (event?.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : [])).map((contact, i) => (
-                <button 
-                  key={i}
-                  onClick={() => {
-                    const cleanPhone = contact.phone.replace(/\D/g, '');
-                    const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event?.title}*`;
-                    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                  }}
-                  className="w-full bg-white/60 border border-glassBorder/40 hover:border-primary/30 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/80 hover:shadow-glow-primary transition-all duration-300 neo-click cursor-pointer"
-                >
-                  <div className="flex flex-col items-start text-left">
-                    <span className="font-bold text-sm md:text-base text-textLight group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
-                    <span className="text-xs md:text-sm text-textMuted font-mono mt-0.5">{contact.phone}</span>
-                  </div>
-                  <Ticket className="text-primary/70 group-hover:text-primary transition-colors" size={18} />
-                </button>
-              ))}
+                  <button
+                    key={i}
+                    onClick={() => {
+                      const cleanPhone = contact.phone.replace(/\D/g, '');
+                      const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Tenho interesse no ingresso para o evento *${event?.title}*`;
+                      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                    }}
+                    className="w-full bg-white/60 border border-glassBorder/40 hover:border-primary/30 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/80 hover:shadow-glow-primary transition-all duration-300 neo-click cursor-pointer"
+                  >
+                    <div className="flex flex-col items-start text-left">
+                      <span className="font-bold text-sm md:text-base text-textLight group-hover:text-primary transition-colors">{contact.name || 'Promoter'}</span>
+                      <span className="text-xs md:text-sm text-textMuted font-mono mt-0.5">{contact.phone}</span>
+                    </div>
+                    <Ticket className="text-primary/70 group-hover:text-primary transition-colors" size={18} />
+                  </button>
+                ))}
             </div>
-            <button 
-              onClick={() => setShowContactsModal(false)} 
+            <button
+              onClick={() => setShowContactsModal(false)}
               className="w-full bg-white/40 hover:bg-white/60 text-textLight border border-transparent font-display font-bold py-3.5 rounded-2xl transition-all duration-300 active:scale-95 text-xs uppercase tracking-wider mt-4 cursor-pointer"
             >
               Cancelar
@@ -912,7 +920,7 @@ export const EventDetails = () => {
             </button>
             <h3 className="font-display text-xl font-black text-accent uppercase tracking-wider mb-1 mt-2">Confirmar Presença</h3>
             <p className="text-xs text-textMuted mb-6">Para evitar spam, informe seus dados.</p>
-            
+
             <div className="flex flex-col gap-4 text-left">
               <div className="space-y-4 bg-white/40 p-5 rounded-[1.75rem] shadow-glass-shadow mb-2 border border-glassBorder/30">
                 <div className="space-y-1">
@@ -921,9 +929,9 @@ export const EventDetails = () => {
                     <span className="absolute left-4 text-textMuted/60 pointer-events-none">
                       <User size={15} />
                     </span>
-                    <input 
-                      type="text" 
-                      placeholder="Seu nome" 
+                    <input
+                      type="text"
+                      placeholder="Seu nome"
                       value={buyerName}
                       onChange={e => setBuyerName(e.target.value)}
                       className="w-full text-sm pl-11 pr-4 py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-primary/40 focus:bg-white focus:shadow-glow-primary transition-all duration-300 placeholder:text-textMuted/50 font-sans"
@@ -936,9 +944,9 @@ export const EventDetails = () => {
                     <span className="absolute left-4 text-textMuted/60 pointer-events-none">
                       <Phone size={15} />
                     </span>
-                    <input 
-                      type="tel" 
-                      placeholder="(00) 00000-0000" 
+                    <input
+                      type="tel"
+                      placeholder="(00) 00000-0000"
                       value={buyerPhone}
                       onChange={e => setBuyerPhone(e.target.value)}
                       className="w-full text-sm pl-11 pr-4 py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-primary/40 focus:bg-white focus:shadow-glow-primary transition-all duration-300 placeholder:text-textMuted/50 font-sans"
@@ -946,12 +954,12 @@ export const EventDetails = () => {
                   </div>
                 </div>
               </div>
-              <button 
-                  onClick={handleRegister}
-                  disabled={!buyerName || !buyerPhone}
-                  className="w-full bg-gradient-to-r from-primary to-primaryHover text-textDark border-0 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-primary hover:shadow-glow-primary-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wider neo-click"
+              <button
+                onClick={handleRegister}
+                disabled={!buyerName || !buyerPhone}
+                className="w-full bg-gradient-to-r from-primary to-primaryHover text-textDark border-0 font-display font-black py-4 rounded-2xl transition-all duration-300 shadow-glow-primary hover:shadow-glow-primary-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-wider neo-click"
               >
-                  Confirmar Presença
+                Confirmar Presença
               </button>
             </div>
           </div>
@@ -968,17 +976,17 @@ export const EventDetails = () => {
             </button>
             <h3 className="font-display text-lg md:text-xl font-black text-accent uppercase tracking-wider mb-0.5 md:mb-1 mt-1 md:mt-2">Pagamento via Pix</h3>
             <p className="text-[11px] md:text-xs text-textMuted mb-4 md:mb-5 font-mono">Total: R$ {getSelectedTicketsTotal().toFixed(2).replace('.', ',')}</p>
-            
+
             {pixStep === 'select_tickets' && (
               <div className="flex flex-col gap-3 md:gap-4 text-left">
                 <div className="space-y-2.5 md:space-y-3 bg-white/40 p-3 md:p-4 rounded-[1.75rem] shadow-glass-shadow mb-2 max-h-[35vh] md:max-h-[45vh] overflow-y-auto pr-1 border border-glassBorder/30">
                   <p className="text-[10px] md:text-xs font-mono font-bold text-accent uppercase tracking-wider ml-1 mb-1.5 md:mb-2">Selecione seus Ingressos</p>
-                  
+
                   {(event?.tickets || []).map((t) => {
                     const available = t.capacity - (t.sold || 0);
                     const isSoldOut = t.status === 'sold_out' || available <= 0;
                     const qty = selectedTickets[t.id] || 0;
-                    
+
                     return (
                       <div key={t.id} className="flex justify-between items-center bg-white/80 p-2.5 md:p-3.5 rounded-2xl gap-2.5 md:gap-3 border border-glassBorder/20">
                         <div className="flex-1 min-w-0">
@@ -986,7 +994,7 @@ export const EventDetails = () => {
                           <p className="text-[10px] md:text-[11px] text-primary font-bold font-display mt-0.5">R$ {t.price.toFixed(2).replace('.', ',')}</p>
                           <p className="text-[7px] md:text-[8px] text-textMuted font-mono mt-0.5 uppercase tracking-wide">Restam {available} de {t.capacity}</p>
                         </div>
-                        
+
                         {isSoldOut ? (
                           <span className="text-[7px] md:text-[8px] font-mono font-bold text-danger bg-danger/10 px-2 py-1 md:py-1.5 rounded-lg uppercase tracking-wider">Esgotado</span>
                         ) : (
@@ -1012,7 +1020,7 @@ export const EventDetails = () => {
                     );
                   })}
                 </div>
-                
+
                 <button
                   type="button"
                   onClick={() => setPixStep('buyer_info')}
@@ -1028,16 +1036,16 @@ export const EventDetails = () => {
               <div className="flex flex-col gap-3 md:gap-4 text-left">
                 <div className="space-y-3.5 md:space-y-4 bg-white/40 p-4 md:p-5 rounded-[1.75rem] shadow-glass-shadow mb-2 max-h-[35vh] md:max-h-[45vh] overflow-y-auto pr-1 border border-glassBorder/30">
                   <p className="text-[10px] md:text-xs font-mono font-bold text-accent uppercase tracking-wider ml-1 mb-1.5 md:mb-2">Seus Dados de Inscrição</p>
-                  
+
                   <div className="space-y-1">
                     <label className="text-[8px] md:text-[9px] font-mono font-bold text-primary uppercase tracking-wider block ml-1">Nome Completo</label>
                     <div className="relative flex items-center">
                       <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
                         <User className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
                       </span>
-                      <input 
-                        type="text" 
-                        placeholder="Nome Completo" 
+                      <input
+                        type="text"
+                        placeholder="Nome Completo"
                         value={buyerName}
                         onChange={e => setBuyerName(e.target.value)}
                         className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-sans"
@@ -1051,9 +1059,9 @@ export const EventDetails = () => {
                       <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
                         <Mail className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
                       </span>
-                      <input 
-                        type="email" 
-                        placeholder="Seu melhor e-mail" 
+                      <input
+                        type="email"
+                        placeholder="Seu melhor e-mail"
                         value={buyerEmail}
                         onChange={e => setBuyerEmail(e.target.value)}
                         className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-sans"
@@ -1067,9 +1075,9 @@ export const EventDetails = () => {
                       <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
                         <Phone className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
                       </span>
-                      <input 
-                        type="tel" 
-                        placeholder="(00) 00000-0000" 
+                      <input
+                        type="tel"
+                        placeholder="(00) 00000-0000"
                         value={buyerPhone}
                         onChange={e => setBuyerPhone(e.target.value)}
                         className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-sans"
@@ -1083,9 +1091,9 @@ export const EventDetails = () => {
                       <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
                         <CreditCard className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
                       </span>
-                      <input 
-                        type="text" 
-                        placeholder="000.000.000-00" 
+                      <input
+                        type="text"
+                        placeholder="000.000.000-00"
                         value={buyerCpf}
                         onChange={e => setBuyerCpf(formatCPF(e.target.value))}
                         className="w-full text-xs md:text-sm pl-9 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3.5 rounded-xl bg-white/90 text-textLight outline-none border border-glassBorder/60 focus:border-success/40 focus:bg-white focus:shadow-glow-success transition-all duration-300 placeholder:text-textMuted/50 font-mono"
@@ -1093,7 +1101,7 @@ export const EventDetails = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {event?.tickets && event.tickets.length > 0 && (
                   <button
                     type="button"
@@ -1104,13 +1112,13 @@ export const EventDetails = () => {
                   </button>
                 )}
 
-                <button 
-                    onClick={handlePagarPix}
-                    disabled={loadingPix || !buyerName || !buyerEmail || !buyerPhone || !buyerCpf}
-                    className="w-full bg-success text-textDark border-0 font-display font-black py-3.5 md:py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-xs md:text-sm uppercase tracking-wider"
+                <button
+                  onClick={handlePagarPix}
+                  disabled={loadingPix || !buyerName || !buyerEmail || !buyerPhone || !buyerCpf}
+                  className="w-full bg-success text-textDark border-0 font-display font-black py-3.5 md:py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-xs md:text-sm uppercase tracking-wider"
                 >
-                    {loadingPix ? <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-textDark border-t-transparent rounded-full animate-spin" /> : <QrCode className="w-3.5 h-3.5 md:w-4 md:h-4" />}
-                    {loadingPix ? 'Gerando QR Code...' : 'Gerar QR Code Pix'}
+                  {loadingPix ? <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-textDark border-t-transparent rounded-full animate-spin" /> : <QrCode className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+                  {loadingPix ? 'Gerando QR Code...' : 'Gerar QR Code Pix'}
                 </button>
               </div>
             )}
@@ -1118,31 +1126,31 @@ export const EventDetails = () => {
             {pixStep === 'qr_code' && qrCodeData && (
               <div className="flex flex-col items-center">
                 <div className="p-4 md:p-5 bg-white border border-transparent rounded-[1.75rem] shadow-glass-shadow mb-4 md:mb-6 w-full flex justify-center">
-                    {qrCodeData.qr_code_base64 ? (
-                        <img 
-                            src={`data:image/jpeg;base64,${qrCodeData.qr_code_base64}`} 
-                            alt="QR Code Pix" 
-                            className="w-40 h-40 md:w-48 md:h-48 rounded-lg object-contain"
-                        />
-                    ) : (
-                        <div className="w-40 h-40 md:w-48 md:h-48 flex items-center justify-center text-textMuted bg-surface rounded-lg text-sm">Indisponível</div>
-                    )}
+                  {qrCodeData.qr_code_base64 ? (
+                    <img
+                      src={`data:image/jpeg;base64,${qrCodeData.qr_code_base64}`}
+                      alt="QR Code Pix"
+                      className="w-40 h-40 md:w-48 md:h-48 rounded-lg object-contain"
+                    />
+                  ) : (
+                    <div className="w-40 h-40 md:w-48 md:h-48 flex items-center justify-center text-textMuted bg-surface rounded-lg text-sm">Indisponível</div>
+                  )}
                 </div>
-                
-                <button 
-                    onClick={copiarCodigo}
-                    className="w-full bg-white/50 hover:bg-white/70 text-textLight border border-glassBorder/20 font-display font-black py-3 md:py-4 px-3 md:px-4 rounded-2xl mb-3 md:mb-4 transition-all shadow-glass-shadow hover:shadow-glow-primary hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-[10px] md:text-xs uppercase tracking-wider cursor-pointer"
+
+                <button
+                  onClick={copiarCodigo}
+                  className="w-full bg-white/50 hover:bg-white/70 text-textLight border border-glassBorder/20 font-display font-black py-3 md:py-4 px-3 md:px-4 rounded-2xl mb-3 md:mb-4 transition-all shadow-glass-shadow hover:shadow-glow-primary hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-[10px] md:text-xs uppercase tracking-wider cursor-pointer"
                 >
-                    <svg className="w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    Copiar Código Pix
+                  <svg className="w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                  Copiar Código Pix
                 </button>
 
                 <div className="flex items-center justify-center gap-2 text-[10px] md:text-xs font-mono font-bold text-success bg-success/10 py-3 md:py-3.5 px-3 md:px-4 rounded-2xl w-full border border-success/10 shadow-sm">
-                    <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 md:h-2.5 md:w-2.5 bg-success"></span>
-                    </span>
-                    AGUARDANDO PAGAMENTO...
+                  <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 md:h-2.5 md:w-2.5 bg-success"></span>
+                  </span>
+                  AGUARDANDO PAGAMENTO...
                 </div>
               </div>
             )}
@@ -1157,11 +1165,11 @@ export const EventDetails = () => {
                     <path className="payment-success-checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
                   </svg>
                 </div>
-                
+
                 <h3 className="success-title font-display text-lg md:text-2xl font-black text-success uppercase tracking-wider mb-1 md:mb-2">
                   Pagamento Confirmado!
                 </h3>
-                
+
                 <p className="success-text text-[11px] md:text-sm text-textLight max-w-[240px] mb-6 md:mb-8 leading-relaxed font-sans">
                   Sua vaga está garantida. Preparando seus ingressos...
                 </p>

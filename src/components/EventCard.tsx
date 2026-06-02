@@ -61,7 +61,13 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
             <img src={event.mediaUrls[0]} alt={event.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           )
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-accent/10 to-surface" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-surface flex items-center justify-center p-6">
+            <img 
+              src={`${import.meta.env.BASE_URL}placeholder-logo.png`} 
+              alt={event.title} 
+              className="w-auto h-12 object-contain opacity-40 group-hover:scale-105 transition-transform duration-500" 
+            />
+          </div>
         )}
 
         {/* Gradient Overlay - Dark Shadow (no white fade) */}
@@ -108,10 +114,12 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
               <img src={event.mediaUrls[0]} alt={event.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             )
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-surface via-surfaceHover to-surface flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <div className="w-8 h-8 border-b-2 border-primary rounded-b-full opacity-40"></div>
-              </div>
+            <div className="w-full h-full bg-gradient-to-br from-surface via-surfaceHover to-surface flex items-center justify-center p-6">
+              <img 
+                src={`${import.meta.env.BASE_URL}placeholder-logo.png`} 
+                alt={event.title} 
+                className="w-auto h-12 object-contain opacity-50 transition-transform duration-500 group-hover:scale-105" 
+              />
             </div>
           )}
 
