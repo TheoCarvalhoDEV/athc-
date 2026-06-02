@@ -1105,7 +1105,7 @@ const CreateEventContent = () => {
 
         return (
           <div className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-background w-full max-w-sm rounded-[2.5rem] border border-glassBorder shadow-2xl flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
+            <div className="bg-background w-full max-w-[440px] rounded-[2.5rem] border border-glassBorder shadow-2xl flex flex-col p-5 sm:p-6 relative overflow-hidden animate-in zoom-in duration-300">
               {/* Header */}
               <div className="flex justify-between items-center mb-5">
                 <div className="text-left">
@@ -1124,7 +1124,7 @@ const CreateEventContent = () => {
               </div>
 
               {/* Calendar Controls */}
-              <div className="flex justify-between items-center mb-5 bg-surfaceHover/40 p-1.5 rounded-2xl border border-glassBorder/40">
+              <div className="flex justify-between items-center mb-5 bg-surfaceHover/40 p-2 rounded-2xl border border-glassBorder/40">
                 <button
                   type="button"
                   onClick={handleMonthPrev}
@@ -1133,7 +1133,7 @@ const CreateEventContent = () => {
                 >
                   <ChevronLeft size={18} />
                 </button>
-                <span className="font-display font-black text-xs text-textLight uppercase tracking-widest">
+                <span className="font-display font-black text-xs sm:text-sm text-textLight uppercase tracking-widest">
                   {MONTHS_PT[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </span>
                 <button
@@ -1147,16 +1147,16 @@ const CreateEventContent = () => {
               </div>
 
               {/* Calendar Grid Weekdays */}
-              <div className="grid grid-cols-7 gap-1 text-center mb-3">
+              <div className="grid grid-cols-7 gap-1.5 text-center mb-3">
                 {WEEKDAYS_PT.map((day) => (
-                  <span key={day} className="text-[9px] font-mono font-bold text-textMuted uppercase tracking-widest opacity-60">
+                  <span key={day} className="text-[10px] sm:text-xs font-mono font-bold text-textMuted uppercase tracking-widest opacity-60">
                     {day}
                   </span>
                 ))}
               </div>
 
               {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-1.5 text-center mb-6">
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center mb-6">
                 {generateCalendarCells(currentMonth).map((cell, idx) => {
                   const isSelected = selectedTempDate &&
                     cell.date.getDate() === selectedTempDate.getDate() &&
@@ -1174,9 +1174,9 @@ const CreateEventContent = () => {
                         }
                       }}
                       className={cn(
-                        "w-9.5 h-9.5 flex items-center justify-center text-xs font-sans rounded-xl transition-all mx-auto cursor-pointer border-0 bg-transparent",
+                        "w-10 h-10 xs:w-11 xs:h-11 sm:w-12 sm:h-12 flex items-center justify-center text-xs sm:text-sm font-sans rounded-full transition-all mx-auto cursor-pointer border-0 bg-transparent",
                         !cell.isCurrentMonth && "text-textMuted/30 hover:bg-surfaceHover/30",
-                        cell.isCurrentMonth && !isSelected && "text-textLight hover:bg-surfaceHover font-medium",
+                        cell.isCurrentMonth && !isSelected && "text-textLight hover:bg-surfaceHover font-semibold",
                         isSelected && "bg-black text-white font-bold shadow-md hover:bg-black"
                       )}
                     >
