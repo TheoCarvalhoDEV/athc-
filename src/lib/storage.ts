@@ -128,9 +128,6 @@ export const storage = {
     const querySnapshot = await getDocs(collection(db, 'events'));
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
-      if (data.publicType === 'VIP' || data.publicType === 'vip') {
-        data.publicType = 'Aberto';
-      }
       return { id: doc.id, ...data } as EventItem;
     });
   },
@@ -161,9 +158,6 @@ export const storage = {
     const querySnapshot = await getDocs(q);
     const events = querySnapshot.docs.map(doc => {
       const data = doc.data();
-      if (data.publicType === 'VIP' || data.publicType === 'vip') {
-        data.publicType = 'Aberto';
-      }
       return { id: doc.id, ...data } as EventItem;
     });
     const lastDoc = querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
@@ -188,9 +182,6 @@ export const storage = {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
-      if (data.publicType === 'VIP' || data.publicType === 'vip') {
-        data.publicType = 'Aberto';
-      }
       return { id: doc.id, ...data } as EventItem;
     });
   },
@@ -213,9 +204,6 @@ export const storage = {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => {
       const data = doc.data();
-      if (data.publicType === 'VIP' || data.publicType === 'vip') {
-        data.publicType = 'Aberto';
-      }
       return { id: doc.id, ...data } as EventItem;
     });
   },
@@ -406,6 +394,29 @@ export const storage = {
     const q = query(collection(db, 'registrations'), where('eventId', '==', eventId));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
+  },
+
+  // Busca inscrições paginadas de um evento específico para otimizar desempenho e custo
+  getPaginatedRegistrationsForEvent: async (eventId: string, lastVisibleDoc: any = null, pageSize: number = 20) => {
+    const regsRef = collection(db, 'registrations');
+    const q = lastVisibleDoc
+      ? query(
+          regsRef,
+          where('eventId', '==', eventId),
+          startAfter(lastVisibleDoc),
+          limit(pageSize)
+        )
+      : query(
+          regsRef,
+          where('eventId', '==', eventId),
+          limit(pageSize)
+        );
+
+    const querySnapshot = await getDocs(q);
+    const registrations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
+    const lastDoc = querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
+
+    return { registrations, lastDoc };
   },
 
   hasUserRegistered: async (eventId: string, userId: string): Promise<boolean> => {

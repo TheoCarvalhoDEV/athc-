@@ -5,12 +5,16 @@ service firebase.storage {
     
     // Função auxiliar para verificar se o usuário é administrador
     function isAdmin() {
-      return request.auth != null && 
+      // Verifica via Custom Claims (definido pela Cloud Function setAdminClaim)
+      // Fallback por e-mail será mantido temporariamente
+      return request.auth != null && (
+        ('admin' in request.auth.token && request.auth.token.admin == true) ||
         request.auth.token.email.lower() in [
           'admin@atche.com.br', 
           'theotheteo@gmail.com', 
           'allanjipa123@gmail.com'
-        ];
+        ]
+      );
     }
 
     // Regra para fotos de perfil

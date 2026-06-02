@@ -79,6 +79,9 @@ export const Profile = () => {
   const [selectedEventForParticipants, setSelectedEventForParticipants] = useState<EventItem | null>(null);
   const [participantsList, setParticipantsList] = useState<Registration[]>([]);
   const [isLoadingParticipants, setIsLoadingParticipants] = useState<boolean>(false);
+  const [participantsLastDoc, setParticipantsLastDoc] = useState<any>(null);
+  const [hasMoreParticipants, setHasMoreParticipants] = useState<boolean>(true);
+  const [isLoadingMoreParticipants, setIsLoadingMoreParticipants] = useState<boolean>(false);
 
   const loadEvents = useCallback(async () => {
     try {
@@ -204,10 +207,18 @@ export const Profile = () => {
     setSelectedEventForParticipants(event);
     setShowParticipantsModal(true);
     setIsLoadingParticipants(true);
+    setParticipantsList([]);
+    setParticipantsLastDoc(null);
+    setHasMoreParticipants(true);
     try {
-      const list = await storage.getRegistrationsForEvent(event.id);
+      const { registrations: list, lastDoc } = await storage.getPaginatedRegistrationsForEvent(event.id, null, 10);
+      // Ordena por data decrescente (já ordenado pelo Firestore no webhook, mas garantimos aqui)
       const sorted = list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       setParticipantsList(sorted);
+      setParticipantsLastDoc(lastDoc);
+      if (list.length < 10) {
+        setHasMoreParticipants(false);
+      }
     } catch (error) {
       console.error("Erro ao buscar participantes:", error);
     } finally {
@@ -215,32 +226,70 @@ export const Profile = () => {
     }
   };
 
-  const exportToCSV = () => {
-    if (!participantsList || participantsList.length === 0) return;
-    const headers = ['Nome;E-mail;Telefone;CPF;Situação de Pagamento;Data da Inscrição'];
-    const rows = participantsList.map(p => {
-      const name = p.userName || '';
-      const email = p.userEmail || '';
-      const phone = p.userPhone || '';
-      const cpf = p.userCpf || '';
-      const status = p.paymentStatus || 'Gratuito';
-      const date = new Date(p.timestamp).toLocaleString('pt-BR');
+  const handleLoadMoreParticipants = async () => {
+    if (!selectedEventForParticipants || isLoadingMoreParticipants || !hasMoreParticipants) return;
+    setIsLoadingMoreParticipants(true);
+    try {
+      const { registrations: list, lastDoc } = await storage.getPaginatedRegistrationsForEvent(
+        selectedEventForParticipants.id,
+        participantsLastDoc,
+        10
+      );
+      const sorted = list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setParticipantsList(prev => [...prev, ...sorted]);
+      setParticipantsLastDoc(lastDoc);
+      if (list.length < 10) {
+        setHasMoreParticipants(false);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar mais participantes:", error);
+    } finally {
+      setIsLoadingMoreParticipants(false);
+    }
+  };
+
+  const exportToCSV = async () => {
+    if (!selectedEventForParticipants) return;
+    setIsLoadingParticipants(true);
+    try {
+      // Para o CSV, buscamos a lista completa para garantir a exportação correta de todos os participantes
+      const fullList = await storage.getRegistrationsForEvent(selectedEventForParticipants.id);
+      if (fullList.length === 0) {
+        alert("Nenhum participante confirmado para exportar.");
+        return;
+      }
+      const sorted = fullList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
-      // Formata os campos e envolve com ="..." para forçar o Excel a tratá-los como texto de forma segura
-      const formattedPhone = phone ? `="${formatPhone(phone)}"` : '""';
-      const formattedCpf = cpf ? `="${formatCPF(cpf)}"` : '""';
-      
-      return `${name};${email};${formattedPhone};${formattedCpf};${status};${date}`;
-    });
-    const csvContent = '\uFEFF' + headers.concat(rows).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `participantes_${selectedEventForParticipants?.title.replace(/\s+/g, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const headers = ['Nome;E-mail;Telefone;CPF;Situação de Pagamento;Data da Inscrição'];
+      const rows = sorted.map(p => {
+        const name = p.userName || '';
+        const email = p.userEmail || '';
+        const phone = p.userPhone || '';
+        const cpf = p.userCpf || '';
+        const status = p.paymentStatus || 'Gratuito';
+        const date = new Date(p.timestamp).toLocaleString('pt-BR');
+        
+        // Formata os campos e envolve com ="..." para forçar o Excel a tratá-los como texto de forma segura
+        const formattedPhone = phone ? `="${formatPhone(phone)}"` : '""';
+        const formattedCpf = cpf ? `="${formatCPF(cpf)}"` : '""';
+        
+        return `${name};${email};${formattedPhone};${formattedCpf};${status};${date}`;
+      });
+      const csvContent = '\uFEFF' + headers.concat(rows).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `participantes_${selectedEventForParticipants?.title.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Erro ao exportar CSV:", error);
+      alert("Ocorreu um erro ao exportar a lista.");
+    } finally {
+      setIsLoadingParticipants(false);
+    }
   };
 
   const openMaps = (event: EventItem) => {
@@ -817,6 +866,21 @@ export const Profile = () => {
                       </div>
                     );
                   })}
+
+                  {/* Botão Carregar Mais para Paginação de Inscrições */}
+                  {hasMoreParticipants && (
+                    <button
+                      onClick={handleLoadMoreParticipants}
+                      disabled={isLoadingMoreParticipants}
+                      className="w-full py-3.5 rounded-xl border border-glassBorder text-textLight hover:text-accent hover:border-accent/40 font-mono text-[9px] font-bold uppercase tracking-wider bg-surface/50 hover:bg-surfaceHover active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer neo-click"
+                    >
+                      {isLoadingMoreParticipants ? (
+                        <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        'Carregar Mais Participantes'
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
