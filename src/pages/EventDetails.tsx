@@ -615,12 +615,7 @@ export const EventDetails = () => {
               )}
             </div>
 
-            {/* Public Type Tag */}
-            <div className="flex">
-              <span className="bg-accent/15 text-accent text-[10px] font-mono font-bold border-none px-3.5 py-1.5 rounded-full uppercase tracking-wider backdrop-blur-md">
-                Acesso {event.publicType}
-              </span>
-            </div>
+
 
             {/* Event Title */}
             <div className="text-left">

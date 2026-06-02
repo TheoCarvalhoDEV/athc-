@@ -9,7 +9,7 @@ import { compressImage } from '../lib/imageUtils';
 import gsap from 'gsap';
 import {
   ArrowLeft, Image as ImageIcon, MapPin, X, Plus, Clock, Loader2,
-  Search as SearchIcon, CalendarPlus, Users2, CheckCircle, Upload,
+  Search as SearchIcon, CalendarPlus, CheckCircle, Upload,
   Trash2, AlertTriangle, FileText
 } from 'lucide-react';
 import { useMap, useMapsLibrary, APIProvider, Map, AdvancedMarker } from '@vis.gl/react-google-maps';
@@ -74,7 +74,7 @@ const eventSchema = z.object({
   time: z.string().min(1, "Horário obrigatório"),
   location: z.string().min(1, "Local obrigatório"),
   address: z.string().min(1, "Endereço obrigatório"),
-  publicType: z.string(),
+  publicType: z.string().optional(),
   description: z.string().min(10, "A descrição deve ter no mínimo 10 caracteres"),
   hasTickets: z.boolean(),
   hasPixTickets: z.boolean().optional(),
@@ -147,7 +147,6 @@ const CreateEventContent = () => {
   const isTestEvent = watch('isTestEvent');
   const location = watch('location');
   const address = watch('address');
-  const publicType = watch('publicType');
   const hasPresence = watch('hasPresence') ?? true;
   const dateValue = watch('date');
   const timeValue = watch('time');
@@ -283,7 +282,7 @@ const CreateEventContent = () => {
       ...data,
       tickets: data.hasPixTickets ? tickets : [],
       whatsappContacts: data.whatsappContacts?.filter(c => c.phone.trim() !== '') || [],
-      publicType: data.publicType as any,
+      publicType: data.publicType || 'Aberto',
       creatorId: id ? (selectedCreatorId || originalCreatorId || targetCreatorId) : targetCreatorId,
     };
     try {
@@ -586,30 +585,7 @@ const CreateEventContent = () => {
               />
             </div>
 
-            {/* Public Type */}
-            <div className="create-anim space-y-1.5 text-left">
-              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
-                <Users2 size={12} />
-                Tipo de Acesso
-              </label>
-              <div className="flex gap-2 md:gap-3.5">
-                {(['Aberto', 'Geral', 'Universitário'] as const).map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setValue('publicType', t, { shouldValidate: true })}
-                    className={cn(
-                      "flex-1 py-2.5 md:py-3.5 rounded-lg md:rounded-xl font-display uppercase tracking-wider text-[10px] md:text-xs border transition-all duration-300 neo-click cursor-pointer",
-                      publicType === t
-                        ? 'bg-accent/10 text-accent border-accent/30 shadow-glow-accent font-black'
-                        : 'bg-surface/50 border-glassBorder text-textMuted font-bold hover:text-textLight'
-                    )}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
+
 
             {/* Presence Toggle */}
             <div className="create-anim space-y-2.5 md:space-y-3.5 glass rounded-[1.2rem] md:rounded-[1.8rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
