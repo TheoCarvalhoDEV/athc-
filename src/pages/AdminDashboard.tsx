@@ -9,6 +9,9 @@ import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
 import type { AppProfile } from '../lib/storage';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { firebaseConfig } from '../lib/firebase';
 
 
 const formatDateBR = (dateStr: string): string => {
@@ -160,10 +163,6 @@ export const AdminDashboard = () => {
 
     try {
       // 1. Criar usuário no Firebase Auth usando instância secundária para não deslogar o Admin
-      const { initializeApp } = await import('firebase/app');
-      const { getAuth, createUserWithEmailAndPassword, signOut } = await import('firebase/auth');
-      const { firebaseConfig } = await import('../lib/firebase');
-
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
       const secondaryAuth = getAuth(secondaryApp);
 

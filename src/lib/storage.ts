@@ -18,7 +18,8 @@ import {
 import {
   signInWithEmailAndPassword,
   signOut,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  updatePassword
 } from 'firebase/auth';
 
 export interface AppProfile {
@@ -319,7 +320,6 @@ export const storage = {
 
     // Atualizar a senha no Firebase Auth também
     if (auth.currentUser) {
-      const { updatePassword } = await import('firebase/auth');
       await updatePassword(auth.currentUser, newPassword);
     }
 
