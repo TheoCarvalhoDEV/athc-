@@ -163,6 +163,10 @@ export const AdminDashboard = () => {
 
     try {
       // 1. Criar usuário no Firebase Auth usando instância secundária para não deslogar o Admin
+      const { initializeApp } = await import('firebase/app');
+      const { getAuth, createUserWithEmailAndPassword, signOut } = await import('firebase/auth');
+      const { firebaseConfig } = await import('../lib/firebase');
+
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
       const secondaryAuth = getAuth(secondaryApp);
 
