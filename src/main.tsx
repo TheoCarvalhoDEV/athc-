@@ -47,7 +47,7 @@ if ('serviceWorker' in navigator) {
                 toast.dismiss(t.id);
                 updateSW(true);
               }}
-              className="px-3.5 py-1.5 text-[10px] font-bold text-black bg-primary rounded-xl uppercase tracking-wider transition-all hover:opacity-90 active:scale-95 cursor-pointer border-0"
+              className="px-3.5 py-1.5 text-[10px] font-bold text-white bg-primary rounded-xl uppercase tracking-wider transition-all hover:opacity-90 active:scale-95 cursor-pointer border-0"
             >
               Atualizar
             </button>
@@ -61,7 +61,7 @@ if ('serviceWorker' in navigator) {
         </div>
       ), {
         duration: Infinity, // Não fecha sozinho até o usuário interagir
-        position: 'bottom-center',
+        position: 'top-center',
       });
     },
     onOfflineReady() {
