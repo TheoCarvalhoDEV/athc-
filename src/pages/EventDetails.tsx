@@ -147,10 +147,18 @@ export const EventDetails = () => {
     initMP();
 
     // Injeta o script de segurança do Mercado Pago dinamicamente como fallback se não estiver carregado
-    const isAlreadyLoaded = !!(window as any).MP_DEVICE_SESSION_ID ||
-      !!document.querySelector('script[src*="mercadopago.com/v2/security.js"]');
+    const hasDeviceSessionId = !!(window as any).MP_DEVICE_SESSION_ID;
+    const hasScriptTag = !!document.querySelector('script[src*="mercadopago.com/v2/security.js"]');
 
-    if (!isAlreadyLoaded) {
+    if (hasDeviceSessionId) {
+      // Se a variável global já existe, garante que o input oculto seja preenchido
+      const input = document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement;
+      if (input) {
+        input.value = (window as any).MP_DEVICE_SESSION_ID;
+      }
+    }
+
+    if (!hasScriptTag) {
       const scriptId = 'mp-security-script';
       const script = document.createElement('script');
       script.id = scriptId;
@@ -256,6 +264,8 @@ export const EventDetails = () => {
       (document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement)?.value ||
       (document.getElementById('deviceId') as HTMLInputElement)?.value ||
       '';
+
+    console.log("Device ID capturado para o pagamento:", deviceId);
 
     // Mapear os ingressos selecionados
     const itensSelecionados = (event.tickets || [])

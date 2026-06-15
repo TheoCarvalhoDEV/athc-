@@ -29,6 +29,8 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
     const data = request.data;
     const { valor, cpf, email, pedidoId, deviceId } = data;
     
+    logger.info("Criando cobrança Pix. Pedido:", pedidoId, "Valor:", valor, "CPF:", cpf, "Email:", email, "DeviceID:", deviceId);
+    
     if (!valor || !email || !pedidoId) {
         throw new HttpsError('invalid-argument', 'Dados incompletos para gerar o Pix.');
     }
@@ -109,14 +111,16 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         const eventTitle = data.eventTitle || "Ingresso Atchêi";
         const eventDescription = data.eventDescription || `Ingresso para o evento ID ${eventId}`;
 
-        // Gerar statement_descriptor dinâmico e seguro de no máximo 16 caracteres alfanuméricos
+        // Gerar statement_descriptor dinâmico e seguro de no máximo 13 caracteres alfanuméricos
         const cleanTitleForDescriptor = eventTitle
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "") // Remove acentos
             .replace(/[^a-zA-Z0-9\s]/g, "")  // Remove caracteres especiais exceto espaços
             .replace(/\s+/g, "")             // Remove espaços
             .toUpperCase();
-        const statementDescriptor = `ATCHEI*${cleanTitleForDescriptor}`.substring(0, 16);
+        const statementDescriptor = `ATCHEI*${cleanTitleForDescriptor}`.substring(0, 13);
+
+        logger.info("Statement Descriptor gerado:", statementDescriptor, "Comprimento:", statementDescriptor.length);
 
         // Processar múltiplos ingressos (VIP, Camarote, etc.) e lotes selecionados.
         // SEGURANÇA: o preço é SEMPRE obtido do documento do evento no servidor.
