@@ -386,7 +386,7 @@ export const storage = {
   },
 
   saveRegistration: async (registration: Registration) => {
-    const { id, ...data } = registration;
+    const { id: _, ...data } = registration;
     await addDoc(collection(db, 'registrations'), data);
   },
 

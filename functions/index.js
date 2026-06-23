@@ -5,6 +5,7 @@ const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
 const cors = require("cors")({ origin: true });
+const { checkRateLimit, LIMITS } = require("./rateLimiter");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -30,6 +31,18 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
     
     if (!valor || !email || !pedidoId) {
         throw new HttpsError('invalid-argument', 'Dados incompletos para gerar o Pix.');
+    }
+
+    // Rate Limiting: 5 cobranças por minuto por usuário
+    const userId = request.auth?.uid || data.userId || 'anonymous';
+    const rlMinuto = await checkRateLimit(userId, 'criarCobrancaPix', LIMITS.CRIAR_COBRANCA.max, LIMITS.CRIAR_COBRANCA.windowSec);
+    if (!rlMinuto.allowed) {
+        throw new HttpsError('resource-exhausted', `Limite de cobranças atingido. Tente novamente em ${Math.ceil(rlMinuto.retryAfterMs / 1000)} segundos.`);
+    }
+    // Rate Limiting: 20 cobranças por hora por usuário
+    const rlHora = await checkRateLimit(userId, 'criarCobrancaPix_hora', LIMITS.CRIAR_COBRANCA_HORA.max, LIMITS.CRIAR_COBRANCA_HORA.windowSec);
+    if (!rlHora.allowed) {
+        throw new HttpsError('resource-exhausted', `Limite de cobranças por hora atingido. Tente novamente em ${Math.ceil(rlHora.retryAfterMs / 1000)} segundos.`);
     }
 
     const eventId = data.eventId || "ingresso";
@@ -222,6 +235,9 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         };
 
     } catch (error) {
+        if (error instanceof HttpsError) {
+            throw error;
+        }
         logger.error("Erro ao criar cobrança Pix:", error);
         throw new HttpsError('internal', 'Erro ao processar pagamento Pix.');
     }
@@ -229,6 +245,16 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
 
 exports.webhookMercadoPago = onRequest(async (req, res) => {
     cors(req, res, async () => {
+        // Rate Limiting: 60 requests por minuto por IP
+        const clientIp = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+        const rlWebhook = await checkRateLimit(clientIp, 'webhookMercadoPago', LIMITS.WEBHOOK.max, LIMITS.WEBHOOK.windowSec);
+        if (!rlWebhook.allowed) {
+            const retryAfterSec = Math.ceil(rlWebhook.retryAfterMs / 1000);
+            res.set('Retry-After', String(retryAfterSec));
+            res.status(429).send(`Rate limit excedido. Tente novamente em ${retryAfterSec} segundos.`);
+            return;
+        }
+
         const paymentId = req.query.id || req.body?.data?.id || req.body?.id;
         logger.info("Webhook payload recebido. Query:", req.query, "Body:", req.body, "Parsed ID:", paymentId);
 
@@ -243,7 +269,12 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
         // Obter o segredo do Webhook das variáveis de ambiente do Firebase Functions
         const webhookSecret = process.env.MP_WEBHOOK_SECRET;
         
-        if (webhookSecret && signatureHeader && requestIdHeader) {
+        if (webhookSecret) {
+            if (!signatureHeader || !requestIdHeader) {
+                logger.error("Validação de assinatura falhou: Cabeçalhos x-signature ou x-request-id ausentes.");
+                res.status(400).send('Assinatura ausente ou inválida.');
+                return;
+            }
             try {
                 // O cabeçalho x-signature vem no formato: ts=NUMERO,v1=HASH
                 const parts = signatureHeader.split(',');
@@ -283,7 +314,7 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
                 res.status(500).send('Erro interno na validação de assinatura.');
                 return;
             }
-        } else if (!webhookSecret) {
+        } else {
             logger.warn("Aviso: MP_WEBHOOK_SECRET não configurado. Validação de assinatura ignorada.");
         }
 
@@ -482,6 +513,12 @@ exports.adminResetPassword = onCall({ cors: true }, async (request) => {
     
     if (!uid || !newPassword) {
         throw new HttpsError('invalid-argument', 'UID e nova senha são obrigatórios.');
+    }
+
+    // Rate Limiting: 3 resets por 5 minutos por admin
+    const rlAdmin = await checkRateLimit(request.auth.uid, 'adminResetPassword', LIMITS.ADMIN_RESET.max, LIMITS.ADMIN_RESET.windowSec);
+    if (!rlAdmin.allowed) {
+        throw new HttpsError('resource-exhausted', `Limite de resets atingido. Tente novamente em ${Math.ceil(rlAdmin.retryAfterMs / 1000)} segundos.`);
     }
     
     try {

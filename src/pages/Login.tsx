@@ -4,6 +4,7 @@ import { storage } from '../lib/storage';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { useRateLimit } from '../hooks/useRateLimit';
 import gsap from 'gsap';
 import { ArrowLeft } from 'lucide-react';
 
@@ -27,9 +28,12 @@ export const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { isLimited, remainingMs, trigger: triggerCooldown } = useRateLimit(3000);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLimited) return;
+    triggerCooldown();
     setIsLoading(true);
     try {
       const user = await storage.login(email, password);
@@ -43,9 +47,13 @@ export const Login = () => {
       } else {
         toast.error('Credenciais inválidas!');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no login:", error);
-      toast.error('Ocorreu um erro ao tentar fazer login.');
+      if (error?.code === 'auth/too-many-requests') {
+        toast.error('Tente novamente mais tarde.');
+      } else {
+        toast.error('Ocorreu um erro ao tentar fazer login.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -98,9 +106,9 @@ export const Login = () => {
             <Button 
               type="submit" 
               className="w-full py-4 text-sm"
-              disabled={isLoading}
+              disabled={isLoading || isLimited}
             >
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? 'Entrando...' : isLimited ? `Aguarde ${Math.ceil(remainingMs / 1000)}s...` : 'Entrar'}
             </Button>
           </div>
         </form>

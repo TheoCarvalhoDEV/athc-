@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, AppProfile, Registration } from '../lib/storage';
 import { Button } from '../components/ui/Button';
+import { useRateLimit } from '../hooks/useRateLimit';
 import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode, Mail, Phone, CreditCard } from 'lucide-react';
 
 const formatCPF = (value: string): string => {
@@ -64,6 +65,7 @@ export const EventDetails = () => {
   const [showPixModal, setShowPixModal] = useState(false);
   const [showFreeTicketModal, setShowFreeTicketModal] = useState(false);
   const [loadingPix, setLoadingPix] = useState(false);
+  const { isLimited: isPixLimited, remainingMs: pixRemainingMs, trigger: triggerPixCooldown } = useRateLimit(10000);
   const [qrCodeData, setQrCodeData] = useState<{ qr_code: string, qr_code_base64: string } | null>(null);
   const [pedidoId, setPedidoId] = useState('');
   const [pixStep, setPixStep] = useState<'select_tickets' | 'buyer_info' | 'qr_code' | 'success'>('buyer_info');
@@ -231,6 +233,7 @@ export const EventDetails = () => {
 
   const handlePagarPix = async () => {
     if (!event) return;
+    if (isPixLimited) return;
 
     if (!buyerName || !buyerEmail || !buyerPhone || !buyerCpf) {
       alert("Por favor, preencha todos os campos do formulário para continuar.");
@@ -242,6 +245,7 @@ export const EventDetails = () => {
       return;
     }
 
+    triggerPixCooldown();
     setLoadingPix(true);
     const buyerId = currentUser ? currentUser.id : `guest-${Date.now()}`;
 
@@ -292,7 +296,11 @@ export const EventDetails = () => {
       setPixStep('qr_code');
     } catch (error: any) {
       console.error("Erro ao gerar Pix:", error);
-      alert("Erro ao processar: " + (error.message || "Verifique o console"));
+      if (error?.code === 'functions/resource-exhausted') {
+        alert("Limite de cobranças atingido. Tente novamente mais tarde.");
+      } else {
+        alert("Erro ao processar: " + (error.message || "Verifique o console"));
+      }
     } finally {
       setLoadingPix(false);
     }
@@ -1114,11 +1122,11 @@ export const EventDetails = () => {
 
                 <button
                   onClick={handlePagarPix}
-                  disabled={loadingPix || !buyerName || !buyerEmail || !buyerPhone || !buyerCpf}
+                  disabled={loadingPix || isPixLimited || !buyerName || !buyerEmail || !buyerPhone || !buyerCpf}
                   className="w-full bg-success text-textDark border-0 font-display font-black py-3.5 md:py-4 rounded-2xl transition-all duration-300 shadow-glow-success hover:shadow-glow-success-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-xs md:text-sm uppercase tracking-wider"
                 >
                   {loadingPix ? <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-textDark border-t-transparent rounded-full animate-spin" /> : <QrCode className="w-3.5 h-3.5 md:w-4 md:h-4" />}
-                  {loadingPix ? 'Gerando QR Code...' : 'Gerar QR Code Pix'}
+                  {loadingPix ? 'Gerando QR Code...' : isPixLimited ? `Aguarde ${Math.ceil(pixRemainingMs / 1000)}s...` : 'Gerar QR Code Pix'}
                 </button>
               </div>
             )}

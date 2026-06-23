@@ -22,18 +22,49 @@ service cloud.firestore {
       );
     }
 
+    // Função auxiliar para verificar se o usuário é parceiro ou administrador
+    function isPartnerOrAdmin() {
+      return isAuthed() && (
+        isAdmin() || 
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.type in ['atletica', 'estabelecimento', 'admin']
+      );
+    }
+
     match /profiles/{profileId} {
       // Perfis são públicos para visualização
       allow read: if true;
-      // Permite escrita apenas ao próprio dono do perfil ou a administradores
-      allow write: if isAuthed() && (request.auth.uid == profileId || isAdmin());
+      
+      // Permitir criação se o próprio usuário estiver criando seu perfil com tipo 'user'
+      // ou se o solicitante for um administrador
+      allow create: if isAuthed() && (
+        (request.auth.uid == profileId && request.resource.data.type == 'user') || 
+        isAdmin()
+      );
+      
+      // Permitir atualização ao dono se não alterar tipo, e-mail ou mustChangePassword,
+      // ou se for um administrador
+      allow update: if isAuthed() && (
+        (
+          request.auth.uid == profileId && 
+          request.resource.data.type == resource.data.type && 
+          request.resource.data.email == resource.data.email &&
+          (
+            !('mustChangePassword' in request.resource.data) || 
+            request.resource.data.mustChangePassword == resource.data.mustChangePassword
+          )
+        ) || 
+        isAdmin()
+      );
+
+      // Apenas admins podem deletar perfis
+      allow delete: if isAdmin();
     }
 
     match /events/{eventId} {
       // Eventos são públicos para visualização
       allow read: if true;
-      // Somente usuários logados podem criar eventos
-      allow create: if isAuthed();
+      // Somente parceiros ou administradores podem criar eventos, e o creatorId deve ser o próprio UID
+      allow create: if isPartnerOrAdmin() && request.resource.data.creatorId == request.auth.uid;
       // Somente o criador do evento ou o administrador podem editar/excluir
       allow update, delete: if isAuthed() && (resource.data.creatorId == request.auth.uid || isAdmin());
     }
@@ -48,14 +79,19 @@ service cloud.firestore {
         isAdmin() || 
         get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.creatorId == request.auth.uid
       );
-      // Qualquer um pode criar inscrições, mas para visitantes sem login
-      // validamos que campos essenciais (nome, email, eventId) são enviados e válidos
-      allow create: if isAuthed() || (
+      // Qualquer um pode criar inscrições, mas:
+      // 1. Se for visitante sem login, validamos os campos obrigatórios.
+      // 2. O status de pagamento não pode ser gravado como 'Pago' (apenas 'Gratuito' ou nulo é permitido via cliente)
+      allow create: if (isAuthed() || (
         request.resource.data.eventId != null &&
         request.resource.data.userName != null &&
         request.resource.data.userEmail != null &&
         request.resource.data.userName is string && request.resource.data.userName.size() > 0 &&
         request.resource.data.userEmail is string && request.resource.data.userEmail.size() > 0
+      )) && (
+        !('paymentStatus' in request.resource.data) || 
+        request.resource.data.paymentStatus == 'Gratuito' || 
+        request.resource.data.paymentStatus == null
       );
       // Apenas administradores podem modificar ou deletar inscrições
       allow update, delete: if isAdmin();
@@ -68,6 +104,12 @@ service cloud.firestore {
       );
       // Escrita direta pelo cliente é proibida (apenas Cloud Functions do backend criam/alteram)
       allow write: if false;
+    }
+
+    // Coleção interna de rate limiting — acesso bloqueado para clientes
+    // Somente Cloud Functions (Admin SDK) podem ler/escrever
+    match /_rateLimits/{docId} {
+      allow read, write: if false;
     }
   }
 }

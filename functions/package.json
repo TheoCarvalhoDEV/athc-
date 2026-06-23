@@ -6,7 +6,8 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test": "vitest run"
   },
   "engines": {
     "node": "22"
@@ -18,5 +19,9 @@
     "firebase-functions": "^5.0.0",
     "mercadopago": "^2.0.15"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "firebase-functions-test": "^3.5.0",
+    "vitest": "^4.1.9"
+  }
 }

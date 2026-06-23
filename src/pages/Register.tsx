@@ -4,6 +4,7 @@ import { storage } from '../lib/storage';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { useRateLimit } from '../hooks/useRateLimit';
 import gsap from 'gsap';
 
 export const Register = () => {
@@ -14,6 +15,7 @@ export const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { isLimited, remainingMs, trigger: triggerCooldown } = useRateLimit(5000);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -30,6 +32,8 @@ export const Register = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLimited) return;
+    triggerCooldown();
     setIsLoading(true);
     try {
       await storage.register(email, password, name);
@@ -40,6 +44,8 @@ export const Register = () => {
         toast.error('Este e-mail já está em uso.');
       } else if (error.code === 'auth/weak-password') {
         toast.error('A senha deve ter pelo menos 6 caracteres.');
+      } else if (error?.code === 'auth/too-many-requests') {
+        toast.error('Tente novamente mais tarde.');
       } else {
         toast.error('Erro ao criar conta. Tente novamente.');
       }
@@ -82,8 +88,8 @@ export const Register = () => {
           </div>
 
           <div className="stagger-el pt-4">
-            <Button type="submit" disabled={isLoading} className="w-full py-4 text-sm">
-              {isLoading ? 'Criando Conta...' : 'Criar minha Conta'}
+            <Button type="submit" disabled={isLoading || isLimited} className="w-full py-4 text-sm">
+              {isLoading ? 'Criando Conta...' : isLimited ? `Aguarde ${Math.ceil(remainingMs / 1000)}s...` : 'Criar minha Conta'}
             </Button>
           </div>
         </form>
