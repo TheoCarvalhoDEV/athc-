@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createRequire } from 'module';
 import Module from 'module';
+import crypto from 'crypto';
 
 // 1. Criar as referências para os mocks (acessíveis nos testes)
 const mockDocGet = vi.fn();
@@ -261,12 +262,23 @@ describe('Cloud Functions Tests', () => {
     });
 
     it('deve processar webhook com sucesso se pagamento for aprovado', async () => {
+      // Configura o segredo e assina o payload corretamente (caminho positivo de validação).
+      const originalSecret = process.env.MP_WEBHOOK_SECRET;
+      process.env.MP_WEBHOOK_SECRET = 'segredo-teste';
+      const ts = '12345';
+      const requestId = 'req-789';
+      const manifest = `id:mp-pay-789;request-id:${requestId};ts:${ts};`;
+      const v1 = crypto.createHmac('sha256', 'segredo-teste').update(manifest).digest('hex');
+
       const req = {
         query: { id: 'mp-pay-789' },
         body: {},
-        headers: {},
+        headers: {
+          'x-signature': `ts=${ts},v1=${v1}`,
+          'x-request-id': requestId,
+        },
       };
-      
+
       let resolveSend;
       const sendPromise = new Promise((resolve) => { resolveSend = resolve; });
       const res = {
@@ -329,6 +341,12 @@ describe('Cloud Functions Tests', () => {
       const wrapped = myFunctions.webhookMercadoPago;
       wrapped(req, res);
       await sendPromise;
+
+      if (originalSecret) {
+        process.env.MP_WEBHOOK_SECRET = originalSecret;
+      } else {
+        delete process.env.MP_WEBHOOK_SECRET;
+      }
 
       expect(mockMpGet).toHaveBeenCalledWith({ id: 'mp-pay-789' });
       expect(mockRunTransaction).toHaveBeenCalled();

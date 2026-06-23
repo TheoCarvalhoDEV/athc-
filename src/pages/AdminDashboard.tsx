@@ -24,6 +24,18 @@ const formatDateBR = (dateStr: string): string => {
   return dateStr;
 };
 
+// Gera senha temporária forte usando CSPRNG (não Math.random, que é previsível).
+const generateSecurePassword = (length = 14): string => {
+  const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+  const values = new Uint32Array(length);
+  crypto.getRandomValues(values);
+  let pass = '';
+  for (let i = 0; i < length; i++) {
+    pass += charset[values[i] % charset.length];
+  }
+  return pass;
+};
+
 export const AdminDashboard = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -159,7 +171,7 @@ export const AdminDashboard = () => {
     e.preventDefault();
     // Remove acentos e espaços do nome para gerar e-mail válido no Firebase Auth
     const email = `${newPartner.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}@atche.com.br`;
-    const password = Math.random().toString(36).slice(-8);
+    const password = generateSecurePassword();
 
     try {
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());

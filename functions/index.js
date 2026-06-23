@@ -33,14 +33,17 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
         throw new HttpsError('invalid-argument', 'Dados incompletos para gerar o Pix.');
     }
 
-    // Rate Limiting: 5 cobranças por minuto por usuário
-    const userId = request.auth?.uid || data.userId || 'anonymous';
-    const rlMinuto = await checkRateLimit(userId, 'criarCobrancaPix', LIMITS.CRIAR_COBRANCA.max, LIMITS.CRIAR_COBRANCA.windowSec);
+    // Rate Limiting: identifica o chamador por uid; sem login, usa deviceId/IP para não
+    // colocar todos os anônimos no mesmo balde (um comprador legítimo bloquearia os demais).
+    const clientIp = request.rawRequest?.headers?.['x-forwarded-for'] || request.rawRequest?.ip || '';
+    const rateLimitKey = request.auth?.uid || data.deviceId || clientIp || data.userId || 'anonymous';
+    // Rate Limiting: 5 cobranças por minuto
+    const rlMinuto = await checkRateLimit(rateLimitKey, 'criarCobrancaPix', LIMITS.CRIAR_COBRANCA.max, LIMITS.CRIAR_COBRANCA.windowSec);
     if (!rlMinuto.allowed) {
         throw new HttpsError('resource-exhausted', `Limite de cobranças atingido. Tente novamente em ${Math.ceil(rlMinuto.retryAfterMs / 1000)} segundos.`);
     }
-    // Rate Limiting: 20 cobranças por hora por usuário
-    const rlHora = await checkRateLimit(userId, 'criarCobrancaPix_hora', LIMITS.CRIAR_COBRANCA_HORA.max, LIMITS.CRIAR_COBRANCA_HORA.windowSec);
+    // Rate Limiting: 20 cobranças por hora
+    const rlHora = await checkRateLimit(rateLimitKey, 'criarCobrancaPix_hora', LIMITS.CRIAR_COBRANCA_HORA.max, LIMITS.CRIAR_COBRANCA_HORA.windowSec);
     if (!rlHora.allowed) {
         throw new HttpsError('resource-exhausted', `Limite de cobranças por hora atingido. Tente novamente em ${Math.ceil(rlHora.retryAfterMs / 1000)} segundos.`);
     }
@@ -69,7 +72,9 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             }
         }
 
-        const idempotencyKey = `${pedidoId}_${Date.now()}`;
+        // Chave de idempotência estável por pedido: garante que retries da mesma compra
+        // não gerem cobranças duplicadas no Mercado Pago.
+        const idempotencyKey = pedidoId;
 
         // Extrai e formata o nome do comprador
         const clienteNome = data.clienteNome || "Comprador Ficticio";
@@ -113,7 +118,10 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             .toUpperCase();
         const statementDescriptor = `ATCHEI*${cleanTitleForDescriptor}`.substring(0, 16);
 
-        // Processar múltiplos ingressos (VIP, Camarote, etc.) e lotes selecionados
+        // Processar múltiplos ingressos (VIP, Camarote, etc.) e lotes selecionados.
+        // SEGURANÇA: o preço é SEMPRE obtido do documento do evento no servidor.
+        // O preço enviado pelo cliente é ignorado para impedir fraude de valor.
+        const ticketsDoEvento = eventData.tickets || [];
         let valorTotal = Number(valor);
         let itemsMP = [];
 
@@ -121,23 +129,36 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             let somaValores = 0;
             for (const item of itensSelecionados) {
                 const qty = Number(item.quantity) || 0;
-                const price = Number(item.price) || 0;
+                if (qty <= 0) continue;
+
+                const ticketReal = ticketsDoEvento.find(t => t.id === item.id);
+                if (!ticketReal) {
+                    throw new HttpsError('failed-precondition', `O ingresso "${item.name || item.id}" não está disponível neste evento.`);
+                }
+                const price = Number(ticketReal.price) || 0;
                 somaValores += price * qty;
 
                 itemsMP.push({
-                    id: item.id,
-                    title: (item.name || "Ingresso").substring(0, 30),
-                    description: `Ingresso do lote ${item.name}`.substring(0, 60),
+                    id: ticketReal.id,
+                    title: (ticketReal.name || "Ingresso").substring(0, 30),
+                    description: `Ingresso do lote ${ticketReal.name}`.substring(0, 60),
                     category_id: 'tickets',
                     quantity: qty,
                     unit_price: price
                 });
             }
-            if (somaValores > 0) {
-                valorTotal = somaValores;
+            if (somaValores <= 0) {
+                throw new HttpsError('invalid-argument', 'Nenhum ingresso válido foi selecionado.');
             }
+            valorTotal = somaValores;
         } else {
-            // Fallback padrão se não forem enviados itens múltiplos (fluxo de lote único ou teste)
+            // Fallback de lote único: usa o preço PIX configurado no evento, não o valor do cliente.
+            // pixTicketPrice é string (ex.: "50" ou "R$ 50,00"); extrai o número de forma robusta.
+            const precoEventoStr = String(eventData.pixTicketPrice ?? '').replace(/[^\d.,]/g, '').replace(/\.(?=\d{3})/g, '').replace(',', '.');
+            const precoEvento = Number(precoEventoStr);
+            if (precoEvento > 0) {
+                valorTotal = precoEvento;
+            }
             itemsMP.push({
                 id: eventId,
                 title: eventTitle.substring(0, 30),
@@ -302,8 +323,11 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
                 hmac.update(manifest);
                 const hashCalculated = hmac.digest('hex');
                 
-                // Comparar hashes de forma segura
-                if (hashCalculated !== hashReceived) {
+                // Comparar hashes de forma segura (timing-safe) para evitar timing attacks
+                const sigValida =
+                    hashCalculated.length === hashReceived.length &&
+                    crypto.timingSafeEqual(Buffer.from(hashCalculated), Buffer.from(hashReceived));
+                if (!sigValida) {
                     logger.error("Assinatura do webhook inválida. Acesso não autorizado.");
                     res.status(401).send('Assinatura não autorizada.');
                     return;
@@ -314,8 +338,13 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
                 res.status(500).send('Erro interno na validação de assinatura.');
                 return;
             }
+        } else if (process.env.FUNCTIONS_EMULATOR === 'true') {
+            logger.warn("MP_WEBHOOK_SECRET ausente — validação de assinatura ignorada (apenas no emulador).");
         } else {
-            logger.warn("Aviso: MP_WEBHOOK_SECRET não configurado. Validação de assinatura ignorada.");
+            // Fail-closed: em produção, sem segredo configurado o webhook é rejeitado por segurança.
+            logger.error("MP_WEBHOOK_SECRET não configurado em produção. Rejeitando webhook.");
+            res.status(500).send('Configuração de segurança ausente.');
+            return;
         }
 
         try {
