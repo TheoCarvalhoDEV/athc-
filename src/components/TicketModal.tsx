@@ -1,5 +1,6 @@
 import { X, Calendar, Clock, MapPin, Download, CheckCircle2 } from 'lucide-react';
 import type { EventItem, Registration } from '../lib/storage';
+import { makeTicketCode } from '../lib/ticketCode';
 
 interface TicketModalProps {
   isOpen: boolean;
@@ -7,15 +8,6 @@ interface TicketModalProps {
   event: EventItem;
   registration: Registration;
 }
-
-// Código curto e legível para exibição (o QR continua usando o id completo na validação)
-const makeShortCode = (id: string): string => {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) {
-    h = (Math.imul(31, h) + id.charCodeAt(i)) | 0;
-  }
-  return 'ATX-' + (h >>> 0).toString(36).toUpperCase().padStart(6, '0').slice(0, 6);
-};
 
 export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModalProps) => {
   if (!isOpen) return null;
@@ -35,7 +27,7 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
   };
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(registration.id)}&color=1c1917&bgcolor=ffffff`;
-  const shortCode = makeShortCode(registration.id);
+  const shortCode = makeTicketCode(registration.id);
 
   return (
     <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">

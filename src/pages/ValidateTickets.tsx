@@ -5,10 +5,11 @@ import { BrowserQRCodeReader } from '@zxing/browser';
 import type { IScannerControls } from '@zxing/browser';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration } from '../lib/storage';
+import { matchesTicketCode } from '../lib/ticketCode';
 import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowLeft, CheckCircle2, XCircle, AlertTriangle, ScanLine,
-  Keyboard, RefreshCw, User, Ticket, CalendarCheck, CameraOff,
+  Keyboard, RefreshCw, User, Ticket, CalendarCheck, CameraOff, SwitchCamera,
 } from 'lucide-react';
 
 type ResultStatus = 'success' | 'already' | 'wrong_event' | 'invalid';
@@ -58,11 +59,15 @@ export const ValidateTickets = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [showManual, setShowManual] = useState(false);
   const [manualCode, setManualCode] = useState('');
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined); // undefined = facingMode environment
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
+  const streamRef = useRef<MediaStream | null>(null); // stream ativo (parado sempre no cleanup)
   const pausedRef = useRef(false); // ignora leituras enquanto um resultado está na tela
   const processingRef = useRef(false);
+  const regsRef = useRef<Registration[]>([]); // inscrições do evento (resolve código curto + id)
 
   // ─── Carrega evento + valida acesso (dono do evento ou admin) ───
   useEffect(() => {
@@ -85,14 +90,16 @@ export const ValidateTickets = () => {
           return;
         }
         setEvent(ev);
-        // Estatística inicial de validação
+        // Carrega as inscrições do evento: alimenta a contagem E a resolução de
+        // códigos curtos / ids na validação.
         try {
           const regs = await storage.getRegistrationsForEvent(eventId);
           if (!active) return;
+          regsRef.current = regs;
           setTotalCount(regs.length);
           setCheckedInCount(regs.filter((r) => r.checkedIn).length);
         } catch {
-          /* contagem é apenas informativa */
+          /* contagem/resolução tentam novamente sob demanda na leitura */
         }
       } catch (e) {
         console.error('Erro ao carregar evento para validação:', e);
@@ -105,6 +112,47 @@ export const ValidateTickets = () => {
       active = false;
     };
   }, [eventId, user?.id, user?.role, user?.profileId, authLoading, user]);
+
+  // ─── Resolve um texto lido para uma inscrição ───
+  // Aceita o id completo do documento (lido do QR, exato) OU o código curto
+  // ATX-XXXX-XXXX (digitação manual), casando contra as inscrições do evento.
+  const resolveRegistration = useCallback(
+    async (text: string): Promise<Registration | 'ambiguous' | null> => {
+      const matchIn = (list: Registration[]): Registration | 'ambiguous' | null => {
+        // 1) id completo do documento (QR padrão) — exato, imune a colisão.
+        const exact = list.find((r) => r.id === text);
+        if (exact) return exact;
+        // 2) código curto derivado do id (digitação manual). O código é um hash
+        //    de 40 bits: a colisão dentro de um evento é raríssima, mas se houver
+        //    mais de um casamento NÃO validamos (evita liberar a pessoa errada).
+        const shortMatches = list.filter((r) => matchesTicketCode(text, r.id));
+        if (shortMatches.length === 1) return shortMatches[0];
+        if (shortMatches.length > 1) return 'ambiguous';
+        return null;
+      };
+
+      let reg = matchIn(regsRef.current);
+      if (reg === null) {
+        // Pode ser um ingresso comprado depois que a tela abriu — recarrega uma vez.
+        try {
+          const fresh = await storage.getRegistrationsForEvent(eventId!);
+          regsRef.current = fresh;
+          setTotalCount(fresh.length);
+          setCheckedInCount(fresh.filter((r) => r.checkedIn).length);
+          reg = matchIn(fresh);
+        } catch {
+          /* segue para o fallback */
+        }
+      }
+      if (reg === null) {
+        // Último recurso: id de documento que não está na lista (ex.: outro
+        // evento) — permite detectar "ingresso de outro evento".
+        reg = await storage.getRegistrationById(text);
+      }
+      return reg;
+    },
+    [eventId]
+  );
 
   // ─── Processa um código lido (câmera ou manual) ───
   const handleCode = useCallback(
@@ -128,9 +176,15 @@ export const ValidateTickets = () => {
       try { navigator.vibrate?.(40); } catch { /* noop */ }
 
       try {
-        const reg = await storage.getRegistrationById(code);
+        const reg = await resolveRegistration(code);
 
-        if (!reg) {
+        if (reg === 'ambiguous') {
+          setResult({
+            status: 'invalid',
+            title: 'Código ambíguo',
+            detail: 'Mais de um ingresso corresponde a este código. Use a leitura do QR Code para validar com precisão.',
+          });
+        } else if (!reg) {
           setResult({
             status: 'invalid',
             title: 'Ingresso não encontrado',
@@ -152,11 +206,19 @@ export const ValidateTickets = () => {
             when: reg.checkedInAt,
           });
         } else {
+          const when = new Date().toISOString();
           await storage.checkInRegistration(reg.id, user?.name);
+          // Atualiza o cache local para que uma segunda leitura do mesmo
+          // ingresso já apareça como "validado".
+          regsRef.current = regsRef.current.map((r) =>
+            r.id === reg.id
+              ? { ...r, checkedIn: true, checkedInAt: when, checkedInBy: user?.name || '' }
+              : r
+          );
           setCheckedInCount((c) => c + 1);
           setResult({
             status: 'success',
-            registration: { ...reg, checkedIn: true, checkedInAt: new Date().toISOString() },
+            registration: { ...reg, checkedIn: true, checkedInAt: when },
             title: 'Entrada liberada',
             detail: 'Ingresso validado com sucesso.',
           });
@@ -173,32 +235,47 @@ export const ValidateTickets = () => {
         setProcessing(false);
       }
     },
-    [eventId, user?.name]
+    [eventId, user?.name, resolveRegistration]
   );
 
-  // ─── Inicia a câmera quando o evento está pronto ───
+  // Mantém a última versão de handleCode acessível sem recriar o effect da
+  // câmera. Se handleCode entrasse nas deps do effect, ele re-rodaria quando o
+  // AuthContext atualizasse o usuário em segundo plano (user.name muda) —
+  // disparando um SEGUNDO getUserMedia concorrente na mesma câmera, causa
+  // conhecida de PREVIEW PRETO no Android (a leitura segue funcionando).
+  const handleCodeRef = useRef(handleCode);
+  useEffect(() => {
+    handleCodeRef.current = handleCode;
+  }, [handleCode]);
+
+  // ─── Inicia a câmera quando o evento está pronto (e ao trocar de lente) ───
   useEffect(() => {
     if (!event || denied || notFound) return;
     let cancelled = false;
-    let stream: MediaStream | null = null;
     const reader = new BrowserQRCodeReader();
+
+    const stopStream = () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    };
 
     (async () => {
       const video = videoRef.current;
       if (!video) return;
       try {
-        // Pega o stream da câmera traseira manualmente — controle total do
-        // preview (mais confiável que deixar o zxing anexar; em vários Androids
-        // o preview ficava preto). `ideal` permite cair na frontal se não houver
-        // traseira, em vez de falhar.
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false,
-        });
+        // Câmera específica (após troca de lente) ou a traseira padrão.
+        const constraints: MediaStreamConstraints = deviceId
+          ? { video: { deviceId: { exact: deviceId } }, audio: false }
+          : { video: { facingMode: { ideal: 'environment' } }, audio: false };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
+        // Encerra qualquer stream anterior antes de anexar o novo (sem overlap).
+        stopStream();
+        streamRef.current = stream;
 
         // Anexa e dá play explicitamente antes de decodificar — garante que o
         // preview realmente apareça (iOS exige playsinline + muted + gesto/auto).
@@ -206,15 +283,28 @@ export const ValidateTickets = () => {
         video.setAttribute('playsinline', '');
         video.muted = true;
         try { await video.play(); } catch { /* autoPlay cobre o resto */ }
+        if (cancelled) {
+          stopStream();
+          return;
+        }
 
         const controls = await reader.decodeFromVideoElement(video, (res) => {
-          if (res) handleCode(res.getText());
+          if (res) handleCodeRef.current(res.getText());
         });
         if (cancelled) {
           controls.stop();
+          stopStream();
           return;
         }
         controlsRef.current = controls;
+        setCameraError(null);
+
+        // Lista as câmeras (rótulos só vêm após a permissão) para habilitar o
+        // botão "Trocar câmera" quando houver mais de uma.
+        try {
+          const all = await navigator.mediaDevices.enumerateDevices();
+          if (!cancelled) setVideoDevices(all.filter((d) => d.kind === 'videoinput'));
+        } catch { /* lista é só conveniência */ }
       } catch (e: any) {
         console.error('Erro ao acessar a câmera:', e);
         if (!cancelled) {
@@ -233,9 +323,22 @@ export const ValidateTickets = () => {
       controlsRef.current?.stop();
       controlsRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
-      stream?.getTracks().forEach((t) => t.stop());
+      stopStream();
     };
-  }, [event, denied, notFound, handleCode]);
+  }, [event, denied, notFound, deviceId]);
+
+  // Alterna entre as câmeras disponíveis (útil quando a traseira "ideal" abre
+  // uma lente que não renderiza o preview corretamente).
+  const switchCamera = () => {
+    if (videoDevices.length < 2) return;
+    const idx = deviceId ? videoDevices.findIndex((d) => d.deviceId === deviceId) : 0;
+    const next = videoDevices[(idx + 1) % videoDevices.length];
+    if (!next) return;
+    setResult(null);
+    pausedRef.current = false;
+    setCameraError(null);
+    setDeviceId(next.deviceId); // dispara o re-start do effect da câmera
+  };
 
   const resumeScanning = () => {
     setResult(null);
@@ -317,24 +420,41 @@ export const ValidateTickets = () => {
 
       {/* Camera viewport */}
       <div className="relative flex-1 flex items-center justify-center px-4 pb-4">
-        <div className="relative w-full max-w-sm aspect-square rounded-3xl overflow-hidden bg-black/60 border border-white/10">
+        {/* IMPORTANTE: o container NÃO usa `overflow-hidden`. Em muitos Androids,
+            clipar o <video> num container arredondado faz o overlay de hardware
+            renderizar PRETO (a leitura do QR funciona, mas o preview some). Por
+            isso o arredondamento vai no próprio vídeo + camada de GPU. */}
+        <div
+          className="relative w-full max-w-sm aspect-square rounded-3xl bg-black/60 border border-white/10"
+          style={{ isolation: 'isolate', transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)' }}
+        >
           <video
             ref={videoRef}
-            className="w-full h-full object-cover"
-            // Força o vídeo para uma camada composta por GPU. Sem isso, em vários
-            // Androids o preview fica PRETO (o vídeo vira um hardware overlay que
-            // ignora o recorte do container arredondado), mesmo com a leitura do
-            // QR funcionando normalmente.
-            style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+            className="w-full h-full object-cover rounded-3xl"
+            // Camada composta por GPU: respeita o arredondamento e renderiza os
+            // frames em vez de um retângulo preto.
+            style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)', willChange: 'transform', backfaceVisibility: 'hidden' }}
             autoPlay
             muted
             playsInline
           />
 
+          {/* Trocar câmera (quando há mais de uma lente disponível) */}
+          {!cameraError && videoDevices.length > 1 && (
+            <button
+              onClick={switchCamera}
+              aria-label="Trocar câmera"
+              title="Trocar câmera"
+              className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center backdrop-blur-sm transition-colors cursor-pointer"
+            >
+              <SwitchCamera size={18} />
+            </button>
+          )}
+
           {/* Overlay de mira */}
           {!cameraError && (
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 pointer-events-none rounded-3xl">
+              <div className="absolute inset-0 bg-black/20 rounded-3xl" />
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5 aspect-square">
                 <span className="absolute -top-1 -left-1 w-7 h-7 border-t-4 border-l-4 border-white/90 rounded-tl-xl" />
                 <span className="absolute -top-1 -right-1 w-7 h-7 border-t-4 border-r-4 border-white/90 rounded-tr-xl" />
@@ -349,7 +469,7 @@ export const ValidateTickets = () => {
 
           {/* Erro de câmera */}
           {cameraError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3 bg-stone-900">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3 bg-stone-900 rounded-3xl">
               <CameraOff size={36} className="text-white/50" />
               <p className="text-sm text-white/70 max-w-[240px]">{cameraError}</p>
             </div>
