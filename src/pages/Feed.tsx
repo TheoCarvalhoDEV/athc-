@@ -45,6 +45,18 @@ export const Feed = () => {
   const [pullDistance, setPullDistance] = useState(0);
   const startY = useRef(0);
   const isPulling = useRef(false);
+  const pullIndicatorRef = useRef<HTMLDivElement>(null);
+  const pullSpinnerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (pullIndicatorRef.current) {
+      pullIndicatorRef.current.style.height = `${pullDistance}px`;
+      pullIndicatorRef.current.style.opacity = pullDistance > 0 ? '1' : '0';
+    }
+    if (pullSpinnerRef.current) {
+      pullSpinnerRef.current.style.transform = `rotate(${pullDistance * 6}deg)`;
+    }
+  }, [pullDistance]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (window.scrollY === 0 && !isRefreshing) {
@@ -245,19 +257,16 @@ export const Feed = () => {
     >
       {/* Pull to Refresh Indicator */}
       <div 
+        ref={pullIndicatorRef}
         className="flex items-center justify-center overflow-hidden transition-all duration-200 pointer-events-none sticky top-0 z-50 w-full"
-        style={{ 
-          height: `${pullDistance}px`,
-          opacity: pullDistance > 0 ? 1 : 0,
-        }}
       >
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FCFAF7]/90 backdrop-blur-md border border-primary/10 shadow-lg mt-2">
           {isRefreshing ? (
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           ) : (
             <div 
+              ref={pullSpinnerRef}
               className="w-4 h-4 border-2 border-primary/40 border-t-primary rounded-full transition-transform duration-75"
-              style={{ transform: `rotate(${pullDistance * 6}deg)` }}
             />
           )}
           <span className="text-[10px] font-bold text-primary uppercase tracking-widest font-mono">

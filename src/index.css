@@ -117,7 +117,11 @@
   }
   .scrollbar-hide {
     -ms-overflow-style: none;
-    scrollbar-width: none;
+  }
+  @supports (scrollbar-width: none) {
+    .scrollbar-hide {
+      scrollbar-width: none;
+    }
   }
 
   .shimmer {
@@ -288,8 +292,8 @@
   /* Fix inline styles on BottomNav */
   .bottom-nav-container {
     transform: translate3d(-50%, 0, 0);
-    backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
 }
 
