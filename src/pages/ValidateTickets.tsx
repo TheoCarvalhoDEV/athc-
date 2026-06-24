@@ -180,25 +180,41 @@ export const ValidateTickets = () => {
   useEffect(() => {
     if (!event || denied || notFound) return;
     let cancelled = false;
+    let stream: MediaStream | null = null;
     const reader = new BrowserQRCodeReader();
 
     (async () => {
+      const video = videoRef.current;
+      if (!video) return;
       try {
-        const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: 'environment' } },
-          videoRef.current!,
-          (res) => {
-            if (res) handleCode(res.getText());
-          }
-        );
+        // Pega o stream da câmera traseira manualmente — controle total do
+        // preview (mais confiável que deixar o zxing anexar; em vários Androids
+        // o preview ficava preto). `ideal` permite cair na frontal se não houver
+        // traseira, em vez de falhar.
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        // Anexa e dá play explicitamente antes de decodificar — garante que o
+        // preview realmente apareça (iOS exige playsinline + muted + gesto/auto).
+        video.srcObject = stream;
+        video.setAttribute('playsinline', '');
+        video.muted = true;
+        try { await video.play(); } catch { /* autoPlay cobre o resto */ }
+
+        const controls = await reader.decodeFromVideoElement(video, (res) => {
+          if (res) handleCode(res.getText());
+        });
         if (cancelled) {
           controls.stop();
           return;
         }
         controlsRef.current = controls;
-        // Garante o playback visível: em alguns aparelhos o preview só "acorda"
-        // com um play() explícito após o stream ser anexado.
-        try { await videoRef.current?.play(); } catch { /* já tocando */ }
       } catch (e: any) {
         console.error('Erro ao acessar a câmera:', e);
         if (!cancelled) {
@@ -216,6 +232,8 @@ export const ValidateTickets = () => {
       cancelled = true;
       controlsRef.current?.stop();
       controlsRef.current = null;
+      if (videoRef.current) videoRef.current.srcObject = null;
+      stream?.getTracks().forEach((t) => t.stop());
     };
   }, [event, denied, notFound, handleCode]);
 
