@@ -34,7 +34,10 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
       : (event.whatsappNumber ? [{ name: event.whatsappName || '', phone: event.whatsappNumber }] : []);
     const contact = contacts[0];
     if (!contact) return;
-    const cleanPhone = contact.phone.replace(/\D/g, '');
+    let cleanPhone = contact.phone.replace(/\D/g, '');
+    if (cleanPhone.length === 10 || cleanPhone.length === 11) {
+      cleanPhone = `55${cleanPhone}`;
+    }
     const message = `Olá${contact.name ? ` ${contact.name}` : ''}! Gostaria de comprar ingresso para o evento *${event.title}* (${event.time} - ${event.location}).`;
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
@@ -44,7 +47,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
 
   if (variant === 'highlight') {
     return (
-      <div className="relative min-w-[260px] max-w-[260px] h-[180px] rounded-3xl overflow-hidden border border-glassBorder shadow-glass-shadow hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow-primary transition-all duration-300 cursor-pointer shrink-0 group text-left"
+      <div className="relative min-w-[260px] max-w-[260px] h-[180px] rounded-2xl overflow-hidden border border-glassBorder shadow-sm hover:-translate-y-1 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer shrink-0 group text-left"
         onClick={() => navigate(`/event/${event.id}`)}>
         {/* Background */}
         {event.mediaUrls && event.mediaUrls.length > 0 ? (
@@ -77,7 +80,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
 
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
-          <h3 className="font-serifDisplay font-extrabold text-base text-white leading-tight truncate uppercase tracking-wider">
+          <h3 className="font-display font-semibold text-base text-white leading-tight truncate">
             {event.title}
           </h3>
           <div className="flex items-center gap-2 mt-1.5">
@@ -89,15 +92,13 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
           </div>
         </div>
 
-        {/* Shimmer effect */}
-        <div className="absolute inset-0 shimmer pointer-events-none z-20" />
       </div>
     );
   }
 
   return (
     <>
-      <div className="glass border border-glassBorder rounded-3xl overflow-hidden shadow-glass-shadow hover:border-primary/30 hover:shadow-glow-primary hover:-translate-y-1 transition-all duration-300 flex flex-col group text-left">
+      <div className="surface surface-hover rounded-2xl overflow-hidden flex flex-col group text-left">
         {/* Image Section */}
         <div className="h-44 relative overflow-hidden cursor-pointer" onClick={() => navigate(`/event/${event.id}`)}>
           {event.mediaUrls && event.mediaUrls.length > 0 ? (
@@ -127,7 +128,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
 
           {/* Time badge top right */}
           <div className="absolute top-3 right-3">
-            <div className="glass border border-glassBorder rounded-lg px-3 py-1 flex items-center gap-1.5 backdrop-blur-md">
+            <div className="bg-surface/90 border border-glassBorder rounded-lg px-3 py-1 flex items-center gap-1.5 backdrop-blur-sm">
               <Clock size={12} className="text-primary" />
               <span className="font-mono text-[10px] font-bold text-textLight">{formatCardDate(event.date)} {event.time}</span>
             </div>
@@ -138,7 +139,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
         <div className="p-4 relative z-10 border-t border-glassBorder bg-surface/30">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h3 className="font-serifDisplay font-extrabold text-lg text-textLight leading-tight truncate uppercase tracking-wider">
+              <h3 className="font-display font-semibold text-lg text-textLight leading-tight truncate">
                 {event.title}
               </h3>
 
@@ -157,8 +158,9 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
                   onClick={(e) => { e.stopPropagation(); openMaps(); }}
                   className="mt-1 flex items-center gap-1.5 text-textMuted hover:text-textLight transition-colors group/addr cursor-pointer"
                 >
-                  <span className="font-mono text-[11px] truncate max-w-[200px] group-hover/addr:underline">
-                    📍 {event.address}
+                  <MapPin size={11} className="shrink-0" />
+                  <span className="text-[11px] truncate max-w-[200px] group-hover/addr:underline">
+                    {event.address}
                   </span>
                 </button>
               )}
@@ -168,22 +170,22 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={(e) => { e.stopPropagation(); openWhatsApp(); }}
-                className="w-9 h-9 rounded-xl bg-success/10 text-success border border-success/20 flex items-center justify-center hover:bg-success hover:text-textDark hover:shadow-glow-success transition-all duration-300 neo-click cursor-pointer"
-                title="Comprar Ingresso"
+                className="w-9 h-9 rounded-xl bg-success/10 text-success border border-success/20 flex items-center justify-center hover:bg-success hover:text-textDark transition-all duration-200 neo-click cursor-pointer"
+                title="Comprar ingresso"
               >
                 <Ticket size={16} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); openMaps(); }}
-                className="w-9 h-9 rounded-xl bg-accent/10 text-accent border border-accent/20 flex items-center justify-center hover:bg-accent hover:text-textDark hover:shadow-glow-accent transition-all duration-300 neo-click cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-accent/10 text-accent border border-accent/20 flex items-center justify-center hover:bg-accent hover:text-textDark transition-all duration-200 neo-click cursor-pointer"
                 title="Como chegar"
               >
                 <Navigation size={16} />
               </button>
               <button
                 onClick={() => navigate(`/event/${event.id}`)}
-                className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center hover:bg-primary hover:text-textDark hover:shadow-glow-primary transition-all duration-300 neo-click cursor-pointer"
-                title="Ver Detalhes"
+                className="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center hover:bg-primary hover:text-textDark transition-all duration-200 neo-click cursor-pointer"
+                title="Ver detalhes"
               >
                 <ArrowRight size={16} />
               </button>

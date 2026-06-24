@@ -16,6 +16,8 @@
     "@hookform/resolvers": "^5.4.0",
     "@mercadopago/sdk-js": "^0.0.3",
     "@vis.gl/react-google-maps": "^1.8.3",
+    "@zxing/browser": "^0.2.0",
+    "@zxing/library": "^0.22.0",
     "clsx": "^2.1.1",
     "firebase": "^12.13.0",
     "gsap": "^3.15.0",

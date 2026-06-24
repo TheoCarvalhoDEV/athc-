@@ -64,21 +64,18 @@ export const Search = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-8 px-4 relative">
-      {/* Ambient glow */}
-      <div className="ambient-glow w-48 h-48 bg-primary/10 top-0 right-0" />
-
       {/* Header */}
       <div className="flex justify-between items-center mb-6 px-2 relative z-10 md:hidden">
         <div className="flex items-center gap-2">
-          <img 
-            src={`${import.meta.env.BASE_URL}logo.png?v=5`} 
-            alt="Atchêi" 
-            className="w-auto h-14 object-contain brightness-110 drop-shadow-sm" 
+          <img
+            src={`${import.meta.env.BASE_URL}logo.png?v=5`}
+            alt="Atchêi"
+            className="w-auto h-14 object-contain brightness-110 drop-shadow-sm"
           />
         </div>
-        <button 
+        <button
           onClick={() => navigate('/profile')}
-          className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primaryHover text-textDark border border-primary/20 flex items-center justify-center shadow-glow-primary text-lg font-display font-extrabold overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+          className="w-14 h-14 rounded-full bg-primary text-textDark border border-primary/20 flex items-center justify-center text-lg font-display font-semibold overflow-hidden transition-all duration-300 hover:bg-primaryHover active:scale-95 cursor-pointer"
           title="Ir para o perfil"
         >
           {user?.imageUrl ? (
@@ -100,35 +97,35 @@ export const Search = () => {
       </div>
 
       <div className="flex gap-3 mb-6 overflow-x-auto pt-1 pb-2.5 px-4 -mx-4 scrollbar-hide relative z-10">
-        <button 
+        <button
           onClick={() => setActiveTab('eventos')}
           className={cn(
-            "px-5 py-3 rounded-2xl font-display font-black text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 border neo-click",
-            activeTab === 'eventos' 
-              ? "bg-gradient-to-r from-accent to-accentHover text-textDark border-accent/20 shadow-glow-accent scale-105" 
-              : "bg-white/80 border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
+            "px-5 py-3 rounded-xl font-sans font-medium text-xs whitespace-nowrap transition-all duration-300 border neo-click",
+            activeTab === 'eventos'
+              ? "bg-primary text-textDark border-primary/20"
+              : "bg-surface border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
           )}
         >
           Eventos
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('estabelecimentos')}
           className={cn(
-            "px-5 py-3 rounded-2xl font-display font-black text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 border neo-click",
-            activeTab === 'estabelecimentos' 
-              ? "bg-gradient-to-r from-accent to-accentHover text-textDark border-accent/20 shadow-glow-accent scale-105" 
-              : "bg-white/80 border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
+            "px-5 py-3 rounded-xl font-sans font-medium text-xs whitespace-nowrap transition-all duration-300 border neo-click",
+            activeTab === 'estabelecimentos'
+              ? "bg-primary text-textDark border-primary/20"
+              : "bg-surface border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
           )}
         >
           Estabelecimentos
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('atleticas')}
           className={cn(
-            "px-5 py-3 rounded-2xl font-display font-black text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-300 border neo-click",
-            activeTab === 'atleticas' 
-              ? "bg-gradient-to-r from-accent to-accentHover text-textDark border-accent/20 shadow-glow-accent scale-105" 
-              : "bg-white/80 border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
+            "px-5 py-3 rounded-xl font-sans font-medium text-xs whitespace-nowrap transition-all duration-300 border neo-click",
+            activeTab === 'atleticas'
+              ? "bg-primary text-textDark border-primary/20"
+              : "bg-surface border-glassBorder text-textMuted hover:text-textLight hover:bg-surfaceHover hover:-translate-y-0.5"
           )}
         >
           Atléticas
@@ -144,7 +141,7 @@ export const Search = () => {
               </div>
             ))}
             {filteredEvents.length === 0 && (
-              <p className="text-center font-mono text-textMuted mt-10">Nenhum evento encontrado para "{query}"</p>
+              <p className="text-center font-sans text-textMuted mt-10">Nenhum evento encontrado para "{query}"</p>
             )}
           </>
         ) : (
@@ -155,7 +152,7 @@ export const Search = () => {
               </div>
             ))}
             {filteredProfiles.length === 0 && (
-              <p className="text-center font-mono text-textMuted mt-10">Nenhum perfil encontrado para "{query}"</p>
+              <p className="text-center font-sans text-textMuted mt-10">Nenhum perfil encontrado para "{query}"</p>
             )}
           </>
         )}

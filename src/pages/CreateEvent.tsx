@@ -5,7 +5,6 @@ import { Button } from '../components/ui/Button';
 import { storage } from '../lib/storage';
 import type { AppProfile, TicketType } from '../lib/storage';
 import { cn } from '../lib/utils';
-import { compressImage } from '../lib/imageUtils';
 import gsap from 'gsap';
 import {
   ArrowLeft, Image as ImageIcon, MapPin, X, Plus, Clock, Loader2,
@@ -461,13 +460,7 @@ const CreateEventContent = () => {
 
     try {
       const croppedFile = await getCroppedImg(imageSrc, croppedAreaPixels, currentFile.name);
-      const compressedBase64 = await compressImage(croppedFile, 1080, 1080, 0.7);
-
-      const res = await fetch(compressedBase64);
-      const blob = await res.blob();
-      const finalFile = new File([blob], currentFile.name, { type: 'image/jpeg' });
-
-      const url = await storage.uploadFile(finalFile, 'events');
+      const url = await storage.uploadFile(croppedFile, 'events');
       setValue('mediaUrls', [...mediaUrls, url], { shouldValidate: true });
       toast.success('Upload concluído!');
     } catch (error) {
@@ -532,30 +525,27 @@ const CreateEventContent = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-4 md:pt-6 px-3 md:px-4 relative">
-      {/* Ambient glow */}
-      <div className="ambient-glow w-48 h-48 bg-primary/10 top-0 right-0 pointer-events-none" />
-
       <button
         type="button"
         onClick={() => navigate(-1)}
         title="Voltar"
         aria-label="Voltar"
-        className="w-9 h-9 md:w-10 md:h-10 mb-4 md:mb-6 rounded-xl md:rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
+        className="w-9 h-9 md:w-10 md:h-10 mb-4 md:mb-6 rounded-xl bg-surface border border-glassBorder text-textLight flex items-center justify-center shadow-sm hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer relative z-10"
       >
         <ArrowLeft size={18} />
       </button>
 
       <div className="max-w-2xl mx-auto">
         <div className="create-anim flex items-center gap-2.5 md:gap-3.5 mb-4 md:mb-6 relative z-10 text-left">
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-accent/15 text-accent flex items-center justify-center border border-accent/20 shadow-glow-accent">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-accent/15 text-accent flex items-center justify-center border border-accent/20">
             <CalendarPlus size={18} className="md:hidden" />
             <CalendarPlus size={22} className="hidden md:block" />
           </div>
           <div>
-            <h1 className="font-serifDisplay italic font-bold text-lg md:text-2xl text-textLight tracking-wide leading-tight animate-fade-in">
-              {isEdit ? 'Editar Evento' : 'Criar Evento'}
+            <h1 className="font-display font-semibold text-lg md:text-2xl text-textLight leading-tight animate-fade-in">
+              {isEdit ? 'Editar evento' : 'Criar evento'}
             </h1>
-            <p className="text-[9px] md:text-xs text-textMuted font-mono uppercase mt-0.5 font-bold">Configure os detalhes do seu evento</p>
+            <p className="text-xs text-textMuted mt-0.5">Configure os detalhes do seu evento</p>
           </div>
         </div>
 
@@ -564,13 +554,13 @@ const CreateEventContent = () => {
             {/* Admin Select Partner */}
             {userRole === 'admin' && (
               <div className="create-anim space-y-1 text-left">
-                <label htmlFor="creator-select" className="text-[9px] font-mono font-bold text-primary uppercase ml-1 block tracking-wider">
+                <label htmlFor="creator-select" className="text-xs font-medium text-textMuted ml-1 block">
                   Criar evento pelo estabelecimento:
                 </label>
                 <select
                   id="creator-select"
                   title="Selecione o estabelecimento criador"
-                  className="w-full h-10 md:h-12 bg-surfaceHover/50 border border-glassBorder rounded-xl px-3 md:px-4 text-xs md:text-sm font-sans focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all text-textLight"
+                  className="w-full h-10 md:h-12 bg-surface border border-glassBorder rounded-xl px-3 md:px-4 text-xs md:text-sm font-sans focus:outline-none focus:border-primary/40 transition-all text-textLight"
                   value={selectedCreatorId}
                   onChange={e => setSelectedCreatorId(e.target.value)}
                 >
@@ -586,13 +576,13 @@ const CreateEventContent = () => {
 
             {/* Media Upload */}
             <div className="create-anim space-y-2 text-left">
-              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+              <label className="text-xs font-medium text-textMuted ml-1 flex items-center gap-1.5">
                 <ImageIcon size={12} />
-                Fotos do Evento
+                Fotos do evento
               </label>
               <div className="grid grid-cols-3 gap-2 md:gap-3">
                 {mediaUrls.map((url: string, i: number) => (
-                  <div key={i} className="aspect-square rounded-xl md:rounded-2xl bg-surface/50 border border-glassBorder shadow-glass-shadow relative overflow-hidden group">
+                  <div key={i} className="aspect-square rounded-2xl bg-surface border border-glassBorder shadow-sm relative overflow-hidden group">
                     <img src={url} alt={`Mídia ${i + 1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
@@ -606,13 +596,13 @@ const CreateEventContent = () => {
                   </div>
                 ))}
                 {mediaUrls.length < 6 && (
-                  <label className="aspect-square rounded-xl md:rounded-2xl bg-surfaceHover/50 border border-dashed border-primary/45 flex flex-col items-center justify-center text-textMuted cursor-pointer hover:border-accent/60 hover:text-accent transition-all duration-300 hover:bg-surfaceHover">
+                  <label className="aspect-square rounded-2xl bg-surfaceHover/50 border border-dashed border-primary/45 flex flex-col items-center justify-center text-textMuted cursor-pointer hover:border-accent/60 hover:text-accent transition-all duration-300 hover:bg-surfaceHover">
                     {isUploading ? (
                       <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
                         <Upload size={20} className="text-primary" />
-                        <span className="text-[10px] font-mono font-bold mt-1 uppercase">Upload</span>
+                        <span className="text-[11px] font-medium mt-1">Enviar</span>
                       </>
                     )}
                     <input type="file" className="hidden" accept="image/*" disabled={isUploading} onChange={handleFileChange} />
@@ -623,23 +613,23 @@ const CreateEventContent = () => {
 
             {/* Title */}
             <div className="create-anim space-y-1 text-left">
-              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+              <label className="text-xs font-medium text-textMuted ml-1 flex items-center gap-1.5">
                 <FileText size={12} />
-                Nome do Evento
+                Nome do evento
               </label>
               <Input
                 placeholder="Ex: Sunset Party"
-                className="bg-surface/50 border-glassBorder text-textLight"
+                className="bg-surface border-glassBorder text-textLight"
                 {...register('title')}
               />
             </div>
 
             {/* Description */}
             <div className="create-anim space-y-1 text-left">
-              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider">Descrição</label>
+              <label className="text-xs font-medium text-textMuted ml-1">Descrição</label>
               <textarea
                 placeholder="Descreva o evento..."
-                className="w-full min-h-[90px] md:min-h-[120px] bg-surfaceHover/50 border border-glassBorder rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-sans text-textLight focus:outline-none focus:border-primary/40 focus:shadow-glow-primary transition-all duration-300 resize-none placeholder:text-textMuted/50"
+                className="w-full min-h-[90px] md:min-h-[120px] bg-surface border border-glassBorder rounded-xl px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-sans text-textLight focus:outline-none focus:border-primary/40 transition-all duration-300 resize-none placeholder:text-textMuted/50"
                 {...register('description')}
               />
             </div>
@@ -647,35 +637,35 @@ const CreateEventContent = () => {
             {/* Date & Time */}
             <div className="create-anim grid grid-cols-2 gap-2 md:gap-3 text-left">
               <div className="space-y-1">
-                <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                <label className="text-xs font-medium text-textMuted ml-1 flex items-center gap-1.5">
                   <CalendarPlus size={12} />
                   Data
                 </label>
-                <div 
+                <div
                   onClick={() => setShowDatePickerModal(true)}
                   className="cursor-pointer"
                 >
                   <Input
                     readOnly
                     placeholder="Selecione a data"
-                    className="bg-surface/50 border-glassBorder text-textLight cursor-pointer pointer-events-none"
+                    className="bg-surface border-glassBorder text-textLight cursor-pointer pointer-events-none"
                     value={dateValue ? formatDateToLocal(dateValue) : ''}
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                <label className="text-xs font-medium text-textMuted ml-1 flex items-center gap-1.5">
                   <Clock size={12} />
                   Horário
                 </label>
-                <div 
+                <div
                   onClick={() => setShowDatePickerModal(true)}
                   className="cursor-pointer"
                 >
                   <Input
                     readOnly
                     placeholder="Selecione o horário"
-                    className="bg-surface/50 border-glassBorder text-textLight cursor-pointer pointer-events-none"
+                    className="bg-surface border-glassBorder text-textLight cursor-pointer pointer-events-none"
                     value={timeValue || ''}
                   />
                 </div>
@@ -685,13 +675,13 @@ const CreateEventContent = () => {
             {/* Location */}
             <div className="create-anim grid grid-cols-[1fr_auto] gap-2 items-end text-left">
               <div className="space-y-1">
-                <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 flex items-center gap-1.5 tracking-wider">
+                <label className="text-xs font-medium text-textMuted ml-1 flex items-center gap-1.5">
                   <MapPin size={12} />
                   Local
                 </label>
                 <Input
                   placeholder="Ex: Pub Aurora"
-                  className="bg-surface/50 border-glassBorder text-textLight"
+                  className="bg-surface border-glassBorder text-textLight"
                   {...register('location')}
                 />
               </div>
@@ -707,10 +697,10 @@ const CreateEventContent = () => {
 
             {/* Address */}
             <div className="create-anim space-y-1 text-left">
-              <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider">Endereço Completo</label>
+              <label className="text-xs font-medium text-textMuted ml-1">Endereço completo</label>
               <Input
                 placeholder="Ex: Rua X, 123 - Bairro - Cidade/UF"
-                className="bg-surface/50 border-glassBorder text-textLight"
+                className="bg-surface border-glassBorder text-textLight"
                 {...register('address')}
               />
             </div>
@@ -718,9 +708,9 @@ const CreateEventContent = () => {
 
 
             {/* Presence Toggle */}
-            <div className="create-anim space-y-2.5 md:space-y-3.5 glass rounded-[1.2rem] md:rounded-[1.8rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
+            <div className="create-anim space-y-2.5 md:space-y-3.5 surface rounded-2xl p-3.5 md:p-5 text-left">
               <div className="flex items-center justify-between">
-                <label className="text-xs md:text-sm font-display uppercase tracking-wider font-black text-textLight">Habilitar Confirmação de Presença?</label>
+                <label className="text-xs md:text-sm font-display font-semibold text-textLight">Habilitar confirmação de presença?</label>
                 <button
                   type="button"
                   onClick={() => setValue('hasPresence', !hasPresence, { shouldValidate: true })}
@@ -734,7 +724,7 @@ const CreateEventContent = () => {
                   <div
                     className={cn(
                       "w-5 h-5 rounded-full absolute top-[3px] transition-all",
-                      hasPresence ? 'right-[3px] bg-primary shadow-glow-primary' : 'left-[3px] bg-textMuted'
+                      hasPresence ? 'right-[3px] bg-primary' : 'left-[3px] bg-textMuted'
                     )}
                   />
                 </button>
@@ -742,9 +732,9 @@ const CreateEventContent = () => {
             </div>
 
             {/* Tickets Toggle */}
-            <div className="create-anim space-y-2.5 md:space-y-3.5 glass rounded-[1.2rem] md:rounded-[1.8rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
+            <div className="create-anim space-y-2.5 md:space-y-3.5 surface rounded-2xl p-3.5 md:p-5 text-left">
               <div className="flex items-center justify-between">
-                <label className="text-xs md:text-sm font-display uppercase tracking-wider font-black text-textLight">Possui Ingressos?</label>
+                <label className="text-xs md:text-sm font-display font-semibold text-textLight">Possui ingressos?</label>
                 <button
                   type="button"
                   onClick={() => setValue('hasTickets', !hasTickets, { shouldValidate: true })}
@@ -758,7 +748,7 @@ const CreateEventContent = () => {
                   <div
                     className={cn(
                       "w-5 h-5 rounded-full absolute top-[3px] transition-all",
-                      hasTickets ? 'right-[3px] bg-primary shadow-glow-primary' : 'left-[3px] bg-textMuted'
+                      hasTickets ? 'right-[3px] bg-primary' : 'left-[3px] bg-textMuted'
                     )}
                   />
                 </button>
@@ -767,26 +757,26 @@ const CreateEventContent = () => {
               {hasTickets && (
                 <div className="space-y-4 pt-4 border-t border-glassBorder">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider block">Preço do Ingresso</label>
+                    <label className="text-xs font-medium text-textMuted ml-1 block">Preço do ingresso</label>
                     <Input
                       placeholder="Ex: R$ 30,00 ou Lote 1 R$20 / Lote 2 R$30"
-                      className="bg-surface/50 border-glassBorder text-textLight"
+                      className="bg-surface border-glassBorder text-textLight"
                       {...register('ticketPrice')}
                     />
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider block">Promoters de Venda (WhatsApp)</label>
+                    <label className="text-xs font-medium text-textMuted ml-1 block">Promoters de venda (WhatsApp)</label>
                     {(watch('whatsappContacts') || []).map((_, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <Input
                           placeholder="Nome"
-                          className="flex-1 text-sm font-sans bg-surface/50 border-glassBorder text-textLight"
+                          className="flex-1 text-sm font-sans bg-surface border-glassBorder text-textLight"
                           {...register(`whatsappContacts.${i}.name` as const)}
                         />
                         <Input
                           placeholder="(00) 00000-0000"
-                          className="flex-1 text-sm font-mono bg-surface/50 border-glassBorder text-textLight"
+                          className="flex-1 text-sm font-mono bg-surface border-glassBorder text-textLight"
                           {...register(`whatsappContacts.${i}.phone` as const)}
                         />
                         {(watch('whatsappContacts') || []).length > 1 && (
@@ -798,7 +788,7 @@ const CreateEventContent = () => {
                             }}
                             title="Remover promoter"
                             aria-label="Remover promoter"
-                            className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface/50 hover:bg-surfaceHover rounded-xl neo-click transition-all duration-300"
+                            className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface hover:bg-surfaceHover rounded-xl transition-all duration-300"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -812,10 +802,10 @@ const CreateEventContent = () => {
                           const current = watch('whatsappContacts') || [];
                           setValue('whatsappContacts', [...current, { name: '', phone: '' }]);
                         }}
-                        className="w-full py-3 rounded-xl border border-dashed border-primary/45 text-primary font-display uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 hover:bg-primary/10 transition-colors cursor-pointer duration-300 shadow-sm"
+                        className="w-full py-3 rounded-xl border border-dashed border-primary/45 text-primary font-sans font-semibold text-xs flex items-center justify-center gap-1.5 hover:bg-primary/10 transition-colors cursor-pointer duration-300"
                       >
                         <Plus size={14} />
-                        Adicionar Promoter
+                        Adicionar promoter
                       </button>
                     )}
                   </div>
@@ -825,9 +815,9 @@ const CreateEventContent = () => {
 
             {/* PIX Section — Admin Only */}
             {userRole === 'admin' && (
-              <div className="create-anim space-y-2.5 md:space-y-3.5 glass rounded-[1.2rem] md:rounded-[1.8rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
+              <div className="create-anim space-y-2.5 md:space-y-3.5 surface rounded-2xl p-3.5 md:p-5 text-left">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs md:text-sm font-display uppercase tracking-wider font-black text-textLight flex items-center gap-1.5 md:gap-2">
+                  <label className="text-xs md:text-sm font-display font-semibold text-textLight flex items-center gap-1.5 md:gap-2">
                     <CheckCircle size={16} className="text-success" />
                     Venda via PIX
                   </label>
@@ -844,7 +834,7 @@ const CreateEventContent = () => {
                     <div
                       className={cn(
                         "w-5 h-5 rounded-full absolute top-[3px] transition-all",
-                        hasPixTickets ? 'right-[3px] bg-success shadow-glow-success' : 'left-[3px] bg-textMuted'
+                        hasPixTickets ? 'right-[3px] bg-success' : 'left-[3px] bg-textMuted'
                       )}
                     />
                   </button>
@@ -853,58 +843,58 @@ const CreateEventContent = () => {
                 {hasPixTickets && (
                   <div className="space-y-4 pt-4 border-t border-glassBorder">
                     <div className="space-y-1.5 mb-3">
-                      <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 block">Valor PIX Padrão (R$)</label>
+                      <label className="text-xs font-medium text-textMuted ml-1 block">Valor PIX padrão (R$)</label>
                       <Input
                         type="number"
                         step="0.01"
                         placeholder="30.00"
-                        className="bg-surface/50 border-glassBorder text-textLight"
+                        className="bg-surface border-glassBorder text-textLight"
                         {...register('pixTicketPrice')}
                       />
-                      <p className="text-[10px] text-textMuted font-mono mt-1 opacity-80">Usado como valor fallback caso não existam lotes específicos cadastrados abaixo.</p>
+                      <p className="text-[11px] text-textMuted mt-1">Usado como valor fallback caso não existam lotes específicos cadastrados abaixo.</p>
                     </div>
 
                     <div className="space-y-3 pt-4 border-t border-glassBorder/40">
                       <div className="flex justify-between items-center">
-                        <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1 tracking-wider block font-bold">Setores e Lotes de Ingressos</label>
+                        <label className="text-xs font-medium text-textMuted ml-1 block">Setores e lotes de ingressos</label>
                         <button
                           type="button"
                           onClick={handleAddTicketType}
-                          className="py-1.5 px-3 bg-success/15 border border-success/35 text-success rounded-xl font-mono text-[10px] font-bold uppercase hover:bg-success/20 transition-all flex items-center gap-1 cursor-pointer"
+                          className="py-1.5 px-3 bg-success/15 border border-success/35 text-success rounded-xl font-sans text-[11px] font-semibold hover:bg-success/20 transition-all flex items-center gap-1 cursor-pointer"
                         >
-                          <Plus size={10} /> Adicionar Lote/Setor
+                          <Plus size={10} /> Adicionar lote/setor
                         </button>
                       </div>
                       
                       {tickets.length > 0 ? (
                         <div className="space-y-3">
                           {tickets.map((t, idx) => (
-                            <div key={t.id || idx} className="flex gap-2 items-end bg-surface/30 p-3 rounded-[1.2rem] border border-glassBorder">
+                            <div key={t.id || idx} className="flex gap-2 items-end bg-surface p-3 rounded-2xl border border-glassBorder">
                               <div className="flex-1 space-y-1">
-                                <label className="text-[9px] font-mono font-bold text-textMuted uppercase ml-1 block">Nome / Lote</label>
+                                <label className="text-[11px] font-medium text-textMuted ml-1 block">Nome / lote</label>
                                 <Input
                                   placeholder="Ex: VIP - 1º Lote"
-                                  className="text-xs bg-surface/50 border-glassBorder text-textLight"
+                                  className="text-xs bg-surface border-glassBorder text-textLight"
                                   value={t.name}
                                   onChange={e => handleUpdateTicketType(idx, 'name', e.target.value)}
                                 />
                               </div>
                               <div className="w-24 space-y-1">
-                                <label className="text-[9px] font-mono font-bold text-textMuted uppercase ml-1 block">Preço (R$)</label>
+                                <label className="text-[11px] font-medium text-textMuted ml-1 block">Preço (R$)</label>
                                 <Input
                                   type="number"
                                   placeholder="0.00"
-                                  className="text-xs bg-surface/50 border-glassBorder text-textLight"
+                                  className="text-xs bg-surface border-glassBorder text-textLight"
                                   value={t.price || ''}
                                   onChange={e => handleUpdateTicketType(idx, 'price', e.target.value)}
                                 />
                               </div>
                               <div className="w-20 space-y-1">
-                                <label className="text-[9px] font-mono font-bold text-textMuted uppercase ml-1 block">Capacidade</label>
+                                <label className="text-[11px] font-medium text-textMuted ml-1 block">Capacidade</label>
                                 <Input
                                   type="number"
                                   placeholder="100"
-                                  className="text-xs bg-surface/50 border-glassBorder text-textLight"
+                                  className="text-xs bg-surface border-glassBorder text-textLight"
                                   value={t.capacity || ''}
                                   onChange={e => handleUpdateTicketType(idx, 'capacity', e.target.value)}
                                 />
@@ -914,7 +904,7 @@ const CreateEventContent = () => {
                                 onClick={() => handleRemoveTicketType(idx)}
                                 title="Remover lote"
                                 aria-label="Remover lote"
-                                className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface/50 hover:bg-surfaceHover rounded-xl neo-click transition-all duration-300 cursor-pointer"
+                                className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface hover:bg-surfaceHover rounded-xl transition-all duration-300 cursor-pointer"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -922,7 +912,7 @@ const CreateEventContent = () => {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-4 bg-surfaceHover/30 rounded-xl border border-dashed border-glassBorder text-[10px] text-textMuted font-mono">
+                        <div className="text-center py-4 bg-surfaceHover/30 rounded-xl border border-dashed border-glassBorder text-[11px] text-textMuted">
                           Nenhum lote ou setor configurado. Cadastre lotes para habilitar múltiplos preços.
                         </div>
                       )}
@@ -934,7 +924,7 @@ const CreateEventContent = () => {
 
             {/* Test Event — Admin Only */}
             {userRole === 'admin' && (
-              <div className="create-anim flex items-center gap-2.5 md:gap-3.5 glass rounded-[1.2rem] md:rounded-[1.5rem] p-3.5 md:p-5 border border-glassBorder shadow-glass-shadow text-left">
+              <div className="create-anim flex items-center gap-2.5 md:gap-3.5 surface rounded-2xl p-3.5 md:p-5 text-left">
                 <input
                   type="checkbox"
                   id="testEvent"
@@ -942,7 +932,7 @@ const CreateEventContent = () => {
                   checked={!!isTestEvent}
                   onChange={e => setValue('isTestEvent', e.target.checked, { shouldValidate: true })}
                 />
-                <label htmlFor="testEvent" className="text-xs md:text-sm font-mono text-textMuted uppercase tracking-wider flex items-center gap-1.5 md:gap-2 cursor-pointer select-none font-bold">
+                <label htmlFor="testEvent" className="text-xs md:text-sm text-textMuted flex items-center gap-1.5 md:gap-2 cursor-pointer select-none font-medium">
                   <AlertTriangle size={14} className="text-accent" />
                   Evento de teste (só admin vê)
                 </label>
@@ -950,8 +940,8 @@ const CreateEventContent = () => {
             )}
 
             <div className="create-anim pt-3 md:pt-4">
-              <Button type="submit" disabled={isSubmitting} className="w-full rounded-xl py-3 md:py-4 font-display uppercase tracking-wider text-sm md:text-base">
-                {isSubmitting ? (isEdit ? 'Salvando...' : 'Criando...') : (isEdit ? 'Salvar Alterações' : 'Criar Evento')}
+              <Button type="submit" loading={isSubmitting} fullWidth className="rounded-xl py-3 md:py-4 text-sm md:text-base">
+                {isSubmitting ? (isEdit ? 'Salvando...' : 'Criando...') : (isEdit ? 'Salvar alterações' : 'Criar evento')}
               </Button>
             </div>
           </form>
@@ -964,13 +954,13 @@ const CreateEventContent = () => {
 
       {/* Modal do Mapa */}
       {showMapModal && (
-        <div className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-background w-full max-w-lg h-[80vh] rounded-[2.5rem] border border-glassBorder shadow-2xl flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
+        <div className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="bg-background w-full max-w-lg h-[80vh] rounded-3xl border border-glassBorder shadow-md flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
               <div className="text-left">
-                <h3 className="font-serifDisplay italic font-bold text-xl text-textLight">Escolher Localização</h3>
-                <p className="text-[10px] font-mono text-textMuted uppercase tracking-wider">Busque ou clique no mapa para marcar</p>
+                <h3 className="font-display font-semibold text-xl text-textLight">Escolher localização</h3>
+                <p className="text-xs text-textMuted">Busque ou clique no mapa para marcar</p>
               </div>
               <button
                 type="button"
@@ -984,7 +974,7 @@ const CreateEventContent = () => {
             </div>
 
             {/* Map Container */}
-            <div className="relative flex-1 rounded-[2rem] overflow-hidden border border-glassBorder bg-primary/5 shadow-inner flex flex-col">
+            <div className="relative flex-1 rounded-2xl overflow-hidden border border-glassBorder bg-primary/5 shadow-inner flex flex-col">
               <div className="absolute top-4 left-4 right-4 z-20">
                 <PlaceAutocomplete
                   onPlaceSelect={(place) => {
@@ -1016,29 +1006,30 @@ const CreateEventContent = () => {
             </div>
 
             {isSearching && (
-              <div className="flex items-center justify-center gap-2 mt-4 text-primary animate-pulse">
+              <div className="flex items-center justify-center gap-2 mt-4 text-primary">
                 <Loader2 size={14} className="animate-spin" />
-                <span className="text-xs font-bold font-mono">Buscando endereço...</span>
+                <span className="text-xs font-medium">Buscando endereço...</span>
               </div>
             )}
 
             {/* Address Preview */}
             {address && (
-              <div className="mt-4 p-3.5 bg-surface/50 border border-glassBorder rounded-2xl flex items-start gap-2.5 text-left">
+              <div className="mt-4 p-3.5 bg-surface border border-glassBorder rounded-2xl flex items-start gap-2.5 text-left">
                 <MapPin className="text-primary shrink-0 mt-0.5" size={16} />
                 <div className="min-w-0">
-                  <span className="text-[9px] font-bold text-primary/70 uppercase block tracking-wider">Endereço Selecionado</span>
-                  <p className="font-sans font-bold text-xs text-textLight truncate leading-snug">{address}</p>
+                  <span className="text-xs font-medium text-textMuted block">Endereço selecionado</span>
+                  <p className="font-sans font-semibold text-xs text-textLight truncate leading-snug">{address}</p>
                 </div>
               </div>
             )}
 
             <Button
-              className="w-full mt-4 rounded-full py-3.5 shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-95 transition-all"
+              fullWidth
+              className="mt-4 rounded-xl py-3.5"
               onClick={() => setShowMapModal(false)}
               disabled={!address}
             >
-              Confirmar Localização
+              Confirmar localização
             </Button>
           </div>
         </div>
@@ -1049,8 +1040,8 @@ const CreateEventContent = () => {
         <div className="fixed inset-0 z-[99999] bg-background/95 backdrop-blur-md flex flex-col pt-12 pb-6 px-4">
           <div className="flex justify-between items-center mb-6">
             <div className="text-left">
-              <h2 className="font-serifDisplay italic font-bold text-xl text-textLight">Ajustar Imagem</h2>
-              <p className="text-xs text-textMuted">Recorte para exibição perfeita no Feed</p>
+              <h2 className="font-display font-semibold text-xl text-textLight">Ajustar imagem</h2>
+              <p className="text-xs text-textMuted">Recorte para exibição perfeita no feed</p>
             </div>
             <button
               type="button"
@@ -1075,20 +1066,21 @@ const CreateEventContent = () => {
           </div>
 
           <div className="flex gap-4">
-            <button
+            <Button
               type="button"
-              className="flex-1 rounded-full py-4 border border-glassBorder text-textLight font-bold hover:bg-surfaceHover transition-all neo-click"
+              variant="secondary"
+              className="flex-1 rounded-xl py-4"
               onClick={() => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); }}
             >
               Cancelar
-            </button>
+            </Button>
             <Button
               type="button"
-              className="flex-1 rounded-full py-4 shadow-xl"
+              loading={isUploading}
+              className="flex-1 rounded-xl py-4"
               onClick={handleCropConfirm}
-              disabled={isUploading}
             >
-              {isUploading ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'Confirmar Corte'}
+              {isUploading ? 'Enviando...' : 'Confirmar corte'}
             </Button>
           </div>
         </div>
@@ -1105,13 +1097,13 @@ const CreateEventContent = () => {
         const tempMinute = selectedTempTime.split(':')[1] || '00';
 
         return (
-          <div className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-background w-full max-w-[440px] rounded-[2.5rem] border border-glassBorder shadow-2xl flex flex-col p-5 sm:p-6 relative overflow-hidden animate-in zoom-in duration-300">
+          <div className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            <div className="bg-background w-full max-w-[440px] rounded-3xl border border-glassBorder shadow-md flex flex-col p-5 sm:p-6 relative overflow-hidden animate-in zoom-in duration-300">
               {/* Header */}
               <div className="flex justify-between items-center mb-5">
                 <div className="text-left">
-                  <h3 className="font-serifDisplay italic font-bold text-xl text-textLight">Escolher Data/Horário</h3>
-                  <p className="text-[10px] font-mono text-textMuted uppercase tracking-wider">Defina o dia e a hora do evento</p>
+                  <h3 className="font-display font-semibold text-xl text-textLight">Escolher data/horário</h3>
+                  <p className="text-xs text-textMuted">Defina o dia e a hora do evento</p>
                 </div>
                 <button
                   type="button"
@@ -1129,19 +1121,19 @@ const CreateEventContent = () => {
                 <button
                   type="button"
                   onClick={handleMonthPrev}
-                  className="p-1.5 rounded-xl hover:bg-white text-textLight transition-all border-0 bg-transparent cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
-                  title="Mês Anterior"
+                  className="p-1.5 rounded-xl hover:bg-primary/10 hover:text-primary text-textLight transition-all border-0 bg-transparent cursor-pointer flex items-center justify-center active:scale-95"
+                  title="Mês anterior"
                 >
                   <ChevronLeft size={18} />
                 </button>
-                <span className="font-display font-black text-xs sm:text-sm text-textLight uppercase tracking-widest">
+                <span className="font-display font-semibold text-sm text-textLight">
                   {MONTHS_PT[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </span>
                 <button
                   type="button"
                   onClick={handleMonthNext}
-                  className="p-1.5 rounded-xl hover:bg-white text-textLight transition-all border-0 bg-transparent cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
-                  title="Próximo Mês"
+                  className="p-1.5 rounded-xl hover:bg-primary/10 hover:text-primary text-textLight transition-all border-0 bg-transparent cursor-pointer flex items-center justify-center active:scale-95"
+                  title="Próximo mês"
                 >
                   <ChevronRight size={18} />
                 </button>
@@ -1150,7 +1142,7 @@ const CreateEventContent = () => {
               {/* Calendar Grid Weekdays */}
               <div className="grid grid-cols-7 gap-1.5 text-center mb-3">
                 {WEEKDAYS_PT.map((day) => (
-                  <span key={day} className="text-[10px] sm:text-xs font-mono font-bold text-textMuted uppercase tracking-widest opacity-60">
+                  <span key={day} className="text-[11px] sm:text-xs font-medium text-textMuted">
                     {day}
                   </span>
                 ))}
@@ -1178,7 +1170,7 @@ const CreateEventContent = () => {
                         "w-10 h-10 xs:w-11 xs:h-11 sm:w-12 sm:h-12 flex items-center justify-center text-xs sm:text-sm font-sans rounded-full transition-all mx-auto cursor-pointer border-0 bg-transparent",
                         !cell.isCurrentMonth && "text-textMuted/30 hover:bg-surfaceHover/30",
                         cell.isCurrentMonth && !isSelected && "text-textLight hover:bg-surfaceHover font-semibold",
-                        isSelected && "bg-black text-white font-bold shadow-md hover:bg-black"
+                        isSelected && "bg-primary text-textDark font-semibold shadow-sm hover:bg-primaryHover"
                       )}
                     >
                       {cell.day}
@@ -1188,12 +1180,12 @@ const CreateEventContent = () => {
               </div>
 
               {/* Time Picker */}
-              <div className="bg-[#1C1917] text-white rounded-[2rem] p-4 flex flex-col items-center justify-center gap-3 mb-6 shadow-xl border border-white/5">
-                <label className="text-[10px] uppercase font-mono font-bold text-white/40 tracking-wider flex items-center gap-1.5">
+              <div className="bg-surface text-textLight rounded-2xl p-4 flex flex-col items-center justify-center gap-3 mb-6 shadow-sm border border-glassBorder">
+                <label className="text-xs font-medium text-textMuted flex items-center gap-1.5">
                   <Clock size={12} className="text-primary" />
-                  Horário do Evento
+                  Horário do evento
                 </label>
-                <div className="flex items-center justify-center gap-6 bg-white/5 px-8 py-2 rounded-2xl border border-white/10">
+                <div className="flex items-center justify-center gap-6 bg-surfaceHover/50 px-8 py-2 rounded-xl border border-glassBorder">
                   {/* Hour Control */}
                   <div className="flex flex-col items-center gap-0.5">
                     <button
@@ -1203,12 +1195,12 @@ const CreateEventContent = () => {
                         if (h > 23) h = 0;
                         setSelectedTempTime(`${String(h).padStart(2, '0')}:${tempMinute}`);
                       }}
-                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
-                      title="Aumentar Hora"
+                      className="p-1 rounded-xl bg-surface/50 border border-glassBorder hover:bg-primary/10 hover:text-primary text-textMuted transition-all cursor-pointer"
+                      title="Aumentar hora"
                     >
                       <ChevronUp size={18} />
                     </button>
-                    <span className="font-display text-4xl font-black text-white select-none w-12 text-center leading-none">
+                    <span className="font-mono text-4xl font-semibold text-textLight select-none w-12 text-center leading-none">
                       {tempHour}
                     </span>
                     <button
@@ -1218,15 +1210,15 @@ const CreateEventContent = () => {
                         if (h < 0) h = 23;
                         setSelectedTempTime(`${String(h).padStart(2, '0')}:${tempMinute}`);
                       }}
-                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
-                      title="Diminuir Hora"
+                      className="p-1 rounded-xl bg-surface/50 border border-glassBorder hover:bg-primary/10 hover:text-primary text-textMuted transition-all cursor-pointer"
+                      title="Diminuir hora"
                     >
                       <ChevronDown size={18} />
                     </button>
                   </div>
 
                   {/* Colon */}
-                  <span className="text-white/40 font-display text-3xl font-black mb-1 select-none">:</span>
+                  <span className="text-textMuted font-mono text-3xl font-semibold mb-1 select-none">:</span>
 
                   {/* Minute Control */}
                   <div className="flex flex-col items-center gap-0.5">
@@ -1237,12 +1229,12 @@ const CreateEventContent = () => {
                         if (m > 59) m = 0;
                         setSelectedTempTime(`${tempHour}:${String(m).padStart(2, '0')}`);
                       }}
-                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
-                      title="Aumentar Minuto"
+                      className="p-1 rounded-xl bg-surface/50 border border-glassBorder hover:bg-primary/10 hover:text-primary text-textMuted transition-all cursor-pointer"
+                      title="Aumentar minuto"
                     >
                       <ChevronUp size={18} />
                     </button>
-                    <span className="font-display text-4xl font-black text-white select-none w-12 text-center leading-none">
+                    <span className="font-mono text-4xl font-semibold text-textLight select-none w-12 text-center leading-none">
                       {tempMinute}
                     </span>
                     <button
@@ -1252,8 +1244,8 @@ const CreateEventContent = () => {
                         if (m < 0) m = 55;
                         setSelectedTempTime(`${tempHour}:${String(m).padStart(2, '0')}`);
                       }}
-                      className="p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-all border-0 bg-transparent cursor-pointer"
-                      title="Diminuir Minuto"
+                      className="p-1 rounded-xl bg-surface/50 border border-glassBorder hover:bg-primary/10 hover:text-primary text-textMuted transition-all cursor-pointer"
+                      title="Diminuir minuto"
                     >
                       <ChevronDown size={18} />
                     </button>
@@ -1264,10 +1256,11 @@ const CreateEventContent = () => {
               {/* Confirm Button */}
               <Button
                 type="button"
-                className="w-full rounded-2xl py-4 shadow-xl"
+                fullWidth
+                className="rounded-xl py-4"
                 onClick={handleDatePickerConfirm}
               >
-                Confirmar Horário
+                Confirmar horário
               </Button>
             </div>
           </div>
@@ -1338,7 +1331,7 @@ const PlaceAutocomplete = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
             setInputValue(e.target.value);
             fetchPredictions(e.target.value);
           }}
-          className="w-full h-12 bg-white/90 backdrop-blur-md border border-glassBorder rounded-2xl px-12 text-sm shadow-xl focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-textLight"
+          className="w-full h-12 bg-white/90 backdrop-blur-md border border-glassBorder rounded-xl px-12 text-sm shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all text-textLight"
         />
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
         {inputValue && (
@@ -1354,14 +1347,14 @@ const PlaceAutocomplete = ({ onPlaceSelect }: { onPlaceSelect: (place: google.ma
       </div>
 
       {predictions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-glassBorder rounded-[1.5rem] shadow-2xl z-[120] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-glassBorder rounded-2xl shadow-md z-[120] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           {predictions.map((p, idx) => (
             <button
               key={p.placePrediction?.placeId || idx}
               className="w-full text-left px-5 py-3 hover:bg-primary/5 text-xs border-b border-glassBorder last:border-0 flex flex-col gap-0.5"
               onClick={() => handleSelect(p)}
             >
-              <span className="font-bold text-textLight">{p.placePrediction?.text.text}</span>
+              <span className="font-semibold text-textLight">{p.placePrediction?.text.text}</span>
             </button>
           ))}
         </div>

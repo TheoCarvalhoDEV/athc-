@@ -4,13 +4,10 @@
 
 @layer base {
   body {
-    @apply bg-background text-textLight font-sans antialiased font-light;
+    @apply bg-background text-textLight font-sans antialiased;
     margin: 0;
     overflow-x: hidden;
     background-color: #FCFAF7;
-    /* Padrão sutil de linho/grade leve de fundo */
-    background-image: radial-gradient(rgba(28, 25, 23, 0.02) 1px, transparent 0);
-    background-size: 24px 24px;
   }
 
   /* Custom Warm Scrollbar */
@@ -35,66 +32,24 @@
     background: rgba(90, 18, 46, 0.15);
     color: #1C1917;
   }
+
+  /* ─── Foco visível por teclado (acessibilidade global) ───
+     Especificidade 0 via :where(), então componentes com seu próprio
+     focus-visible:ring sobrescrevem sem conflito. Elementos com
+     `outline-none` (Button/Input do DS) anulam este outline e usam o anel. */
+  :where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid rgba(90, 18, 46, 0.55);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  /* Remove o outline para cliques de mouse, mantendo-o para teclado */
+  :where(button, [role="button"]):focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 
-/* ─── Auroras de Fundo (Ambiente Solar) ─── */
-.aurora-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-  opacity: 0.6;
-  mix-blend-mode: normal;
-}
-
-.aurora-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  will-change: transform;
-}
-
-.aurora-pink {
-  width: 75vw;
-  height: 75vw;
-  background: radial-gradient(circle, rgba(90, 18, 46, 0.05) 0%, rgba(90, 18, 46, 0) 70%);
-  top: -20vh;
-  right: -10vw;
-  animation: aurora-slow 25s ease-in-out infinite alternate;
-}
-
-.aurora-cyan {
-  width: 80vw;
-  height: 80vw;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.06) 0%, rgba(251, 191, 36, 0) 70%);
-  bottom: -25vh;
-  left: -15vw;
-  animation: aurora-slow 30s ease-in-out infinite alternate-reverse;
-}
-
-/* ─── Global Noise Overlay ─── */
-.hidden-svg {
-  display: none;
-}
-
-.noise-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.015;
-  mix-blend-mode: overlay;
-  background: url('data:image/svg+xml;utf8,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');
-}
-
-/* ─── Classes Utilitárias Glassmorphic & Sombras ─── */
+/* ─── Utilitários de Superfície, Sombra e Interação ─── */
 @layer utilities {
   /* Transições e efeitos de clique suaves */
   .neo-click {
@@ -104,12 +59,12 @@
     transform: scale(0.97) translateY(1px);
   }
 
-  /* Micro-interação de cartão */
+  /* Micro-interação de cartão (sutil, ancorada) */
   .beat-hover {
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .beat-hover:hover {
-    transform: translateY(-4px) scale(1.015);
+    transform: translateY(-2px);
   }
 
   .scrollbar-hide::-webkit-scrollbar {
@@ -142,12 +97,11 @@
     animation: shimmer-slide 2.5s infinite;
   }
 
-  /* Badge de Status */
+  /* Badge de Status (único uppercase+tracking aceitável: estado) */
   .badge-open {
     background: rgba(16, 185, 129, 0.08);
     color: #0B4F48;
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     font-size: 0.65rem;
@@ -164,82 +118,88 @@
     backdrop-filter: blur(16px);
   }
 
-  /* Glassmorphism Editorial de Alta Fidelidade */
-  .glass {
-    background: rgba(255, 255, 255, 0.65);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+  /* Superfície ancorada padrão de card (sólida, hairline real, sombra suave) */
+  .surface {
+    background: #FFFFFF;
     border: 1px solid rgba(28, 25, 23, 0.08);
-    box-shadow: 0 12px 40px -10px rgba(28, 25, 23, 0.06);
+    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.05);
+  }
+  .surface-cream {
+    background: #FCFAF7;
+    border: 1px solid rgba(28, 25, 23, 0.07);
+  }
+  .surface-hover {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .surface-hover:hover {
+    border-color: rgba(28, 25, 23, 0.14);
+    box-shadow: 0 6px 18px -8px rgba(28, 25, 23, 0.12);
+    transform: translateY(-2px);
   }
 
-  /* Efeitos de Hover Premium */
+  /* Glass: RESERVADO para navegação e overlays de modal (ancorado, menos blur) */
+  .glass {
+    background: rgba(255, 255, 255, 0.82);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(28, 25, 23, 0.08);
+    box-shadow: 0 4px 16px -6px rgba(28, 25, 23, 0.08);
+  }
+
+  /* Hover de card: sutil, sem troca de opacidade de vidro nem salto exagerado */
   .glass-hover {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .glass-hover:hover {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(90, 18, 46, 0.25);
-    box-shadow: 0 16px 45px -10px rgba(90, 18, 46, 0.08), 0 12px 40px -10px rgba(28, 25, 23, 0.06);
-    transform: translateY(-3px);
+    border-color: rgba(90, 18, 46, 0.2);
+    box-shadow: 0 6px 18px -8px rgba(28, 25, 23, 0.12);
+    transform: translateY(-2px);
   }
-
   .glass-hover-accent {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .glass-hover-accent:hover {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(11, 79, 72, 0.25);
-    box-shadow: 0 16px 45px -10px rgba(11, 79, 72, 0.08), 0 12px 40px -10px rgba(28, 25, 23, 0.06);
-    transform: translateY(-3px);
+    border-color: rgba(11, 79, 72, 0.2);
+    box-shadow: 0 6px 18px -8px rgba(28, 25, 23, 0.12);
+    transform: translateY(-2px);
   }
 
-  /* Cards Brutalistas Reconfigurados para Glassmorphism Claro */
+  /* Aliases legados → superfícies sólidas (mantidos durante a varredura) */
   .brutal-card {
-    background: rgba(255, 255, 255, 0.65);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
+    background: #FFFFFF;
     border: 1px solid rgba(28, 25, 23, 0.08);
-    box-shadow: 0 12px 40px -10px rgba(28, 25, 23, 0.06);
-    border-radius: 24px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.05);
+    border-radius: 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .brutal-card:hover {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(28, 25, 23, 0.15);
-    transform: translateY(-3px);
+    border-color: rgba(28, 25, 23, 0.14);
+    box-shadow: 0 6px 18px -8px rgba(28, 25, 23, 0.12);
+    transform: translateY(-2px);
   }
-
   .brutal-card-primary {
-    background: rgba(255, 255, 255, 0.65);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(90, 18, 46, 0.15);
-    box-shadow: 0 12px 40px -10px rgba(28, 25, 23, 0.06);
-    border-radius: 24px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #FFFFFF;
+    border: 1px solid rgba(90, 18, 46, 0.14);
+    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.05);
+    border-radius: 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .brutal-card-primary:hover {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(90, 18, 46, 0.3);
-    box-shadow: 0 16px 45px -10px rgba(90, 18, 46, 0.08);
-    transform: translateY(-3px);
+    border-color: rgba(90, 18, 46, 0.28);
+    box-shadow: 0 6px 18px -8px rgba(28, 25, 23, 0.12);
+    transform: translateY(-2px);
   }
-
   .brutal-card-accent {
-    background: rgba(255, 255, 255, 0.65);
-    -webkit-backdrop-filter: blur(20px);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(11, 79, 72, 0.15);
-    box-shadow: 0 12px 40px -10px rgba(28, 25, 23, 0.06);
-    border-radius: 24px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #FFFFFF;
+    border: 1px solid rgba(11, 79, 72, 0.14);
+    box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 1px 3px rgba(28, 25, 23, 0.05);
+    border-radius: 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
   .brutal-card-accent:hover {
-    background: rgba(255, 255, 255, 0.85);
-    border-color: rgba(11, 79, 72, 0.3);
-    box-shadow: 0 16px 45px -10px rgba(11, 79, 72, 0.08);
-    transform: translateY(-3px);
+    border-color: rgba(11, 79, 72, 0.28);
+    box-shadow: 0 6px 18px -8px rgba(28, 25, 23, 0.12);
+    transform: translateY(-2px);
   }
 
   /* Skeleton Loading Cor de Papel/Osso */
@@ -271,15 +231,20 @@
     100% { transform: translateY(100%); }
   }
 
-  /* Ambient Glow Solar */
+  /* Linha de leitura do scanner de QR (percorre o quadro de mira via `top`) */
+  @keyframes scan-sweep {
+    0% { top: 4%; opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { top: 96%; opacity: 0; }
+  }
+  .animate-scan-sweep {
+    animation: scan-sweep 2.2s ease-in-out infinite;
+  }
+
+  /* Ambient Glow desativado (decoração "template" removida) */
   .ambient-glow {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    pointer-events: none;
-    z-index: 0;
-    mix-blend-mode: normal;
-    opacity: 0.5;
+    display: none;
   }
 
   .card-lift {
@@ -334,7 +299,7 @@ input[type="time"]::-webkit-date-and-time-value {
   position: absolute;
   width: 100px;
   height: 100px;
-  background-color: rgba(34, 197, 94, 0.15);
+  background-color: rgba(16, 185, 129, 0.15);
   border-radius: 50%;
   z-index: 0;
   opacity: 0;
@@ -347,10 +312,10 @@ input[type="time"]::-webkit-date-and-time-value {
   border-radius: 50%;
   display: block;
   stroke-width: 3;
-  stroke: #22c55e;
+  stroke: #10B981;
   stroke-miterlimit: 10;
   z-index: 1;
-  box-shadow: inset 0px 0px 0px #22c55e;
+  box-shadow: inset 0px 0px 0px #10B981;
   animation: fillBackgroundPremium 0.5s ease-in-out 0.4s forwards;
 }
 
@@ -359,7 +324,7 @@ input[type="time"]::-webkit-date-and-time-value {
   stroke-dashoffset: 166;
   stroke-width: 3;
   stroke-miterlimit: 10;
-  stroke: #22c55e;
+  stroke: #10B981;
   fill: none;
   animation: strokeDrawPremium 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
 }
@@ -379,10 +344,10 @@ input[type="time"]::-webkit-date-and-time-value {
 
 @keyframes fillBackgroundPremium {
   0% {
-    box-shadow: inset 0px 0px 0px 0px rgba(34, 197, 94, 0);
+    box-shadow: inset 0px 0px 0px 0px rgba(16, 185, 129, 0);
   }
   100% {
-    box-shadow: inset 0px 0px 0px 40px rgba(34, 197, 94, 0.1);
+    box-shadow: inset 0px 0px 0px 40px rgba(16, 185, 129, 0.1);
   }
 }
 
@@ -397,6 +362,39 @@ input[type="time"]::-webkit-date-and-time-value {
   100% {
     transform: scale(1.4);
     opacity: 0;
+  }
+}
+
+/* ─── Impressão: imprime SOMENTE o cartão do ingresso (.printable-ticket) ─── */
+@media print {
+  /* Esconde toda a página (mantém o layout, só não pinta) */
+  body * {
+    visibility: hidden !important;
+  }
+  /* Revela apenas o ingresso e seu conteúdo */
+  .printable-ticket,
+  .printable-ticket * {
+    visibility: visible !important;
+  }
+  /* Posiciona o ingresso sozinho no topo da folha */
+  .printable-ticket {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-color: #e7e5e4 !important;
+  }
+  /* Neutraliza o fundo/blur do modal para não gerar páginas extras */
+  .modal-backdrop {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  @page {
+    margin: 14mm;
   }
 }
 

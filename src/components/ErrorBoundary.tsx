@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCcw } from 'lucide-react';
+import { Button } from './ui/Button';
 
 interface Props {
   children?: ReactNode;
@@ -28,23 +29,33 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
-            <AlertTriangle className="text-red-500 w-10 h-10" />
+          <div className="w-20 h-20 bg-danger/10 border border-danger/20 rounded-2xl flex items-center justify-center mb-6">
+            <AlertTriangle className="text-danger w-10 h-10" />
           </div>
-          <h1 className="font-sans font-bold text-2xl text-textDark mb-2">
-            Oops, algo deu errado!
+          <h1 className="font-display font-semibold text-2xl text-textLight mb-2">
+            Algo deu errado
           </h1>
-          <p className="text-textDark/60 text-sm mb-8 max-w-sm">
-            Um erro inesperado aconteceu e travou a tela. Nossa equipe já deve estar ciente, mas recarregar a página costuma resolver.
+          <p className="text-textMuted text-sm mb-8 max-w-sm leading-relaxed">
+            Um erro inesperado travou a tela. Nossa equipe já deve estar ciente, mas recarregar a página costuma resolver.
           </p>
-          
-          <button
-            onClick={() => window.location.reload()}
-            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full font-bold shadow-lg hover:scale-105 transition-all"
-          >
-            <RefreshCcw size={18} />
-            Recarregar Aplicativo
-          </button>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCcw size={18} />
+              Recarregar
+            </Button>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => { window.location.href = '/'; }}
+            >
+              Voltar ao Início
+            </Button>
+          </div>
         </div>
       );
     }

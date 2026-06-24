@@ -22,11 +22,15 @@ export default {
         danger: "#EF4444",
         success: "#10B981",
       },
+      // ─── PONTO ÚNICO DE TROCA DE FONTE ───
+      // Família unificada Plus Jakarta Sans para títulos e corpo (hierarquia via peso).
+      // 'display'/'serifDisplay'/'mono' são aliases da mesma família para os usos legados
+      // renderizarem sem serifa nem monoespaçado. Para alinhar números, usar `tabular-nums`.
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
-        display: ['Poppins', 'sans-serif'],
-        serifDisplay: ['Poppins', 'sans-serif'],
-        mono: ['Poppins', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'sans-serif'],
+        serifDisplay: ['Plus Jakarta Sans', 'sans-serif'],
+        mono: ['Plus Jakarta Sans', 'sans-serif'],
       },
       boxShadow: {
         'glow-primary': '0 4px 20px rgba(90, 18, 46, 0.15)',
@@ -34,6 +38,8 @@ export default {
         'glow-success': '0 4px 20px rgba(16, 185, 129, 0.15)',
         'glass-shadow': '0 12px 40px -10px rgba(28, 25, 23, 0.06)',
         'glow-primary-lg': '0 8px 30px rgba(90, 18, 46, 0.25)',
+        'glow-success-lg': '0 8px 30px rgba(16, 185, 129, 0.28)',
+        'glow-accent-lg': '0 8px 30px rgba(11, 79, 72, 0.25)',
         'float': '0 20px 50px rgba(28, 25, 23, 0.08)',
       },
       animation: {
@@ -41,7 +47,6 @@ export default {
         'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
         'float': 'float 6s ease-in-out infinite',
         'skeleton': 'skeleton 1.5s ease-in-out infinite',
-        'aurora-slow': 'aurora-slow 20s ease-in-out infinite alternate',
       },
       keyframes: {
         'shimmer-slide': {
@@ -59,11 +64,6 @@ export default {
         'skeleton': {
           '0%': { backgroundPosition: '200% 0' },
           '100%': { backgroundPosition: '-200% 0' },
-        },
-        'aurora-slow': {
-          '0%': { transform: 'translate(0, 0) rotate(0deg) scale(1)' },
-          '50%': { transform: 'translate(10vw, 5vh) rotate(180deg) scale(1.1)' },
-          '100%': { transform: 'translate(-5vw, -5vh) rotate(360deg) scale(1)' },
         },
       },
     },

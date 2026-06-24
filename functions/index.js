@@ -480,6 +480,7 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
                                         overbooked: isOverbooked,
                                         ticketTypeId: item.id,
                                         ticketTypeName: item.name,
+                                        pedidoId: pedidoDoc.id,
                                         timestamp: new Date().toISOString()
                                     });
                                 }
@@ -498,6 +499,7 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
                                 userCpf: currentPedidoData.clienteCpf || '',
                                 paymentStatus: isOverbooked ? 'Overbooking (Pago)' : 'Pago',
                                 overbooked: isOverbooked,
+                                pedidoId: pedidoDoc.id,
                                 timestamp: new Date().toISOString()
                             });
                             logger.info(`Transação: Pedido ${pedidoDoc.id} processado! Inscrição simples criada.`);

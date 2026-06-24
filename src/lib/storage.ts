@@ -89,6 +89,10 @@ export type Registration = {
   timestamp: string;
   ticketTypeId?: string;   // ID do tipo de ingresso (lote) adquirido
   ticketTypeName?: string; // Nome do tipo de ingresso (lote) adquirido
+  pedidoId?: string;       // ID do pedido de pagamento
+  checkedIn?: boolean;     // Ingresso já validado na portaria?
+  checkedInAt?: string;    // Quando foi validado (ISO)
+  checkedInBy?: string;    // Quem validou (nome do operador)
 };
 
 export const storage = {
@@ -198,6 +202,14 @@ export const storage = {
 
   deleteEvent: async (id: string) => {
     await deleteDoc(doc(db, 'events', id));
+  },
+
+  getEventById: async (id: string): Promise<EventItem | undefined> => {
+    const docSnap = await getDoc(doc(db, 'events', id));
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as EventItem;
+    }
+    return undefined;
   },
 
   getAgendaByProfileId: async (profileId: string): Promise<EventItem[]> => {
@@ -385,15 +397,41 @@ export const storage = {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
   },
 
-  saveRegistration: async (registration: Registration) => {
-    const { id: _, ...data } = registration;
-    await addDoc(collection(db, 'registrations'), data);
+  saveRegistration: async (registration: Registration): Promise<string> => {
+    const { id, ...data } = registration;
+    const docRef = await addDoc(collection(db, 'registrations'), data);
+    return docRef.id;
   },
 
   getRegistrationsForEvent: async (eventId: string): Promise<Registration[]> => {
     const q = query(collection(db, 'registrations'), where('eventId', '==', eventId));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
+  },
+
+  // Busca um ingresso/inscrição pelo ID do documento (usado na leitura do QR Code)
+  getRegistrationById: async (id: string): Promise<Registration | null> => {
+    const trimmed = (id || '').trim();
+    if (!trimmed) return null;
+    try {
+      const docSnap = await getDoc(doc(db, 'registrations', trimmed));
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Registration;
+      }
+      return null;
+    } catch (error) {
+      console.error('Erro ao buscar inscrição por ID:', error);
+      return null;
+    }
+  },
+
+  // Marca um ingresso como validado/usado (check-in na portaria)
+  checkInRegistration: async (id: string, byName?: string): Promise<void> => {
+    await updateDoc(doc(db, 'registrations', id), {
+      checkedIn: true,
+      checkedInAt: new Date().toISOString(),
+      checkedInBy: byName || '',
+    });
   },
 
   // Busca inscrições paginadas de um evento específico para otimizar desempenho e custo

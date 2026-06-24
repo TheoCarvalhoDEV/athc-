@@ -44,27 +44,22 @@ export const Agenda = () => {
   }, [profile, events]);
 
   if (!profile) {
-    return <div className="min-h-screen bg-background flex items-center justify-center p-4 text-center text-primary font-mono">Carregando perfil...</div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center p-4 text-center text-primary font-sans">Carregando perfil...</div>;
   }
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background pb-28 pt-6 px-4 relative">
-      {/* Ambient glow */}
-      <div className="ambient-glow w-48 h-48 bg-primary/15 top-20 right-0" />
-
-      <button 
-        onClick={() => navigate(-1)} 
+      <button
+        onClick={() => navigate(-1)}
         title="Voltar"
         aria-label="Voltar"
-        className="w-10 h-10 mb-6 rounded-2xl bg-surface/50 border border-glassBorder text-textLight flex items-center justify-center shadow-glass-shadow hover:border-primary/40 hover:shadow-glow-primary hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
+        className="w-10 h-10 mb-6 rounded-xl bg-surface border border-glassBorder text-textLight flex items-center justify-center shadow-sm hover:border-primary/40 hover:-translate-y-0.5 transition-all duration-300 neo-click cursor-pointer relative z-10"
       >
         <ArrowLeft size={18} />
       </button>
 
       {/* Profile Header */}
-      <div className="agenda-header glass rounded-[2.5rem] p-8 text-textLight flex flex-col items-center text-center border border-glassBorder shadow-glass-shadow mb-8 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-tr from-accent/5 to-primary/5 pointer-events-none" />
-        
+      <div className="agenda-header surface rounded-2xl p-8 text-textLight flex flex-col items-center text-center mb-8 relative overflow-hidden">
         {/* Avatar/Logo */}
         <div className="w-24 h-24 rounded-2xl bg-surface/40 border border-glassBorder flex items-center justify-center mb-4 overflow-hidden relative shadow-md shrink-0 z-10">
           {profile.imageUrl ? (
@@ -76,8 +71,8 @@ export const Agenda = () => {
           )}
         </div>
         
-        <h1 className="font-serifDisplay italic font-bold text-2xl mb-2 text-textLight tracking-wide z-10 leading-tight">{profile.name}</h1>
-        <span className="font-mono text-[9px] text-accent bg-accent/10 border border-accent/20 px-3 py-1 font-bold uppercase tracking-widest rounded-full mb-4 inline-block z-10">
+        <h1 className="font-display font-semibold text-2xl mb-2 text-textLight z-10 leading-tight">{profile.name}</h1>
+        <span className="text-[11px] font-medium capitalize text-accent bg-accent/10 border border-accent/20 px-3 py-1 rounded-full mb-4 inline-block z-10">
           {profile.type === 'atletica' ? 'Atlética' : 'Estabelecimento'}
         </span>
         
@@ -93,7 +88,7 @@ export const Agenda = () => {
                 href={`https://instagram.com/${profile.instagram.replace('@', '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-2xl bg-surface/50 border border-glassBorder hover:border-primary/40 hover:text-primary flex items-center justify-center shadow-glass-shadow hover:-translate-y-0.5 hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click cursor-pointer"
+                className="w-10 h-10 rounded-xl bg-surface border border-glassBorder hover:border-primary/40 hover:text-primary flex items-center justify-center shadow-sm hover:-translate-y-0.5 active:scale-95 transition-all duration-300 neo-click cursor-pointer"
                 title="Instagram"
               >
                 <InstagramIcon size={16} />
@@ -102,7 +97,7 @@ export const Agenda = () => {
             {profile.email && (
               <a
                 href={`mailto:${profile.email}`}
-                className="w-10 h-10 rounded-2xl bg-surface/50 border border-glassBorder hover:border-primary/40 hover:text-primary flex items-center justify-center shadow-glass-shadow hover:-translate-y-0.5 hover:shadow-glow-primary active:scale-95 transition-all duration-300 neo-click cursor-pointer"
+                className="w-10 h-10 rounded-xl bg-surface border border-glassBorder hover:border-primary/40 hover:text-primary flex items-center justify-center shadow-sm hover:-translate-y-0.5 active:scale-95 transition-all duration-300 neo-click cursor-pointer"
                 title="E-mail"
               >
                 <Mail size={16} />
@@ -113,9 +108,9 @@ export const Agenda = () => {
       </div>
 
       <div className="agenda-event flex items-center gap-2.5 px-1 mb-6 relative z-10">
-        <div className="w-1 h-5 bg-gradient-to-b from-primary to-primaryHover rounded-full shadow-glow-primary" />
-        <h2 className="font-serifDisplay italic font-semibold text-xl text-textLight">
-          Agenda de Eventos
+        <div className="w-1 h-5 bg-primary/40 rounded-full" />
+        <h2 className="font-display font-semibold text-xl text-textLight">
+          Agenda de eventos
         </h2>
       </div>
 

@@ -1,0 +1,350 @@
+[
+  {
+    "time": "20:00",
+    "whatsappContacts": [],
+    "registrationCount": 1,
+    "location": "Centro",
+    "pixTicketPrice": "1.00",
+    "isTestEvent": true,
+    "ticketPrice": "",
+    "publicType": "Aberto",
+    "whatsappNumber": "",
+    "address": "Casa de shows sertaneja. O melhor do sertanejo universitário e raiz em Cáceres.",
+    "hasPresence": true,
+    "creatorId": "IWxWyDNYPYfLBCACvNPoVcUVATV2",
+    "date": "2026-06-15",
+    "mediaUrls": [],
+    "hasTickets": false,
+    "description": "TESTE 15/06",
+    "hasPixTickets": true,
+    "title": "TESTE 15/06",
+    "tickets": [],
+    "id": "1781552658969"
+  },
+  {
+    "date": "2026-06-16",
+    "mediaUrls": [],
+    "address": "Escola Estadual Natalino Ferreira Mendes, Rua Tiradentes, Centro, Cáceres, Mato Grosso, Região Centro-Oeste, 78210-050, Brasil",
+    "hasPresence": true,
+    "creatorId": "IWxWyDNYPYfLBCACvNPoVcUVATV2",
+    "hasTickets": false,
+    "description": "TESTE PIX 15/06",
+    "hasPixTickets": true,
+    "tickets": [],
+    "title": "TESTE PIX 15/06",
+    "location": "Centro",
+    "registrationCount": 1,
+    "whatsappContacts": [],
+    "time": "20:00",
+    "publicType": "Aberto",
+    "ticketPrice": "",
+    "pixTicketPrice": "1",
+    "isTestEvent": true,
+    "whatsappNumber": "",
+    "id": "1781555466973"
+  },
+  {
+    "title": "16/06",
+    "tickets": [],
+    "hasPixTickets": true,
+    "description": "16/06 DDDDDDDDDDDDDDD",
+    "hasTickets": false,
+    "address": "rua das Garcas bairro cidade alta",
+    "creatorId": "IWxWyDNYPYfLBCACvNPoVcUVATV2",
+    "hasPresence": true,
+    "date": "2026-06-26",
+    "mediaUrls": [],
+    "whatsappNumber": "",
+    "pixTicketPrice": "1",
+    "isTestEvent": false,
+    "ticketPrice": "",
+    "publicType": "Aberto",
+    "time": "20:00",
+    "whatsappContacts": [],
+    "location": "Centro",
+    "id": "1781640746005"
+  },
+  {
+    "description": "A noite mais aguardada do mês! DJs convidados, open bar premium e muito mais. Dress code: All Black. Não perca a edição especial Neon do Velvet Night.",
+    "hasTickets": true,
+    "creatorId": "IWxWyDNYPYfLBCACvNPoVcUVATV2",
+    "address": "Rua Coronel José Dulce, 250 - Centro, Cáceres - MT",
+    "date": "2026-06-14",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=800&q=80"
+    ],
+    "title": "Velvet Night - Edição Neon",
+    "hasPixTickets": false,
+    "whatsappContacts": [
+      {
+        "phone": "65996097252",
+        "name": "Theo"
+      },
+      {
+        "phone": "65996097252",
+        "name": "Velvet Club Oficial"
+      }
+    ],
+    "time": "23:00",
+    "location": "Velvet Club",
+    "registrationCount": 0,
+    "whatsappNumber": "65996097252",
+    "ticketPrice": "",
+    "pixTicketPrice": "",
+    "isTestEvent": false,
+    "publicType": "Aberto",
+    "id": "evt_1779549753381_0"
+  },
+  {
+    "description": "Sexta-feira é dia de samba! Venha curtir a melhor roda de samba de Cáceres com petiscos pantaneiros e cerveja artesanal. Entrada gratuita até 20h.",
+    "hasTickets": true,
+    "whatsappName": "Theo",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&q=80",
+      "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=800&q=80"
+    ],
+    "date": "2026-06-06",
+    "creatorId": "uYfV1qerQDRgdeRJTjVdGgG9fK73",
+    "address": "Av. São Luiz, 1500 - Cavalhada, Cáceres - MT",
+    "title": "Sextou no Pantanal - Roda de Samba",
+    "location": "Boteco do Pantanal",
+    "time": "18:00",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Boteco do Pantanal Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "whatsappNumber": "65996097252",
+    "publicType": "Aberto",
+    "id": "evt_1779549756059_1"
+  },
+  {
+    "title": "Calourada UNEMAT 2026.2",
+    "whatsappName": "Theo",
+    "hasTickets": true,
+    "description": "A maior calourada de Cáceres está de volta! Open bar, shows ao vivo, piscina e muita diversão. Calouro entra de graça com comprovante de matrícula!",
+    "address": "Estrada da Figueira, KM 3 - Zona Rural, Cáceres - MT",
+    "creatorId": "2yIGClq1skdOtnLFw5lNJCUy8T42",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80",
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80"
+    ],
+    "date": "2026-07-26",
+    "whatsappNumber": "65996097252",
+    "id": "evt_1779549758771_2",
+    "publicType": "Aberto",
+    "time": "21:00",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Atlética Pantaneira UNEMAT Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "location": "Chácara da Atlética"
+  },
+  {
+    "hasTickets": true,
+    "whatsappName": "Theo",
+    "description": "Um festival inteiro dedicado à culinária regional! Mais de 20 barracas com pratos típicos do cerrado e pantanal, música ao vivo e espaço kids.",
+    "address": "Rua General Osório, 890 - Centro, Cáceres - MT",
+    "creatorId": "VXFYIZ5nLigtAwaw6S7iAuy4dDq1",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80",
+      "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&q=80"
+    ],
+    "date": "2026-06-21",
+    "title": "Festival Gastronômico do Cerrado",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Espaço Cerrado Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "time": "11:00",
+    "location": "Espaço Cerrado",
+    "whatsappNumber": "65996097252",
+    "publicType": "Aberto",
+    "id": "evt_1779549761383_3"
+  },
+  {
+    "creatorId": "eZfvzLTbJiYCcf6zBHEVePU9yFT2",
+    "address": "Rua 7 de Setembro, 420 - Centro, Cáceres - MT",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1496024840928-4c417adf211d?w=800&q=80",
+      "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&q=80"
+    ],
+    "date": "2026-06-28",
+    "description": "A lendária Toga Party está de volta! Vista sua toga, traga seus amigos e venha curtir a melhor festa temática da faculdade de Direito. Ingresso inclui open bar.",
+    "hasTickets": true,
+    "whatsappName": "Theo",
+    "title": "Toga Party - Festa da Themis",
+    "time": "22:00",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Atlética Themis Direito Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "location": "Salão de Eventos Imperial",
+    "id": "evt_1779549764019_4",
+    "publicType": "Aberto",
+    "whatsappNumber": "65996097252"
+  },
+  {
+    "whatsappNumber": "65996097252",
+    "publicType": "Aberto",
+    "id": "evt_1779549766685_5",
+    "location": "Bar da Esquina",
+    "time": "16:00",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Bar da Esquina Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "title": "Sunset Sessions - Edição de Inverno",
+    "description": "Drinks especiais de inverno, música lofi ao vivo e o pôr do sol mais bonito da cidade. Happy hour das 16h às 19h com 50% nos drinks autorais.",
+    "hasTickets": true,
+    "whatsappName": "Theo",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&q=80",
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80"
+    ],
+    "date": "2026-07-05",
+    "creatorId": "k8IkwaVRPVbBaSF3EKmrSvkIgFD3",
+    "address": "Rua Padre Casimiro, 77 - Centro, Cáceres - MT"
+  },
+  {
+    "whatsappNumber": "65996097252",
+    "publicType": "Aberto",
+    "id": "evt_1779549769377_6",
+    "location": "Rancho do Sul",
+    "time": "20:00",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Rancho do Sul Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "title": "Rodeio Fest Cáceres 2026",
+    "description": "O maior rodeio de Cáceres! 3 dias de festa com shows nacionais, rodeio profissional, praça de alimentação e parque de diversões. Venha viver essa experiência!",
+    "whatsappName": "Theo",
+    "hasTickets": true,
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800&q=80",
+      "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&q=80"
+    ],
+    "date": "2026-07-12",
+    "address": "Rod. BR-070, KM 2 - Saída para Cuiabá, Cáceres - MT",
+    "creatorId": "318W09E6fZORN7OX0rcwcxyE0gf1"
+  },
+  {
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&q=80",
+      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+    ],
+    "date": "2026-08-02",
+    "address": "Rua General Osório, 890 - Centro, Cáceres - MT",
+    "creatorId": "SWJ5IW6fNyeJFHtBQi6SV3A7q3D3",
+    "description": "A festa mais icônica da Medicina! Dress code totalmente branco. Open bar, DJ nacional e a energia contagiante da galera da Caduceu. Imperdível!",
+    "hasTickets": true,
+    "whatsappName": "Theo",
+    "title": "White Party - Noite da Medicina",
+    "location": "Espaço Cerrado",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Atlética Caduceu Medicina Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "time": "22:00",
+    "id": "evt_1779549772096_7",
+    "publicType": "Aberto",
+    "whatsappNumber": "65996097252"
+  },
+  {
+    "location": "Lounge Noir",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Lounge Noir Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "time": "20:00",
+    "whatsappNumber": "65996097252",
+    "publicType": "Aberto",
+    "id": "evt_1779549774693_8",
+    "whatsappName": "Theo",
+    "hasTickets": true,
+    "description": "Uma noite especial de jazz ao vivo e degustação de whiskies premium. Ambiente intimista, música de qualidade e drinks exclusivos preparados por bartenders premiados.",
+    "date": "2026-06-20",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&q=80",
+      "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=800&q=80"
+    ],
+    "address": "Rua Comandante Balduíno, 155 - Centro, Cáceres - MT",
+    "creatorId": "jOno7G78PGc5yfJPG846klnKcTn1",
+    "title": "Jazz & Whisky Night"
+  },
+  {
+    "publicType": "Aberto",
+    "id": "evt_1779549777574_9",
+    "whatsappNumber": "65996097252",
+    "time": "17:00",
+    "whatsappContacts": [
+      {
+        "name": "Theo",
+        "phone": "65996097252"
+      },
+      {
+        "name": "Arena Open Air Oficial",
+        "phone": "65996097252"
+      }
+    ],
+    "location": "Arena Open Air",
+    "title": "Festival Eletro Pantanal",
+    "creatorId": "96ZIsXSFkKh2b1AV3xyQ9RRrEmD2",
+    "address": "Av. Tancredo Neves, 3000 - Jardim Paraíso, Cáceres - MT",
+    "date": "2026-07-19",
+    "mediaUrls": [
+      "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80",
+      "https://images.unsplash.com/photo-1574391884720-bbc3740c59d1?w=800&q=80"
+    ],
+    "description": "O primeiro festival de música eletrônica a céu aberto de Cáceres! 3 palcos, +10 DJs, food trucks gourmet e área VIP premium. Uma experiência inesquecível!",
+    "hasTickets": true,
+    "whatsappName": "Theo"
+  }
+]

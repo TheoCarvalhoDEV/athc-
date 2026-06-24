@@ -61,13 +61,9 @@ export const Login = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Ambient glows */}
-      <div className="ambient-glow w-72 h-72 bg-primary/10 -top-36 left-1/2 -translate-x-1/2" />
-      <div className="ambient-glow w-48 h-48 bg-accent/8 bottom-20 -right-20" />
-
-      <button 
-        onClick={() => navigate(-1)} 
-        className="absolute top-8 left-6 p-2.5 rounded-2xl bg-surface/50 border border-glassBorder text-accent hover:border-accent/40 hover:shadow-glow-accent hover:bg-surface/70 transition-all duration-300 neo-click z-10"
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-8 left-6 p-2.5 rounded-xl bg-surface border border-glassBorder text-accent hover:border-accent/40 hover:bg-surfaceHover transition-all duration-300 neo-click z-10"
         title="Voltar"
       >
         <ArrowLeft size={20} />
@@ -76,12 +72,12 @@ export const Login = () => {
 
         <div className="flex flex-col items-center gap-3 stagger-el mb-8">
           <img src={`${import.meta.env.BASE_URL}logo.png?v=5`} alt="Atchêi" className="w-24 h-24 object-contain brightness-110 drop-shadow-[0_4px_20px_rgba(255,79,24,0.15)]" />
-          <h2 className="font-display font-black text-2xl uppercase tracking-widest text-accent mt-2">Login</h2>
+          <h2 className="font-display font-semibold text-2xl text-accent mt-2">Login</h2>
         </div>
 
-        <form onSubmit={handleLogin} className="w-full glass rounded-[2rem] p-6 shadow-glass-shadow space-y-5">
+        <form onSubmit={handleLogin} className="w-full surface rounded-2xl p-6 space-y-5">
           <div className="stagger-el space-y-1.5">
-            <label className="text-xs font-mono font-bold uppercase tracking-wider text-primary block ml-1">E-mail</label>
+            <label className="text-xs font-medium text-textMuted block ml-1">E-mail</label>
             <Input 
               type="email"
               placeholder="Seu e-mail" 
@@ -92,7 +88,7 @@ export const Login = () => {
           </div>
           
           <div className="stagger-el space-y-1.5">
-            <label className="text-xs font-mono font-bold uppercase tracking-wider text-primary block ml-1">Senha</label>
+            <label className="text-xs font-medium text-textMuted block ml-1">Senha</label>
             <Input 
               type="password" 
               placeholder="Sua senha" 
@@ -105,8 +101,11 @@ export const Login = () => {
           <div className="stagger-el pt-4">
             <Button 
               type="submit" 
-              className="w-full py-4 text-sm"
-              disabled={isLoading || isLimited}
+              variant="primary"
+              fullWidth
+              loading={isLoading}
+              disabled={isLimited}
+              className="py-4 text-sm"
             >
               {isLoading ? 'Entrando...' : isLimited ? `Aguarde ${Math.ceil(remainingMs / 1000)}s...` : 'Entrar'}
             </Button>

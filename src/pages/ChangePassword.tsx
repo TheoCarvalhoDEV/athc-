@@ -60,26 +60,23 @@ export const ChangePassword = () => {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Ambient glows */}
-      <div className="ambient-glow w-64 h-64 bg-primary/10 -top-32 left-1/2 -translate-x-1/2" />
-
       <div className="w-full max-w-sm flex flex-col items-center relative z-10">
         {/* Icon */}
-        <div className="stagger-el mb-6 w-20 h-20 border border-primary/20 rounded-2xl flex items-center justify-center bg-primary/10 shadow-glow-primary text-primary">
+        <div className="stagger-el mb-6 w-20 h-20 border border-primary/20 rounded-2xl flex items-center justify-center bg-primary/10 text-primary">
           <ShieldCheck size={36} />
         </div>
 
-        <h1 className="stagger-el font-serifDisplay italic font-bold text-3xl text-textLight tracking-wide mb-2">Primeiro Acesso</h1>
-        <p className="stagger-el text-xs text-textMuted font-mono uppercase tracking-wider text-center mb-8 leading-relaxed">
+        <h1 className="stagger-el font-display italic font-semibold text-3xl text-textLight mb-2">Primeiro acesso</h1>
+        <p className="stagger-el text-xs text-textMuted text-center mb-8 leading-relaxed">
           Defina uma nova senha para a sua conta.<br />
           A senha temporária não poderá mais ser usada.
         </p>
 
         <form onSubmit={handleSubmit} className="w-full space-y-5">
           <div className="stagger-el space-y-1.5 text-left">
-            <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1.5 flex items-center gap-2 tracking-wider">
+            <label className="text-xs font-medium text-textMuted ml-1.5 flex items-center gap-2">
               <Lock size={14} className="text-primary" />
-              Nova Senha
+              Nova senha
             </label>
             <div className="relative">
               <Input
@@ -100,9 +97,9 @@ export const ChangePassword = () => {
           </div>
 
           <div className="stagger-el space-y-1.5 text-left">
-            <label className="text-[9px] font-mono font-bold text-primary uppercase ml-1.5 flex items-center gap-2 tracking-wider">
+            <label className="text-xs font-medium text-textMuted ml-1.5 flex items-center gap-2">
               <Lock size={14} className="text-primary" />
-              Confirmar Senha
+              Confirmar senha
             </label>
             <Input
               type={showPassword ? 'text' : 'password'}
@@ -114,14 +111,14 @@ export const ChangePassword = () => {
           </div>
 
           {error && (
-            <div className="stagger-el bg-danger/10 border border-danger/20 text-danger text-xs font-mono uppercase tracking-wider px-4 py-3 rounded-2xl text-center shadow-glass-shadow">
+            <div className="stagger-el bg-danger/10 border border-danger/20 text-danger text-xs px-4 py-3 rounded-xl text-center shadow-sm">
               {error}
             </div>
           )}
 
           <div className="stagger-el pt-4 flex justify-center">
-            <Button type="submit" className="w-full rounded-xl py-4 font-display uppercase tracking-wider text-base">
-              Definir Nova Senha
+            <Button type="submit" variant="primary" fullWidth className="rounded-xl py-4 font-sans font-semibold text-base">
+              Definir nova senha
             </Button>
           </div>
         </form>
