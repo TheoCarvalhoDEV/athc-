@@ -12,14 +12,14 @@ describe('Button component', () => {
   it('applies correct class for primary variant by default', () => {
     render(<Button>Enviar</Button>);
     const button = screen.getByRole('button', { name: /enviar/i });
-    expect(button).toHaveClass('bg-gradient-to-r');
+    expect(button).toHaveClass('bg-primary');
   });
 
   it('applies correct class for outline variant', () => {
     render(<Button variant="outline">Voltar</Button>);
     const button = screen.getByRole('button', { name: /voltar/i });
     expect(button).toHaveClass('text-accent');
-    expect(button).toHaveClass('border-accent/20');
+    expect(button).toHaveClass('border-accent/30');
   });
 
   it('triggers onClick handler when clicked', async () => {

@@ -111,7 +111,11 @@ export const ValidateTickets = () => {
     return () => {
       active = false;
     };
-  }, [eventId, user?.id, user?.role, user?.profileId, authLoading, user]);
+    // Usa apenas campos escalares estáveis do usuário, NÃO o objeto `user`. O
+    // AuthContext recria `user` em segundo plano (sync do perfil); incluir o
+    // objeto fazia este effect re-rodar e chamar setEvent(novoObjeto), o que
+    // reiniciava a câmera em loop.
+  }, [eventId, user?.id, user?.role, user?.profileId, authLoading]);
 
   // ─── Resolve um texto lido para uma inscrição ───
   // Aceita o id completo do documento (lido do QR, exato) OU o código curto
@@ -250,7 +254,12 @@ export const ValidateTickets = () => {
 
   // ─── Inicia a câmera quando o evento está pronto (e ao trocar de lente) ───
   useEffect(() => {
-    if (!event || denied || notFound) return;
+    // `loading` precisa ser false: só então o <video> está renderizado (o render
+    // mostra o spinner enquanto loading=true). Sem essa guarda, o effect rodava
+    // no render intermediário em que `event` já está setado mas `loading` ainda
+    // é true (setEvent e setLoading(false) são updates separados, com um await
+    // no meio) — o getUserMedia não achava o <video> e desistia → preview preto.
+    if (!event || denied || notFound || loading) return;
     let cancelled = false;
     const reader = new BrowserQRCodeReader();
 
@@ -259,7 +268,12 @@ export const ValidateTickets = () => {
       streamRef.current = null;
     };
 
-    (async () => {
+    // Início ADIADO: o StrictMode (dev) monta → desmonta → monta. Agendando o
+    // getUserMedia num timer, o mount descartável é cancelado (clearTimeout no
+    // cleanup) ANTES de abrir a câmera — evitando dois getUserMedia concorrentes
+    // na mesma câmera, que intermitentemente devolvia um preview preto no F5.
+    const startTimer = setTimeout(() => {
+      void (async () => {
       const video = videoRef.current;
       if (!video) return;
       try {
@@ -316,16 +330,25 @@ export const ValidateTickets = () => {
           setShowManual(true);
         }
       }
-    })();
+      })();
+    }, 0);
 
     return () => {
       cancelled = true;
+      clearTimeout(startTimer);
       controlsRef.current?.stop();
       controlsRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
       stopStream();
     };
-  }, [event, denied, notFound, deviceId]);
+    // Depende do ID do evento (string estável), não do objeto `event`. O
+    // AuthContext recria o objeto `event` em segundo plano (refresh do usuário);
+    // usar a identidade do objeto reiniciava a câmera em loop e cancelava o
+    // getUserMedia antes de anexar o stream (preview preto / temStream:false).
+    // `loading` é dependência: quando vira false o <video> é (re)montado, e o
+    // effect precisa re-rodar para anexar o stream ao nó atual. Isso também
+    // cobre o caso de o perfil sincronizar tarde (re-carga → flicker → remount).
+  }, [event?.id, denied, notFound, deviceId, loading]);
 
   // Alterna entre as câmeras disponíveis (útil quando a traseira "ideal" abre
   // uma lente que não renderiza o preview corretamente).
