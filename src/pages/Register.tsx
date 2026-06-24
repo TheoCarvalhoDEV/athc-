@@ -84,7 +84,6 @@ export const Register = () => {
           </div>
 
           <div className="stagger-el pt-4">
-<<<<<<< Updated upstream
             <Button
               type="submit"
               variant="primary"

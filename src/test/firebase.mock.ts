@@ -8,7 +8,7 @@ vi.mock('firebase/app', () => ({
 // Mock firebase/auth
 vi.mock('firebase/auth', () => ({
   getAuth: vi.fn(() => ({})),
-  onAuthStateChanged: vi.fn((auth, cb) => {
+  onAuthStateChanged: vi.fn((_auth, cb) => {
     // Por padrão chama o callback com nulo (não logado)
     cb(null);
     return () => {};
