@@ -196,6 +196,9 @@ export const ValidateTickets = () => {
           return;
         }
         controlsRef.current = controls;
+        // Garante o playback visível: em alguns aparelhos o preview só "acorda"
+        // com um play() explícito após o stream ser anexado.
+        try { await videoRef.current?.play(); } catch { /* já tocando */ }
       } catch (e: any) {
         console.error('Erro ao acessar a câmera:', e);
         if (!cancelled) {
@@ -300,6 +303,12 @@ export const ValidateTickets = () => {
           <video
             ref={videoRef}
             className="w-full h-full object-cover"
+            // Força o vídeo para uma camada composta por GPU. Sem isso, em vários
+            // Androids o preview fica PRETO (o vídeo vira um hardware overlay que
+            // ignora o recorte do container arredondado), mesmo com a leitura do
+            // QR funcionando normalmente.
+            style={{ transform: 'translateZ(0)', WebkitTransform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
+            autoPlay
             muted
             playsInline
           />
