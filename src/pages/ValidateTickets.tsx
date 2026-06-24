@@ -64,10 +64,10 @@ export const ValidateTickets = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
-  const streamRef = useRef<MediaStream | null>(null); // stream ativo (parado sempre no cleanup)
   const pausedRef = useRef(false); // ignora leituras enquanto um resultado está na tela
   const processingRef = useRef(false);
   const regsRef = useRef<Registration[]>([]); // inscrições do evento (resolve código curto + id)
+  const didLoadRef = useRef(false); // true após a 1ª carga: evita re-exibir o spinner em re-syncs
 
   // ─── Carrega evento + valida acesso (dono do evento ou admin) ───
   useEffect(() => {
@@ -75,7 +75,11 @@ export const ValidateTickets = () => {
     let active = true;
     (async () => {
       if (!eventId) return;
-      setLoading(true);
+      // Spinner só na PRIMEIRA carga. Re-execuções (ex.: o perfil sincroniza
+      // tarde e role/profileId mudam) recarregam em segundo plano SEM voltar ao
+      // spinner — assim o <video> não é desmontado/remontado e a câmera não
+      // reinicia no meio da validação.
+      if (!didLoadRef.current) setLoading(true);
       try {
         const ev = await storage.getEventById(eventId);
         if (!active) return;
@@ -105,7 +109,10 @@ export const ValidateTickets = () => {
         console.error('Erro ao carregar evento para validação:', e);
         if (active) setNotFound(true);
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          didLoadRef.current = true;
+        }
       }
     })();
     return () => {
@@ -263,83 +270,59 @@ export const ValidateTickets = () => {
     let cancelled = false;
     const reader = new BrowserQRCodeReader();
 
-    const stopStream = () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    };
-
-    // Início ADIADO: o StrictMode (dev) monta → desmonta → monta. Agendando o
-    // getUserMedia num timer, o mount descartável é cancelado (clearTimeout no
-    // cleanup) ANTES de abrir a câmera — evitando dois getUserMedia concorrentes
-    // na mesma câmera, que intermitentemente devolvia um preview preto no F5.
+    // Início ADIADO: o StrictMode (dev) monta → desmonta → monta. Agendando a
+    // abertura num timer, o mount descartável é cancelado (clearTimeout no
+    // cleanup) ANTES de abrir a câmera — evitando duas aberturas concorrentes
+    // na mesma câmera, que intermitentemente devolviam um preview preto no F5.
     const startTimer = setTimeout(() => {
       void (async () => {
-      const video = videoRef.current;
-      if (!video) return;
-      try {
-        // Câmera específica (após troca de lente) ou a traseira padrão.
-        const constraints: MediaStreamConstraints = deviceId
-          ? { video: { deviceId: { exact: deviceId } }, audio: false }
-          : { video: { facingMode: { ideal: 'environment' } }, audio: false };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        // Encerra qualquer stream anterior antes de anexar o novo (sem overlap).
-        stopStream();
-        streamRef.current = stream;
-
-        // Anexa e dá play explicitamente antes de decodificar — garante que o
-        // preview realmente apareça (iOS exige playsinline + muted + gesto/auto).
-        video.srcObject = stream;
-        video.setAttribute('playsinline', '');
-        video.muted = true;
-        try { await video.play(); } catch { /* autoPlay cobre o resto */ }
-        if (cancelled) {
-          stopStream();
-          return;
-        }
-
-        const controls = await reader.decodeFromVideoElement(video, (res) => {
-          if (res) handleCodeRef.current(res.getText());
-        });
-        if (cancelled) {
-          controls.stop();
-          stopStream();
-          return;
-        }
-        controlsRef.current = controls;
-        setCameraError(null);
-
-        // Lista as câmeras (rótulos só vêm após a permissão) para habilitar o
-        // botão "Trocar câmera" quando houver mais de uma.
+        const video = videoRef.current;
+        if (!video) return;
         try {
-          const all = await navigator.mediaDevices.enumerateDevices();
-          if (!cancelled) setVideoDevices(all.filter((d) => d.kind === 'videoinput'));
-        } catch { /* lista é só conveniência */ }
-      } catch (e: any) {
-        console.error('Erro ao acessar a câmera:', e);
-        if (!cancelled) {
-          setCameraError(
-            e?.name === 'NotAllowedError'
-              ? 'Permissão de câmera negada. Use a digitação manual abaixo.'
-              : 'Não foi possível acessar a câmera. Use a digitação manual abaixo.'
-          );
-          setShowManual(true);
+          // Câmera específica (após troca de lente) ou a traseira padrão.
+          const constraints: MediaStreamConstraints = deviceId
+            ? { video: { deviceId: { exact: deviceId } }, audio: false }
+            : { video: { facingMode: { ideal: 'environment' } }, audio: false };
+
+          // decodeFromConstraints faz internamente: getUserMedia → anexa o
+          // srcObject → play() → loop de decodificação. E o controls.stop()
+          // encerra o stream E limpa o vídeo (disposeMediaStream +
+          // cleanVideoSource), então NÃO precisamos gerenciar o stream à mão.
+          const controls = await reader.decodeFromConstraints(constraints, video, (res) => {
+            if (res) handleCodeRef.current(res.getText());
+          });
+          if (cancelled) {
+            controls.stop();
+            return;
+          }
+          controlsRef.current = controls;
+          setCameraError(null);
+
+          // Lista as câmeras (rótulos só vêm após a permissão) para habilitar o
+          // botão "Trocar câmera" quando houver mais de uma.
+          try {
+            const all = await navigator.mediaDevices.enumerateDevices();
+            if (!cancelled) setVideoDevices(all.filter((d) => d.kind === 'videoinput'));
+          } catch { /* lista é só conveniência */ }
+        } catch (e: any) {
+          console.error('Erro ao acessar a câmera:', e);
+          if (!cancelled) {
+            setCameraError(
+              e?.name === 'NotAllowedError'
+                ? 'Permissão de câmera negada. Use a digitação manual abaixo.'
+                : 'Não foi possível acessar a câmera. Use a digitação manual abaixo.'
+            );
+            setShowManual(true);
+          }
         }
-      }
       })();
     }, 0);
 
     return () => {
       cancelled = true;
       clearTimeout(startTimer);
-      controlsRef.current?.stop();
+      controlsRef.current?.stop(); // encerra stream + limpa o <video>
       controlsRef.current = null;
-      if (videoRef.current) videoRef.current.srcObject = null;
-      stopStream();
     };
     // Depende do ID do evento (string estável), não do objeto `event`. O
     // AuthContext recria o objeto `event` em segundo plano (refresh do usuário);
