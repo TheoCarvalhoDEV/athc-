@@ -81,4 +81,4 @@ Se você é desenvolvedor e deseja rodar o projeto localmente:
 
 ---
 
-*Desenvolvido com foco em excelência visual e engenharia de experiência por Theo Carvalho.*
+*Desenvolvido com foco em excelência visual e engenharia de experiência por Theo Carvalho e Allan Oliveira.*
