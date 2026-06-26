@@ -964,6 +964,80 @@ exports.criarIngressoTeste = onCall({ cors: true }, async (request) => {
     }
 });
 
+// Recupera os ingressos de um CPF para acesso SEM login (compra Pix sem conta).
+// Resolve o caso em que o comprador fecha a aba antes da confirmação e perde o ingresso:
+// a qualquer momento ele entra em /ingresso, informa o CPF e vê os ingressos com QR.
+// Pública (sem auth), protegida por rate limit. Usa Admin SDK, então NÃO afeta as regras
+// do Firestore (que continuam exigindo auth para leitura direta de registrations).
+// Risco de consulta a CPF alheio é mitigado pelo rate limit e pela flag checkedIn, que
+// já impede entrada dupla na portaria.
+exports.recuperarIngressosPorCpf = onCall({ cors: true }, async (request) => {
+    const cpfLimpo = String(request.data?.cpf || '').replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) {
+        return { ingressos: [] };
+    }
+
+    // Rate limit por IP (10/min) — evita varredura de CPFs.
+    const clientIp = request.rawRequest?.headers?.['x-forwarded-for'] || request.rawRequest?.ip || 'unknown';
+    const rl = await checkRateLimit(clientIp, 'recuperarIngressosPorCpf', LIMITS.RECUPERAR_INGRESSO.max, LIMITS.RECUPERAR_INGRESSO.windowSec);
+    if (!rl.allowed) {
+        throw new HttpsError('resource-exhausted', `Muitas buscas. Tente novamente em ${Math.ceil(rl.retryAfterMs / 1000)} segundos.`);
+    }
+
+    try {
+        const regsSnap = await db.collection('registrations').where('userCpf', '==', cpfLimpo).limit(50).get();
+
+        // Cache de eventos já lidos (vários ingressos podem ser do mesmo evento).
+        const eventosCache = {};
+        const ingressos = [];
+
+        for (const docSnap of regsSnap.docs) {
+            const reg = docSnap.data();
+            if (reg.isTeste === true) continue; // ingressos de teste não entram na recuperação
+
+            const eventId = reg.eventId;
+            if (!eventId) continue;
+
+            if (!(eventId in eventosCache)) {
+                const evDoc = await db.collection('events').doc(eventId).get();
+                eventosCache[eventId] = evDoc.exists ? evDoc.data() : null;
+            }
+            const ev = eventosCache[eventId];
+            if (!ev) continue; // evento deletado — ignora
+
+            ingressos.push({
+                registration: {
+                    id: docSnap.id,
+                    eventId,
+                    userName: reg.userName || '',
+                    userCpf: reg.userCpf || '',
+                    paymentStatus: reg.paymentStatus || '',
+                    ticketTypeName: reg.ticketTypeName || '',
+                    checkedIn: reg.checkedIn === true,
+                    timestamp: reg.timestamp || '',
+                },
+                event: {
+                    id: eventId,
+                    title: ev.title || '',
+                    date: ev.date || '',
+                    time: ev.time || '',
+                    location: ev.location || '',
+                    address: ev.address || '',
+                },
+            });
+        }
+
+        // Próximos/recentes primeiro (por data do evento, desc).
+        ingressos.sort((a, b) => String(b.event.date).localeCompare(String(a.event.date)));
+
+        logger.info(`Recuperação por CPF retornou ${ingressos.length} ingresso(s).`);
+        return { ingressos };
+    } catch (error) {
+        logger.error('Erro ao recuperar ingressos por CPF:', error);
+        throw new HttpsError('internal', 'Erro ao buscar ingressos.');
+    }
+});
+
 exports.onRegistrationCreated = onDocumentCreated("registrations/{registrationId}", async (event) => {
     const data = event.data.data();
     // Ingressos de teste (gerados por admin) não entram na contagem real de presença.

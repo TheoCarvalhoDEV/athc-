@@ -21,6 +21,7 @@ const Agenda = React.lazy(() => import('./pages/Agenda').then(m => ({ default: m
 const ChangePassword = React.lazy(() => import('./pages/ChangePassword').then(m => ({ default: m.ChangePassword })));
 const ValidateTickets = React.lazy(() => import('./pages/ValidateTickets').then(m => ({ default: m.ValidateTickets })));
 const Financeiro = React.lazy(() => import('./pages/Financeiro').then(m => ({ default: m.Financeiro })));
+const RecuperarIngresso = React.lazy(() => import('./pages/RecuperarIngresso').then(m => ({ default: m.RecuperarIngresso })));
 
 // Spinner simples de carregamento exibido enquanto uma página lazy é baixada
 const LoadingSpinner = () => (
@@ -69,6 +70,8 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/change-password" element={<ChangePassword />} />
               <Route path="/event/:id" element={<EventDetails />} />
+              {/* Recuperação de ingresso por CPF (acesso público, sem login) */}
+              <Route path="/ingresso" element={<RecuperarIngresso />} />
               {/* Scanner de validação em tela cheia (autenticação tratada na própria página) */}
               <Route path="/validar/:eventId" element={<ValidateTickets />} />
               

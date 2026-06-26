@@ -9,37 +9,7 @@ import { TicketModal } from '../components/TicketModal';
 import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode, Mail, Phone, CreditCard, Copy, Check, Timer, RefreshCw, FlaskConical, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const formatCPF = (value: string): string => {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-};
-
-const isValidCPF = (cpf: string): boolean => {
-  const cleanCpf = cpf.replace(/\D/g, '');
-  if (cleanCpf.length !== 11) return false;
-  if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
-
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    sum += parseInt(cleanCpf.charAt(i)) * (10 - i);
-  }
-  let rest = sum % 11;
-  let digit1 = rest < 2 ? 0 : 11 - rest;
-  if (parseInt(cleanCpf.charAt(9)) !== digit1) return false;
-
-  sum = 0;
-  for (let i = 0; i < 10; i++) {
-    sum += parseInt(cleanCpf.charAt(i)) * (11 - i);
-  }
-  rest = sum % 11;
-  let digit2 = rest < 2 ? 0 : 11 - rest;
-  if (parseInt(cleanCpf.charAt(10)) !== digit2) return false;
-
-  return true;
-};
+import { formatCPF, isValidCPF } from '../lib/cpf';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { getFirestore, doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
 import gsap from 'gsap';
@@ -1346,6 +1316,12 @@ export const EventDetails = () => {
                     </span>
                     Aguardando pagamento…
                   </div>
+
+                  {/* Recuperação por CPF: tranquiliza quem pode fechar a aba antes de confirmar */}
+                  <p className="text-[11px] text-textMuted text-center mt-3 leading-snug max-w-[280px]">
+                    Pode fechar esta tela após pagar. Você acessa o ingresso quando quiser em{' '}
+                    <strong className="text-textLight">/ingresso</strong>, informando o seu CPF.
+                  </p>
                 </div>
               ) : null
             )}
@@ -1369,7 +1345,7 @@ export const EventDetails = () => {
                   Sua vaga está garantida. Abrindo seu ingresso em <strong className="text-success tabular-nums">{successCountdown}s</strong>…
                 </p>
                 <p className="success-text text-xs text-textMuted max-w-[250px] mb-6 md:mb-8 font-sans">
-                  Você também o encontrará no seu perfil.
+                  Para reabrir depois, acesse <strong className="text-textLight">/ingresso</strong> e informe o seu CPF.
                 </p>
 
                 {/* Barra de progresso indicando o encerramento automático do modal */}

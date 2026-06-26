@@ -6,7 +6,7 @@ import { storage } from '../lib/storage';
 import type { EventItem } from '../lib/storage';
 import { useAuth } from '../contexts/AuthContext';
 import gsap from 'gsap';
-import { Sparkles, Flame, Calendar } from 'lucide-react';
+import { Sparkles, Flame, Calendar, Ticket } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 
@@ -324,6 +324,13 @@ export const Feed = () => {
               <p className="font-sans text-sm text-textMuted mt-4 leading-relaxed max-w-[240px]">
                 Descubra os melhores encontros e eventos selecionados para hoje.
               </p>
+              <button
+                onClick={() => navigate('/ingresso')}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accentHover transition-colors cursor-pointer"
+              >
+                <Ticket size={13} />
+                Já comprou? Recuperar ingresso
+              </button>
             </div>
 
             {/* Métrica de eventos ativos na cena */}
