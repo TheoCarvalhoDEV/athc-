@@ -43,10 +43,30 @@ async function registerFcmServiceWorker(): Promise<ServiceWorkerRegistration | u
   // Escopo dedicado para não disputar o controle de cliente com o SW do vite-plugin-pwa (Workbox,
   // escopo '/'). O getToken recebe este registration explicitamente, então isolar o escopo não
   // afeta a obtenção do token. '/firebase-cloud-messaging-push-scope' é o escopo padrão do FCM.
-  return navigator.serviceWorker.register(
+  const reg = await navigator.serviceWorker.register(
     `${import.meta.env.BASE_URL}firebase-messaging-sw.js?${params.toString()}`,
     { scope: `${import.meta.env.BASE_URL}firebase-cloud-messaging-push-scope` }
   );
+
+  // Aguarda o Service Worker estar ativado para evitar erro de assinatura (no active Service Worker)
+  if (reg && !reg.active) {
+    await new Promise<void>((resolve) => {
+      const worker = reg.installing || reg.waiting;
+      if (!worker) {
+        resolve();
+        return;
+      }
+      const stateChangeHandler = () => {
+        if (worker.state === 'activated') {
+          worker.removeEventListener('statechange', stateChangeHandler);
+          resolve();
+        }
+      };
+      worker.addEventListener('statechange', stateChangeHandler);
+    });
+  }
+
+  return reg;
 }
 
 async function getMessagingSafe() {
