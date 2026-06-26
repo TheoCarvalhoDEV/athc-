@@ -842,9 +842,132 @@ exports.setAdminClaim = onCall({ cors: true }, async (request) => {
     }
 });
 
+// Gera um "pagamento Pix confirmado" de teste, produzindo um ingresso real e validável,
+// sem cobrar nada nem alterar estoque/faturamento do evento. Exclusivo para administradores.
+// Idempotente por (evento, admin): regerar substitui o ingresso de teste anterior em vez de acumular.
+exports.criarIngressoTeste = onCall({ cors: true }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', 'Apenas usuários autenticados podem gerar ingressos de teste.');
+    }
+
+    const callerEmail = request.auth.token.email || '';
+    const adminEmails = [
+        'admin@atche.com.br',
+        'theotheteo@gmail.com',
+        'allanjipa123@gmail.com'
+    ];
+    const isCallerAdmin = request.auth.token.admin === true ||
+                          adminEmails.includes(callerEmail.toLowerCase());
+    if (!isCallerAdmin) {
+        throw new HttpsError('permission-denied', 'Apenas administradores podem gerar ingressos de teste.');
+    }
+
+    const { eventId, itensSelecionados } = request.data || {};
+    if (!eventId) {
+        throw new HttpsError('invalid-argument', 'O eventId é obrigatório.');
+    }
+
+    const uid = request.auth.uid;
+    const itens = Array.isArray(itensSelecionados) ? itensSelecionados : [];
+
+    try {
+        const eventRef = db.collection('events').doc(eventId);
+        const eventDoc = await eventRef.get();
+        if (!eventDoc.exists) {
+            throw new HttpsError('not-found', 'Evento não encontrado.');
+        }
+        const eventData = eventDoc.data();
+        const ticketsEvento = eventData.tickets || [];
+
+        // Valor e itens calculados no servidor (a partir dos lotes do evento). NÃO altera o estoque.
+        let valorTotal = 0;
+        const itensComprados = [];
+        if (itens.length > 0) {
+            for (const item of itens) {
+                const qty = Number(item.quantity) || 0;
+                if (qty <= 0) continue;
+                const ticketReal = ticketsEvento.find(t => t.id === item.id);
+                const price = ticketReal ? (Number(ticketReal.price) || 0) : 0;
+                const name = ticketReal ? ticketReal.name : (item.name || 'Ingresso');
+                valorTotal += price * qty;
+                itensComprados.push({ id: item.id, name, quantity: qty });
+            }
+        } else {
+            const precoStr = String(eventData.pixTicketPrice ?? '')
+                .replace(/[^\d.,]/g, '').replace(/\.(?=\d{3})/g, '').replace(',', '.');
+            valorTotal = Number(precoStr) || 0;
+        }
+
+        const callerName = request.auth.token.name || callerEmail || 'Administrador (Teste)';
+        // ID determinístico por (evento, admin): regerar sobrescreve o teste anterior.
+        const pedidoId = `TESTE-${eventId}-${uid}`;
+
+        // Remove inscrições do teste anterior deste mesmo pedido (cobre troca de lote).
+        const antigasSnap = await db.collection('registrations').where('pedidoId', '==', pedidoId).get();
+
+        const batch = db.batch();
+        antigasSnap.docs.forEach(d => batch.delete(d.ref));
+
+        batch.set(db.collection('pedidos').doc(pedidoId), {
+            id: pedidoId,
+            valor: valorTotal,
+            eventId,
+            eventTitle: eventData.title || '',
+            userId: uid,
+            clienteNome: callerName,
+            clienteEmail: callerEmail,
+            status: 'pago',
+            isTeste: true,
+            itensComprados: itensComprados.length ? itensComprados : null,
+            dataCriacao: FieldValue.serverTimestamp(),
+            dataPagamento: FieldValue.serverTimestamp(),
+        });
+
+        const baseReg = {
+            eventId,
+            userId: uid,
+            userName: callerName,
+            userEmail: callerEmail,
+            userPhone: '',
+            userCpf: '',
+            paymentStatus: 'Pago (Teste)',
+            isTeste: true,
+            pedidoId,
+            timestamp: new Date().toISOString(),
+        };
+
+        const registrations = [];
+        if (itensComprados.length > 0) {
+            for (const item of itensComprados) {
+                for (let q = 0; q < item.quantity; q++) {
+                    const registrationId = `regteste_${eventId}_${uid}_${item.id}_${q}`;
+                    const regData = { ...baseReg, id: registrationId, ticketTypeId: item.id, ticketTypeName: item.name };
+                    batch.set(db.collection('registrations').doc(registrationId), regData);
+                    registrations.push(regData);
+                }
+            }
+        } else {
+            const registrationId = `regteste_${eventId}_${uid}`;
+            const regData = { ...baseReg, id: registrationId };
+            batch.set(db.collection('registrations').doc(registrationId), regData);
+            registrations.push(regData);
+        }
+
+        await batch.commit();
+
+        logger.info(`Ingresso(s) de teste gerado(s) por ${callerEmail} no evento ${eventId}: ${registrations.length}.`);
+        return { success: true, pedidoId, registrations };
+    } catch (error) {
+        if (error instanceof HttpsError) throw error;
+        logger.error('Erro ao criar ingresso de teste:', error);
+        throw new HttpsError('internal', 'Erro ao criar ingresso de teste.');
+    }
+});
+
 exports.onRegistrationCreated = onDocumentCreated("registrations/{registrationId}", async (event) => {
     const data = event.data.data();
-    if (!data.eventId) return;
+    // Ingressos de teste (gerados por admin) não entram na contagem real de presença.
+    if (!data.eventId || data.isTeste === true) return;
     try {
         await db.collection("events").doc(data.eventId).update({
             registrationCount: FieldValue.increment(1)
@@ -857,7 +980,8 @@ exports.onRegistrationCreated = onDocumentCreated("registrations/{registrationId
 
 exports.onRegistrationDeleted = onDocumentDeleted("registrations/{registrationId}", async (event) => {
     const data = event.data.data();
-    if (!data.eventId) return;
+    // Ingressos de teste nunca incrementaram a contagem — não decrementam ao serem removidos.
+    if (!data.eventId || data.isTeste === true) return;
     try {
         await db.collection("events").doc(data.eventId).update({
             registrationCount: FieldValue.increment(-1)

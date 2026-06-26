@@ -6,7 +6,7 @@ import type { EventItem, AppProfile, Registration } from '../lib/storage';
 import { Button } from '../components/ui/Button';
 import { useRateLimit } from '../hooks/useRateLimit';
 import { TicketModal } from '../components/TicketModal';
-import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode, Mail, Phone, CreditCard, Copy, Check, Timer, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket, ChevronLeft, ChevronRight, QrCode, Mail, Phone, CreditCard, Copy, Check, Timer, RefreshCw, FlaskConical, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const formatCPF = (value: string): string => {
@@ -74,6 +74,8 @@ export const EventDetails = () => {
   const [selectedTickets, setSelectedTickets] = useState<{ [key: string]: number }>({});
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [registrationForTicket, setRegistrationForTicket] = useState<Registration | null>(null);
+  // Geração de ingresso de teste (somente admin)
+  const [loadingTestTicket, setLoadingTestTicket] = useState(false);
   // Mantém a referência da inscrição para o fechamento agendado do modal de sucesso
   const registrationForTicketRef = useRef<Registration | null>(null);
 
@@ -361,6 +363,39 @@ export const EventDetails = () => {
       }
     } finally {
       setLoadingPix(false);
+    }
+  };
+
+  // Gera um "pagamento Pix confirmado" de teste (admin) e abre o ingresso resultante.
+  // Não cobra nada, não altera estoque nem faturamento real (backend marca isTeste).
+  const handleGerarIngressoTeste = async () => {
+    if (!event || loadingTestTicket) return;
+    setLoadingTestTicket(true);
+    try {
+      // Usa o primeiro lote disponível (qty 1) quando o evento tem lotes; senão ingresso simples.
+      const primeiroLote = (event.tickets || []).find(t => (t.capacity - (t.sold || 0)) > 0) || event.tickets?.[0];
+      const itensSelecionados = primeiroLote
+        ? [{ id: primeiroLote.id, name: primeiroLote.name, quantity: 1 }]
+        : [];
+
+      const criarIngressoTeste = httpsCallable(functions, 'criarIngressoTeste');
+      const result = await criarIngressoTeste({ eventId: event.id, itensSelecionados });
+      const data = result.data as { registrations?: Registration[] };
+      const reg = data?.registrations?.[0];
+
+      if (reg) {
+        registrationForTicketRef.current = reg;
+        setRegistrationForTicket(reg);
+        setShowTicketModal(true);
+        toast.success('Ingresso de teste gerado! Pagamento Pix simulado como confirmado.');
+      } else {
+        toast.error('Não foi possível gerar o ingresso de teste.');
+      }
+    } catch (error: any) {
+      console.error('Erro ao gerar ingresso de teste:', error);
+      toast.error(error?.message || 'Erro ao gerar o ingresso de teste.');
+    } finally {
+      setLoadingTestTicket(false);
     }
   };
 
@@ -862,6 +897,20 @@ export const EventDetails = () => {
                     </>
                   )}
                 </div>
+
+                {/* Atalho de teste (somente admin): simula um Pix confirmado e abre o ingresso. */}
+                {currentUser?.role === 'admin' && (
+                  <button
+                    onClick={handleGerarIngressoTeste}
+                    disabled={loadingTestTicket}
+                    className="w-full rounded-xl py-3 border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 font-sans font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60 z-10"
+                  >
+                    {loadingTestTicket
+                      ? <Loader2 size={15} className="animate-spin" />
+                      : <FlaskConical size={15} />}
+                    <span>{loadingTestTicket ? 'Gerando ingresso de teste…' : 'Gerar ingresso de teste (admin)'}</span>
+                  </button>
+                )}
               </div>
             </div>
 

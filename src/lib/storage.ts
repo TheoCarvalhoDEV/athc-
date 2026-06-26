@@ -93,6 +93,7 @@ export type Registration = {
   checkedIn?: boolean;     // Ingresso já validado na portaria?
   checkedInAt?: string;    // Quando foi validado (ISO)
   checkedInBy?: string;    // Quem validou (nome do operador)
+  isTeste?: boolean;       // Ingresso de teste (gerado por admin, fora do faturamento real)
 };
 
 // Pedido de pagamento (Pix via Mercado Pago). Criado e alterado exclusivamente pelas
@@ -109,6 +110,7 @@ export type Pedido = {
   status: string;
   itensComprados?: { id: string; name?: string; quantity: number }[];
   overbooked?: boolean;
+  isTeste?: boolean; // Pedido de teste (gerado por admin) — não entra no faturamento real
   dataCriacao?: any;
   dataPagamento?: any;
   dataEstorno?: any;

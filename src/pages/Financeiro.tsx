@@ -62,7 +62,8 @@ export const Financeiro = () => {
 
       const finances = await Promise.all(
         myEvents.map(async (event): Promise<EventFinance> => {
-          const pedidos = await storage.getPedidosForEvent(event.id);
+          // Ignora pedidos de teste (gerados por admin) para não poluir o faturamento real.
+          const pedidos = (await storage.getPedidosForEvent(event.id)).filter(p => !p.isTeste);
           const pagos = pedidos.filter(p => p.status === 'pago');
           const estornos = pedidos.filter(p => REFUND_STATUSES.includes(p.status));
           return {
