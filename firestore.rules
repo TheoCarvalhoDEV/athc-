@@ -41,18 +41,14 @@ service cloud.firestore {
         isAdmin()
       );
       
-      // Permitir atualização ao dono se não alterar tipo, e-mail ou mustChangePassword,
-      // ou se for um administrador
+      // Permitir atualização ao dono (do seu próprio perfil, identificado por email autenticado)
+      // se não alterar tipo ou e-mail, ou se for um administrador
       allow update: if isAuthed() && (
         (
-          request.auth.uid == profileId && 
-          request.resource.data.type == resource.data.type && 
-          request.resource.data.email == resource.data.email &&
-          (
-            !('mustChangePassword' in request.resource.data) || 
-            request.resource.data.mustChangePassword == resource.data.mustChangePassword
-          )
-        ) || 
+          request.auth.token.email.lower() == resource.data.email.lower() &&
+          request.resource.data.type == resource.data.type &&
+          request.resource.data.email == resource.data.email
+        ) ||
         isAdmin()
       );
 

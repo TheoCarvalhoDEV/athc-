@@ -83,6 +83,7 @@ export const ChangePassword = () => {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Mínimo 6 caracteres"
                 required
+                autoComplete="new-password"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
               />
@@ -105,6 +106,7 @@ export const ChangePassword = () => {
               type={showPassword ? 'text' : 'password'}
               placeholder="Repita a nova senha"
               required
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
             />
