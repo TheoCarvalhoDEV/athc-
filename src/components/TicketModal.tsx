@@ -3,7 +3,6 @@ import { X, Calendar, Clock, MapPin, Download, CheckCircle2, Loader2 } from 'luc
 import { toPng } from 'html-to-image';
 import type { EventItem, Registration } from '../lib/storage';
 import { makeTicketCode } from '../lib/ticketCode';
-import { LiveTicketSeal } from './LiveTicketSeal';
 
 interface TicketModalProps {
   isOpen: boolean;
@@ -229,9 +228,6 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
               <p className="font-mono font-bold tracking-[0.3em] text-textLight text-lg mt-1">{shortCode}</p>
             </div>
           </div>
-
-          {/* Selo de autenticidade ao vivo (fora do cartão capturado: vale só no app, em movimento) */}
-          <LiveTicketSeal registrationId={registration.id} />
         </div>
 
         {/* Ações (fora do cartão, não entram na imagem) — empilham no mobile estreito */}
