@@ -66,6 +66,24 @@ if ('serviceWorker' in navigator) {
     },
     onOfflineReady() {
       console.log('Atchêi pronto para funcionar em modo Offline!');
+    },
+    onRegisteredSW(_swUrl, registration) {
+      if (!registration) return;
+
+      // Procura por uma nova versão (deploy) sem depender de o usuário recarregar a página:
+      // ao retomar o foco no app, ao reconectar à internet e periodicamente. Quando o Workbox
+      // encontra um novo Service Worker, o onNeedRefresh acima dispara o aviso de atualização.
+      const checkForUpdate = () => {
+        if (document.visibilityState === 'visible' && navigator.onLine) {
+          registration.update().catch(() => {});
+        }
+      };
+
+      document.addEventListener('visibilitychange', checkForUpdate);
+      window.addEventListener('online', checkForUpdate);
+
+      // Fallback periódico (a cada 30 min) para sessões longas que ficam abertas em primeiro plano.
+      setInterval(checkForUpdate, 30 * 60 * 1000);
     }
   });
 }
