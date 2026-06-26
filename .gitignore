@@ -30,3 +30,4 @@ dist-ssr
 # Agents
 .agents/
 agents/
+.claude/
