@@ -128,12 +128,15 @@ describe('Cloud Functions Tests', () => {
     it('deve criar cobranca pix com sucesso se houver estoque', async () => {
       const wrapped = fft.wrap(myFunctions.criarCobrancaPix);
       
+      // 1ª leitura: doc do evento (validação de estoque + preço autoritativo)
       mockDocGet.mockResolvedValueOnce({
         exists: true,
         data: () => ({
           tickets: [{ id: 'lote-1', name: 'Lote VIP', capacity: 10, sold: 2, price: 50 }]
         })
       });
+      // 2ª leitura: guarda anti-duplicação do pedido (ainda não existe)
+      mockDocGet.mockResolvedValueOnce({ exists: false });
 
       mockMpCreate.mockResolvedValueOnce({
         id: 'mp-pay-123',
