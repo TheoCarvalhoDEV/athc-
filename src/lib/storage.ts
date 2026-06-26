@@ -95,6 +95,25 @@ export type Registration = {
   checkedInBy?: string;    // Quem validou (nome do operador)
 };
 
+// Pedido de pagamento (Pix via Mercado Pago). Criado e alterado exclusivamente pelas
+// Cloud Functions; o cliente apenas lê (dono do pedido, admin ou criador do evento).
+export type Pedido = {
+  id: string;
+  valor: number;
+  eventId: string;
+  eventTitle?: string;
+  userId: string;
+  clienteNome?: string;
+  clienteEmail?: string;
+  // pendente | pago | estornado | chargeback | cancelado | rejeitado
+  status: string;
+  itensComprados?: { id: string; name?: string; quantity: number }[];
+  overbooked?: boolean;
+  dataCriacao?: any;
+  dataPagamento?: any;
+  dataEstorno?: any;
+};
+
 export const storage = {
   // Profiles (Estabelecimentos, Atléticas)
   getProfiles: async (): Promise<AppProfile[]> => {
@@ -407,6 +426,14 @@ export const storage = {
     const q = query(collection(db, 'registrations'), where('eventId', '==', eventId));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Registration));
+  },
+
+  // Pedidos de pagamento de um evento (usado no painel financeiro do parceiro).
+  // Filtra o status em memória para não exigir índice composto no Firestore.
+  getPedidosForEvent: async (eventId: string): Promise<Pedido[]> => {
+    const q = query(collection(db, 'pedidos'), where('eventId', '==', eventId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Pedido));
   },
 
   // Busca um ingresso/inscrição pelo ID do documento (usado na leitura do QR Code)

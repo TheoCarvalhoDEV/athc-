@@ -3,7 +3,7 @@ const { onDocumentCreated, onDocumentDeleted } = require("firebase-functions/v2/
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
-const { MercadoPagoConfig, Payment } = require("mercadopago");
+const { MercadoPagoConfig, Payment, PaymentRefund } = require("mercadopago");
 const cors = require("cors")({ origin: true });
 const { checkRateLimit, LIMITS } = require("./rateLimiter");
 
@@ -23,6 +23,74 @@ function getPaymentClient() {
         payment = new Payment(client);
     }
     return payment;
+}
+
+// Envia uma notificação push (FCM) para todos os dispositivos de um usuário.
+// Nunca lança erro: falha de notificação não pode comprometer o processamento do pagamento.
+async function enviarNotificacaoPush(userId, title, body, link) {
+    if (!userId) return;
+    try {
+        const tokensSnap = await db.collection('fcmTokens').where('userId', '==', userId).get();
+        if (tokensSnap.empty) return;
+
+        const tokens = tokensSnap.docs.map(d => d.data().token).filter(Boolean);
+        if (tokens.length === 0) return;
+
+        const message = {
+            tokens,
+            notification: { title, body },
+            data: {
+                type: 'app',
+                link: link || '/profile'
+            },
+            webpush: {
+                notification: { icon: '/apple-touch-icon.png' },
+                fcmOptions: { link: link || '/profile' }
+            }
+        };
+
+        const resp = await admin.messaging().sendEachForMulticast(message);
+
+        // Remove tokens que o FCM reportou como inválidos/expirados (limpeza de base).
+        const removals = [];
+        resp.responses.forEach((r, idx) => {
+            if (!r.success) {
+                const code = r.error?.code || '';
+                if (
+                    code === 'messaging/registration-token-not-registered' ||
+                    code === 'messaging/invalid-registration-token' ||
+                    code === 'messaging/invalid-argument'
+                ) {
+                    removals.push(db.collection('fcmTokens').doc(tokens[idx]).delete().catch(() => {}));
+                }
+            }
+        });
+        await Promise.all(removals);
+
+        logger.info(`Notificação push enviada para o usuário ${userId}: ${resp.successCount}/${tokens.length} entregues.`);
+    } catch (err) {
+        logger.error('Erro ao enviar notificação push (ignorado):', err);
+    }
+}
+
+// Inicia o reembolso total de um pagamento no Mercado Pago (resolução automática de overbooking).
+// A reversão de estoque e a remoção das inscrições são feitas pelo próprio webhook quando o
+// Mercado Pago confirmar o estorno (status 'refunded'). Nunca lança erro.
+async function reembolsarPagamentoAutomatico(paymentId) {
+    if (!paymentId) return false;
+    try {
+        getPaymentClient(); // garante que o client do Mercado Pago esteja inicializado
+        const refundClient = new PaymentRefund(client);
+        await refundClient.create({
+            payment_id: Number(paymentId),
+            requestOptions: { idempotencyKey: `refund-overbooking-${paymentId}` }
+        });
+        logger.info(`Reembolso automático (overbooking) iniciado para o pagamento ${paymentId}.`);
+        return true;
+    } catch (e) {
+        logger.error(`Falha ao reembolsar automaticamente o pagamento ${paymentId}:`, e);
+        return false;
+    }
 }
 
 exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
@@ -233,6 +301,13 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             requestOptions.meliSessionId = deviceId;
         }
 
+        // Evita rebaixar um pedido já processado: se o mesmo pedidoId for reusado após o pagamento,
+        // o set merge abaixo sobrescreveria status='pago' por 'pendente'. Bloqueia antes de gerar o Pix.
+        const pedidoExistenteSnap = await db.collection('pedidos').doc(pedidoId).get();
+        if (pedidoExistenteSnap.exists && ['pago', 'estornado', 'chargeback', 'cancelado'].includes(pedidoExistenteSnap.data().status)) {
+            throw new HttpsError('failed-precondition', 'Este pedido já foi processado.');
+        }
+
         const mpResponse = await getPaymentClient().create({
             body,
             requestOptions
@@ -246,6 +321,7 @@ exports.criarCobrancaPix = onCall({ cors: true }, async (request) => {
             clienteTelefone: clienteTelefone,
             clienteCpf: cleanCpf,
             eventId: eventId,
+            eventTitle: eventTitle, // Guarda o título para usar no texto da notificação push (sem leitura extra)
             userId: data.userId || '',
             status: 'pendente',
             itensComprados: itensSelecionados, // Grava os ingressos do lote para atualizar estoque na aprovação
@@ -385,27 +461,41 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
             
             let isOverbooked = false;
             let statusPedidoAtual = '';
-            
+            // Sinaliza que a compra acabou de ser confirmada AGORA (transição pendente -> pago),
+            // para disparar a notificação push apenas uma vez, ignorando webhooks redundantes.
+            let deveNotificar = false;
+
             if (statusReal === 'approved') {
                 // Toda a operação de aprovação ocorre de forma atômica dentro de uma transação
                 try {
                     await db.runTransaction(async (transaction) => {
+                        // Reinicia as flags a cada tentativa: o Firestore pode reexecutar este callback
+                        // em caso de contenção (retry), e um valor true de uma tentativa abortada não pode
+                        // vazar para a próxima (evita overbooking/notificação falsos após recomputar leituras).
+                        isOverbooked = false;
+                        deveNotificar = false;
+
                         const pedidoRef = pedidosRef.doc(pedidoDoc.id);
                         const currentPedidoDoc = await transaction.get(pedidoRef);
-                        
+
                         if (!currentPedidoDoc.exists) {
                             throw new Error("Pedido não encontrado na transação.");
                         }
-                        
+
                         const currentPedidoData = currentPedidoDoc.data();
                         statusPedidoAtual = currentPedidoData.status;
-                        
-                        // Se o pedido já estiver marcado como pago, aborta a transação para evitar duplicações
-                        if (statusPedidoAtual === 'pago') {
-                            logger.info(`Pedido ${pedidoDoc.id} já foi pago anteriormente. Abortando transação redundante.`);
+
+                        // Se o pedido já está em qualquer estado terminal, aborta para evitar que um
+                        // 'approved' tardio/retry do Mercado Pago ressuscite um pedido pago/estornado/cancelado
+                        // (reprocessamento recriaria inscrições determinísticas e corromperia o estoque).
+                        if (['pago', 'estornado', 'chargeback', 'cancelado'].includes(statusPedidoAtual)) {
+                            logger.info(`Pedido ${pedidoDoc.id} já está em estado terminal (${statusPedidoAtual}). Abortando aprovação redundante/tardia.`);
                             return;
                         }
-                        
+
+                        // Transição efetiva para pago: libera o envio da notificação push após a transação
+                        deveNotificar = true;
+
                         // 1. Atualizar o pedido para Pago
                         transaction.update(pedidoRef, {
                             status: 'pago',
@@ -509,6 +599,145 @@ exports.webhookMercadoPago = onRequest(async (req, res) => {
                     logger.error("Erro na transação de aprovação do pedido:", transError);
                     res.status(500).send('Erro na transação do banco.');
                     return;
+                }
+            }
+
+            // Tratamento de estorno, chargeback e cancelamento.
+            // Se o pedido já havia sido pago, devolvemos o estoque ao evento e removemos as
+            // inscrições geradas, impedindo que um ingresso estornado continue válido na portaria.
+            const REFUND_STATUSES = ['refunded', 'cancelled', 'charged_back'];
+            if (REFUND_STATUSES.includes(statusReal)) {
+                try {
+                    await db.runTransaction(async (transaction) => {
+                        const pedidoRef = pedidosRef.doc(pedidoDoc.id);
+
+                        // IMPORTANTE: todas as leituras devem ocorrer antes de qualquer escrita na transação.
+                        const currentPedidoDoc = await transaction.get(pedidoRef);
+                        if (!currentPedidoDoc.exists) {
+                            throw new Error("Pedido não encontrado na transação de estorno.");
+                        }
+                        const currentPedidoData = currentPedidoDoc.data();
+                        const statusAtual = currentPedidoData.status;
+
+                        const novoStatusPedido = statusReal === 'charged_back'
+                            ? 'chargeback'
+                            : (statusReal === 'refunded' ? 'estornado' : 'cancelado');
+
+                        // Idempotência: se já está em um estado final de estorno, não faz nada.
+                        if (['estornado', 'chargeback', 'cancelado'].includes(statusAtual)) {
+                            logger.info(`Pedido ${pedidoDoc.id} já está em estado final (${statusAtual}). Ignorando estorno redundante.`);
+                            return;
+                        }
+
+                        // Só revertemos estoque/inscrições se o pedido chegou a ser efetivamente pago.
+                        const eraPago = statusAtual === 'pago';
+                        const itensComprados = currentPedidoData.itensComprados || [];
+
+                        // Leitura do evento (antes das escritas) apenas quando há estoque a devolver.
+                        let eventDoc = null;
+                        let eventRef = null;
+                        if (eraPago && currentPedidoData.eventId && itensComprados.length > 0) {
+                            eventRef = db.collection('events').doc(currentPedidoData.eventId);
+                            eventDoc = await transaction.get(eventRef);
+                        }
+
+                        // 1. Atualiza o status do pedido
+                        transaction.update(pedidoRef, {
+                            status: novoStatusPedido,
+                            dataEstorno: FieldValue.serverTimestamp()
+                        });
+
+                        if (!eraPago) {
+                            // Pedido nunca foi pago (ex.: Pix expirado). Nada de estoque/inscrições a reverter.
+                            logger.info(`Pedido ${pedidoDoc.id} marcado como ${novoStatusPedido} (não havia sido pago).`);
+                            return;
+                        }
+
+                        // 2. Devolve o estoque dos lotes ao evento
+                        if (eventDoc && eventDoc.exists) {
+                            const eventData = eventDoc.data();
+                            const tickets = eventData.tickets || [];
+                            const devolucoesMap = {};
+                            for (const item of itensComprados) {
+                                devolucoesMap[item.id] = (devolucoesMap[item.id] || 0) + (Number(item.quantity) || 0);
+                            }
+                            let alterado = false;
+                            const updatedTickets = tickets.map(ticket => {
+                                const qtdDevolvida = devolucoesMap[ticket.id];
+                                if (qtdDevolvida) {
+                                    alterado = true;
+                                    const novoSold = Math.max(0, (ticket.sold || 0) - qtdDevolvida);
+                                    // Reabre o lote se estava esgotado e voltou a ter vaga
+                                    const novoStatus = ticket.status === 'sold_out' && novoSold < ticket.capacity
+                                        ? 'active'
+                                        : ticket.status;
+                                    return { ...ticket, sold: novoSold, status: novoStatus };
+                                }
+                                return ticket;
+                            });
+                            if (alterado) {
+                                transaction.update(eventRef, { tickets: updatedTickets });
+                                logger.info(`Estoque devolvido no evento ${currentPedidoData.eventId} após ${novoStatusPedido} do pedido ${pedidoDoc.id}.`);
+                            }
+                        }
+
+                        // 3. Remove as inscrições criadas por este pedido (IDs determinísticos,
+                        // idênticos aos gerados na aprovação). O contador é ajustado por onRegistrationDeleted.
+                        if (itensComprados.length > 0) {
+                            for (const item of itensComprados) {
+                                const qty = Number(item.quantity) || 0;
+                                for (let q = 0; q < qty; q++) {
+                                    const registrationId = `reg_${currentPedidoData.eventId}_${currentPedidoData.userId}_${item.id}_${q}_${pedidoDoc.id}`;
+                                    transaction.delete(db.collection('registrations').doc(registrationId));
+                                }
+                            }
+                        } else {
+                            const registrationId = `reg_${currentPedidoData.eventId}_${currentPedidoData.userId}_${pedidoDoc.id}`;
+                            transaction.delete(db.collection('registrations').doc(registrationId));
+                        }
+                        logger.info(`Inscrições do pedido ${pedidoDoc.id} removidas após ${novoStatusPedido}.`);
+                    });
+                } catch (transError) {
+                    logger.error("Erro na transação de estorno/cancelamento do pedido:", transError);
+                    res.status(500).send('Erro na transação de estorno.');
+                    return;
+                }
+            }
+
+            // Pós-pagamento (apenas na transição efetiva para pago). Executado após a transação
+            // para não atrasar nem arriscar o processamento financeiro.
+            if (deveNotificar) {
+                const tituloEvento = dadosPedido.eventTitle || 'o evento';
+                if (isOverbooked) {
+                    // Resolução automática de overbooking: reembolsa o pagamento. O webhook de
+                    // estorno (status 'refunded') cuidará de devolver o estoque e remover as inscrições.
+                    // POLÍTICA: se QUALQUER lote do pedido estourou a capacidade, o pedido INTEIRO é
+                    // reembolsado (refund total), inclusive lotes do mesmo pedido que tinham estoque.
+                    // É a opção simples e consistente; refund parcial por lote exigiria cálculo de valor
+                    // por item e ajuste do webhook de 'refunded' para não remover todas as inscrições.
+                    const reembolsado = await reembolsarPagamentoAutomatico(paymentId);
+                    if (reembolsado) {
+                        await enviarNotificacaoPush(
+                            dadosPedido.userId,
+                            'Lote esgotado — reembolso em andamento',
+                            `O lote de "${tituloEvento}" esgotou antes da confirmação. Seu pagamento está sendo reembolsado automaticamente.`,
+                            '/profile'
+                        );
+                    } else {
+                        await enviarNotificacaoPush(
+                            dadosPedido.userId,
+                            'Problema com seu ingresso',
+                            `Houve um problema de disponibilidade em "${tituloEvento}". Entre em contato com o organizador.`,
+                            '/profile'
+                        );
+                    }
+                } else {
+                    await enviarNotificacaoPush(
+                        dadosPedido.userId,
+                        'Ingresso confirmado! 🎟️',
+                        `Seu ingresso para ${tituloEvento} foi confirmado. Toque para visualizar.`,
+                        dadosPedido.eventId ? `/event/${dadosPedido.eventId}` : '/profile'
+                    );
                 }
             }
 

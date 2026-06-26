@@ -75,9 +75,12 @@ service cloud.firestore {
       // 2. O solicitante for o dono da inscrição (userId)
       // 3. O solicitante for o criador do evento associado
       allow read: if isAuthed() && (
-        resource.data.userId == request.auth.uid || 
-        isAdmin() || 
-        get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.creatorId == request.auth.uid
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        (
+          exists(/databases/$(database)/documents/events/$(resource.data.eventId)) &&
+          get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.creatorId == request.auth.uid
+        )
       );
       // Qualquer um pode criar inscrições, mas:
       // 1. Se for visitante sem login, validamos os campos obrigatórios.
@@ -98,12 +101,29 @@ service cloud.firestore {
     }
 
     match /pedidos/{pedidoId} {
-      // Um pedido pode ser lido pelo dono do pedido ou admin para proteger CPF/e-mail
+      // Um pedido pode ser lido pelo dono do pedido, pelo admin, ou pelo criador do evento
+      // associado (necessário para o painel financeiro do parceiro). CPF/e-mail continuam
+      // protegidos de qualquer outro usuário.
       allow read: if isAuthed() && (
-        resource.data.userId == request.auth.uid || isAdmin()
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        (
+          exists(/databases/$(database)/documents/events/$(resource.data.eventId)) &&
+          get(/databases/$(database)/documents/events/$(resource.data.eventId)).data.creatorId == request.auth.uid
+        )
       );
       // Escrita direta pelo cliente é proibida (apenas Cloud Functions do backend criam/alteram)
       allow write: if false;
+    }
+
+    // Tokens de push (FCM): cada dispositivo registra seu próprio token vinculado ao seu UID.
+    // A leitura é feita exclusivamente pelo backend (Admin SDK) ao enviar notificações.
+    match /fcmTokens/{token} {
+      allow read: if false;
+      // O usuário só pode criar/atualizar um token apontando para o seu próprio UID.
+      allow create, update: if isAuthed() && request.resource.data.userId == request.auth.uid;
+      // O dono do token pode removê-lo (ex.: ao desativar notificações ou sair).
+      allow delete: if isAuthed() && resource.data.userId == request.auth.uid;
     }
 
     // Coleção interna de rate limiting — acesso bloqueado para clientes

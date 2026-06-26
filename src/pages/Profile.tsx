@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration } from '../lib/storage';
 import gsap from 'gsap';
-import { User, LogOut, Calendar, MapPin, Clock, Trash2, Navigation, Ticket, Camera, X, Users, Edit2, Mail, Download, Plus, ScanLine } from 'lucide-react';
+import { User, LogOut, Calendar, MapPin, Clock, Trash2, Navigation, Ticket, Camera, X, Users, Edit2, Mail, Download, Plus, ScanLine, Wallet, ChevronRight } from 'lucide-react';
 import { InstagramIcon } from '../components/InstagramIcon';
 import { TicketModal } from '../components/TicketModal';
+import { NotificationToggle } from '../components/NotificationToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { compressImage, dataURLtoBlob } from '../lib/imageUtils';
 import toast from 'react-hot-toast';
@@ -541,6 +542,32 @@ export const Profile = () => {
           </div>
         )}
       </div>
+
+      {/* Acesso ao painel financeiro (parceiros/admin) — também disponível na sidebar do desktop */}
+      {user && userRole !== 'user' && (
+        <div className="profile-el mx-5 mb-6 relative z-10">
+          <button
+            onClick={() => navigate('/financeiro')}
+            className="w-full surface surface-hover rounded-2xl p-4 flex items-center gap-4 text-left cursor-pointer group"
+          >
+            <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+              <Wallet size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-sans font-semibold text-sm text-textLight">Painel financeiro</p>
+              <p className="text-xs text-textMuted mt-0.5 leading-relaxed">Vendas e faturamento dos seus eventos</p>
+            </div>
+            <ChevronRight size={18} className="text-textMuted group-hover:text-primary transition-colors shrink-0" />
+          </button>
+        </div>
+      )}
+
+      {/* Toggle de notificações push (só aparece se houver suporte e chave VAPID) */}
+      {user && (
+        <div className="profile-el mx-5 mb-6 relative z-10">
+          <NotificationToggle />
+        </div>
+      )}
 
       {/* Events Section - only for logged in users */}
       {user && (

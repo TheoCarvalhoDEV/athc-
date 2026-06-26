@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { storage } from '../lib/storage';
 import type { User } from '../lib/storage';
+import { syncNotificationToken } from '../lib/notifications';
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(localUser);
           setIsLoading(false);
         }
+
+        // Atualiza o token de push se o usuário já concedeu permissão (não solicita nada aqui).
+        syncNotificationToken(firebaseUser.uid);
 
         // 2. Busca o perfil atualizado do Firestore em background
         try {

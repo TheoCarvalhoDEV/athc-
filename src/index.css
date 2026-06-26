@@ -8,6 +8,9 @@
     margin: 0;
     overflow-x: hidden;
     background-color: #FCFAF7;
+    /* Reserva a área segura do topo (notch/status bar) em PWA iOS standalone com
+       status bar black-translucent. Em outras plataformas o inset é 0 (sem efeito). */
+    padding-top: env(safe-area-inset-top, 0px);
   }
 
   /* Custom Warm Scrollbar */

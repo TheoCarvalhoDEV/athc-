@@ -594,7 +594,7 @@ export const EventDetails = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-background pb-44 md:pb-16 px-4 md:px-8 pt-6">
+    <div ref={containerRef} className="min-h-screen bg-background pb-[calc(15rem+env(safe-area-inset-bottom))] md:pb-16 px-4 md:px-8 pt-6">
       <input type="hidden" id="MP_DEVICE_SESSION_ID" name="MP_DEVICE_SESSION_ID" />
       <input type="hidden" id="deviceId" />
 
@@ -777,7 +777,7 @@ export const EventDetails = () => {
           <div className="space-y-6 lg:sticky lg:top-6">
 
             {/* Ticket Actions Card (Floating on Mobile, Static card in Right Column on Desktop) */}
-            <div className="fixed bottom-6 left-0 right-0 px-5 z-40 anim-up max-w-2xl mx-auto lg:relative lg:bottom-0 lg:px-0 lg:max-w-none lg:z-10">
+            <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-0 right-0 px-5 z-40 anim-up max-w-2xl mx-auto lg:relative lg:bottom-0 lg:px-0 lg:max-w-none lg:z-10">
               <div className="surface rounded-2xl p-6 flex flex-col gap-4 shadow-md lg:shadow-sm relative overflow-hidden">
 
                 {/* Info do Ingresso */}

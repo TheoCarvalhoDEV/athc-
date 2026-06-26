@@ -226,8 +226,8 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
           </div>
         </div>
 
-        {/* Ações (fora do cartão, não entram na imagem) */}
-        <div className="flex gap-3 mt-4">
+        {/* Ações (fora do cartão, não entram na imagem) — empilham no mobile estreito */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4">
           <button
             onClick={handleDownload}
             disabled={busy || !qrDataUrl}

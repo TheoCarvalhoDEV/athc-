@@ -19,7 +19,7 @@ export const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-6 left-1/2 z-[9999] px-4 md:hidden w-max max-w-[calc(100vw-2rem)] bottom-nav-container">
+    <div className="fixed bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.5rem))] left-1/2 z-[9999] px-4 md:hidden w-max max-w-[calc(100vw-2rem)] bottom-nav-container">
       <nav className="glass rounded-full px-5 py-2.5 flex items-center gap-4 md:gap-6 relative">
         {navItems.map((item) => (
           <NavLink
