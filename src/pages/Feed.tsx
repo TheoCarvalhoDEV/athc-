@@ -116,10 +116,12 @@ export const Feed = () => {
       const isUserAdmin = user?.role === 'admin';
       const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
 
-      const now = new Date();
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
       const upcomingEvents = visibleEvents.filter(e => {
-        const eventDateTime = new Date(`${e.date}T${e.time || '00:00'}`);
-        return eventDateTime >= now;
+        // Evento expira só no fim do seu dia: visível durante todo o dia da data marcada.
+        const eventDay = new Date(`${e.date}T00:00`);
+        return eventDay >= startOfToday;
       });
 
       setEvents(upcomingEvents);
@@ -145,10 +147,12 @@ export const Feed = () => {
       const isUserAdmin = user?.role === 'admin';
       const visibleEvents = isUserAdmin ? newEvents : newEvents.filter(e => !e.isTestEvent);
 
-      const now = new Date();
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
       const upcomingEvents = visibleEvents.filter(e => {
-        const eventDateTime = new Date(`${e.date}T${e.time || '00:00'}`);
-        return eventDateTime >= now;
+        // Evento expira só no fim do seu dia: visível durante todo o dia da data marcada.
+        const eventDay = new Date(`${e.date}T00:00`);
+        return eventDay >= startOfToday;
       });
 
       setEvents(prev => [...prev, ...upcomingEvents]);

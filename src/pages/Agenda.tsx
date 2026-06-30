@@ -26,12 +26,13 @@ export const Agenda = () => {
             setProfile(p);
             const profileEvents = await storage.getAgendaByProfileId(id);
             const isAdmin = user?.role === 'admin';
-            const now = new Date();
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
             const visibleEvents = profileEvents
               // Eventos de teste só aparecem para admins.
               .filter(e => isAdmin || !e.isTestEvent)
-              // Esconde eventos que já passaram (data/hora < agora) para todos.
-              .filter(e => new Date(`${e.date}T${e.time || '00:00'}`) >= now);
+              // Evento expira só no fim do seu dia: visível durante todo o dia da data marcada.
+              .filter(e => new Date(`${e.date}T00:00`) >= startOfToday);
             setEvents(visibleEvents);
           }
         } catch (error) {

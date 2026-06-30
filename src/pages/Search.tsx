@@ -33,12 +33,13 @@ export const Search = () => {
           storage.getUpcomingEvents(),
           storage.getProfiles()
         ]);
-        const now = new Date();
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
         const visibleEvents = allEvents
           // Eventos de teste só aparecem para admins.
           .filter(e => isAdmin || !e.isTestEvent)
-          // Reforço client-side: exclui eventos que já começaram hoje.
-          .filter(e => new Date(`${e.date}T${e.time || '00:00'}`) >= now);
+          // Evento expira só no fim do seu dia: visível durante todo o dia da data marcada.
+          .filter(e => new Date(`${e.date}T00:00`) >= startOfToday);
         setEvents(visibleEvents);
         setProfiles(allProfiles);
       } catch (error) {
