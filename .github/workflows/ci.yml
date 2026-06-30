@@ -120,7 +120,20 @@ jobs:
         if: env.HAS_DEPLOY_CREDS == 'true'
         shell: bash
         run: |
+          set +e
           npx firebase-tools@latest deploy --only hosting,functions,firestore:rules,storage --project atche-sistemas --non-interactive 2>&1 | tee deploy.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # O erro de hosting "is the current active version" acontece quando o conteudo a
+            # publicar e identico ao que ja esta no ar (deploy redundante — ex.: re-run, ou
+            # commit que nao altera o bundle). Functions/rules/storage ja foram publicados antes
+            # dessa etapa, entao tratamos APENAS esse caso especifico como sucesso.
+            if grep -q "is the current active version" deploy.log; then
+              echo "::warning::Hosting ja estava na versao atual (nada novo a publicar). Tratando como sucesso."
+              exit 0
+            fi
+            exit "$code"
+          fi
           status=${PIPESTATUS[0]}
           if [ $status -ne 0 ]; then
             if grep -q "is the current active version" deploy.log; then
