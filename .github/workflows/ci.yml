@@ -134,12 +134,3 @@ jobs:
             fi
             exit "$code"
           fi
-          status=${PIPESTATUS[0]}
-          if [ $status -ne 0 ]; then
-            if grep -q "is the current active version" deploy.log; then
-              echo "Firebase CLI bug detected (supplied version is the current active version). Ignoring."
-              exit 0
-            else
-              exit $status
-            fi
-          fi
