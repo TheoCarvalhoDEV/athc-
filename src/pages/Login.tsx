@@ -112,16 +112,6 @@ export const Login = () => {
             </Button>
           </div>
         </form>
-
-        <div className="stagger-el mt-6 text-center w-full">
-          <button
-            type="button"
-            onClick={() => navigate('/register')}
-            className="text-xs font-medium text-accent hover:text-accentHover underline transition-colors cursor-pointer"
-          >
-            Ainda não tem conta? Criar conta
-          </button>
-        </div>
       </div>
     </div>
   );

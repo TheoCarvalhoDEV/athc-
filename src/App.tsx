@@ -1,7 +1,6 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Feed } from './pages/Feed';
 import { Search } from './pages/Search';
 import { AuthProvider } from './contexts/AuthContext';
@@ -67,7 +66,8 @@ function App() {
             <Routes>
               {/* Rotas autônomas (sem barra de navegação) */}
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              {/* Cadastro de usuário removido: a opção de criar conta foi desativada. */}
+              <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/change-password" element={<ChangePassword />} />
               <Route path="/event/:id" element={<EventDetails />} />
               {/* Recuperação de ingresso por CPF (acesso público, sem login) */}
