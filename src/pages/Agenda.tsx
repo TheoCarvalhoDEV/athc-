@@ -6,12 +6,14 @@ import { EventCard } from '../components/EventCard';
 import gsap from 'gsap';
 import { ArrowLeft, Building2, Users, Mail } from 'lucide-react';
 import { InstagramIcon } from '../components/InstagramIcon';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Agenda = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
 
@@ -23,7 +25,14 @@ export const Agenda = () => {
           if (p) {
             setProfile(p);
             const profileEvents = await storage.getAgendaByProfileId(id);
-            setEvents(profileEvents);
+            const isAdmin = user?.role === 'admin';
+            const now = new Date();
+            const visibleEvents = profileEvents
+              // Eventos de teste só aparecem para admins.
+              .filter(e => isAdmin || !e.isTestEvent)
+              // Esconde eventos que já passaram (data/hora < agora) para todos.
+              .filter(e => new Date(`${e.date}T${e.time || '00:00'}`) >= now);
+            setEvents(visibleEvents);
           }
         } catch (error) {
           console.error("Erro ao carregar agenda:", error);
@@ -31,7 +40,7 @@ export const Agenda = () => {
       }
     };
     loadData();
-  }, [id]);
+  }, [id, user?.role]);
 
   useEffect(() => {
     if (profile) {
