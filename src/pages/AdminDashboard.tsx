@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, Registration } from '../lib/storage';
 import { Button } from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
 import { Calendar, Users, Settings, Trash2, Search as SearchIcon, Building2, UserPlus, Mail, Lock, ShieldCheck, X, Copy, Check, Upload } from 'lucide-react';
 import gsap from 'gsap';
 import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import type { AppProfile } from '../lib/storage';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { initializeApp } from 'firebase/app';
@@ -93,9 +95,15 @@ export const AdminDashboard = () => {
     type: 'warning'
   });
 
+  // Fechar modais com Escape (acessibilidade de diálogo)
+  useEscapeToClose(!!editingPartner, () => setEditingPartner(null));
+  useEscapeToClose(showPartnerModal, () => setShowPartnerModal(false));
+  useEscapeToClose(confirmModal.show, () => setConfirmModal(prev => ({ ...prev, show: false })));
+
   // Basic auth check for MVP
   const currentUser = storage.getCurrentUser();
   const userId = currentUser?.id;
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     if (!userId || currentUser?.role !== 'admin') {
@@ -115,6 +123,8 @@ export const AdminDashboard = () => {
       setProfiles(allProfiles);
     } catch (error) {
       console.error("Erro ao carregar dados do admin:", error);
+    } finally {
+      setIsLoading(false);
     }
   }, [userId, navigate, currentUser]);
 
@@ -334,6 +344,9 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={`ev-sk-${i}`} className="h-32 rounded-2xl" />
+              ))}
               {filteredEvents.map(event => {
                 const eventRegs = registrations.filter(r => r.eventId === event.id).length;
 
@@ -370,7 +383,7 @@ export const AdminDashboard = () => {
                 );
               })}
 
-              {filteredEvents.length === 0 && (
+              {!isLoading && filteredEvents.length === 0 && (
                 <div className="text-center py-10 admin-anim">
                   <p className="text-textMuted text-sm">Nenhum evento encontrado.</p>
                 </div>
@@ -387,6 +400,9 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+              {isLoading && Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={`pt-sk-${i}`} className="h-24 rounded-2xl" />
+              ))}
               {filteredProfiles.map(profile => (
                 <div key={profile.id} className="surface surface-hover p-4 rounded-2xl flex items-center gap-4 admin-anim shadow-sm text-left">
                   <div className="w-12 h-12 rounded-xl bg-surface/50 flex items-center justify-center text-accent overflow-hidden shrink-0 border border-glassBorder shadow-sm">
@@ -421,7 +437,7 @@ export const AdminDashboard = () => {
                 </div>
               ))}
 
-              {filteredProfiles.length === 0 && (
+              {!isLoading && filteredProfiles.length === 0 && (
                 <div className="text-center py-10 admin-anim">
                   <p className="text-textMuted text-sm">Nenhum parceiro encontrado.</p>
                 </div>
@@ -432,7 +448,12 @@ export const AdminDashboard = () => {
 
         {/* Modal Editar Parceiro */}
         {editingPartner && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop">
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-edit-partner-title"
+          >
             <div className="glass rounded-3xl p-6 md:p-8 max-w-md w-full relative max-h-[90vh] overflow-y-auto border border-glassBorder backdrop-blur-3xl text-left shadow-md">
               <button aria-label="Fechar modal" title="Fechar modal" onClick={() => setEditingPartner(null)} className="absolute top-6 right-6 p-2 border border-glassBorder rounded-xl bg-surface/50 hover:bg-surfaceHover hover:border-accent/40 text-textLight cursor-pointer transition-colors duration-200">
                 <X size={16} />
@@ -443,7 +464,7 @@ export const AdminDashboard = () => {
                   <div className="w-14 h-14 bg-primary/20 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
                     <Settings size={24} />
                   </div>
-                  <h3 className="font-display text-2xl font-semibold text-textLight leading-tight">Editar parceiro</h3>
+                  <h3 id="admin-edit-partner-title" className="font-display text-2xl font-semibold text-textLight leading-tight">Editar parceiro</h3>
                   <p className="text-xs font-medium text-textMuted mt-1">Modifique as informações e acessos</p>
                 </div>
 
@@ -504,7 +525,12 @@ export const AdminDashboard = () => {
 
         {/* Modal Novo Parceiro */}
         {showPartnerModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop">
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-new-partner-title"
+          >
             <div className="glass rounded-3xl p-6 md:p-8 max-w-md w-full relative border border-glassBorder backdrop-blur-3xl text-left shadow-md">
               <button aria-label="Fechar modal" title="Fechar modal" onClick={() => setShowPartnerModal(false)} className="absolute top-6 right-6 p-2 border border-glassBorder rounded-xl bg-surface/50 hover:bg-surfaceHover hover:border-accent/40 text-textLight cursor-pointer transition-colors duration-200">
                 <X size={16} />
@@ -516,7 +542,7 @@ export const AdminDashboard = () => {
                     <div className="w-14 h-14 bg-primary/20 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
                       <UserPlus size={24} />
                     </div>
-                    <h3 className="font-display text-2xl font-semibold text-textLight leading-tight">Cadastrar parceiro</h3>
+                    <h3 id="admin-new-partner-title" className="font-display text-2xl font-semibold text-textLight leading-tight">Cadastrar parceiro</h3>
                     <p className="text-xs font-medium text-textMuted mt-1">Crie acesso para novos parceiros</p>
                   </div>
 
@@ -597,7 +623,7 @@ export const AdminDashboard = () => {
                   <div className="w-16 h-16 bg-success/10 text-success rounded-2xl border border-success/20 flex items-center justify-center mx-auto mb-5">
                     <ShieldCheck size={32} />
                   </div>
-                  <h3 className="font-display text-2xl font-semibold text-textLight leading-tight mb-2">Parceiro criado!</h3>
+                  <h3 id="admin-new-partner-title" className="font-display text-2xl font-semibold text-textLight leading-tight mb-2">Parceiro criado!</h3>
                   <p className="text-sm text-textMuted mb-6">Salve os dados de acesso abaixo:</p>
 
                   <div className="surface p-5 rounded-2xl mb-8 relative shadow-sm space-y-4 text-left">
@@ -641,7 +667,14 @@ export const AdminDashboard = () => {
 
       {/* Custom Confirm Modal */}
       {confirmModal.show && (
-        <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6" onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}>
+        <div
+          className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="admin-confirm-title"
+          aria-describedby="admin-confirm-desc"
+          onClick={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+        >
           <div
             className="glass rounded-3xl p-6 md:p-8 max-w-sm w-full border border-glassBorder backdrop-blur-3xl text-center shadow-md"
             onClick={(e) => e.stopPropagation()}
@@ -653,8 +686,8 @@ export const AdminDashboard = () => {
               )}>
                 <Trash2 size={26} />
               </div>
-              <h3 className="font-display text-xl font-semibold text-textLight mb-3">{confirmModal.title}</h3>
-              <p className="text-sm text-textMuted mb-8 font-sans leading-relaxed">
+              <h3 id="admin-confirm-title" className="font-display text-xl font-semibold text-textLight mb-3">{confirmModal.title}</h3>
+              <p id="admin-confirm-desc" className="text-sm text-textMuted mb-8 font-sans leading-relaxed">
                 {confirmModal.message}
               </p>
               <div className="flex gap-3.5 w-full">

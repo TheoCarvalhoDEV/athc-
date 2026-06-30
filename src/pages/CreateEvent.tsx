@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { storage } from '../lib/storage';
 import type { AppProfile, TicketType } from '../lib/storage';
 import { cn } from '../lib/utils';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import gsap from 'gsap';
 import {
   ArrowLeft, Image as ImageIcon, MapPin, X, Plus, Clock, Loader2,
@@ -201,6 +202,11 @@ const CreateEventContent = () => {
 
   // Date Picker States
   const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+
+  // Fechar modais com Escape (acessibilidade de diálogo)
+  useEscapeToClose(showMapModal, () => setShowMapModal(false));
+  useEscapeToClose(cropModalOpen, () => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); });
+  useEscapeToClose(showDatePickerModal, () => setShowDatePickerModal(false));
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedTempDate, setSelectedTempDate] = useState<Date | null>(null);
   const [selectedTempTime, setSelectedTempTime] = useState<string>('20:00');
@@ -954,12 +960,17 @@ const CreateEventContent = () => {
 
       {/* Modal do Mapa */}
       {showMapModal && (
-        <div className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center p-4">
+        <div
+          className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-map-title"
+        >
           <div className="bg-background w-full max-w-lg h-[80vh] rounded-3xl border border-glassBorder shadow-md flex flex-col p-6 relative overflow-hidden animate-in zoom-in duration-300">
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
               <div className="text-left">
-                <h3 className="font-display font-semibold text-xl text-textLight">Escolher localização</h3>
+                <h3 id="create-map-title" className="font-display font-semibold text-xl text-textLight">Escolher localização</h3>
                 <p className="text-xs text-textMuted">Busque ou clique no mapa para marcar</p>
               </div>
               <button
@@ -1037,10 +1048,15 @@ const CreateEventContent = () => {
 
       {/* Crop Modal */}
       {cropModalOpen && (
-        <div className="fixed inset-0 z-[99999] bg-background/95 backdrop-blur-md flex flex-col pt-12 pb-6 px-4">
+        <div
+          className="fixed inset-0 z-[99999] bg-background/95 backdrop-blur-md flex flex-col pt-12 pb-6 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-crop-title"
+        >
           <div className="flex justify-between items-center mb-6">
             <div className="text-left">
-              <h2 className="font-display font-semibold text-xl text-textLight">Ajustar imagem</h2>
+              <h2 id="create-crop-title" className="font-display font-semibold text-xl text-textLight">Ajustar imagem</h2>
               <p className="text-xs text-textMuted">Recorte para exibição perfeita no feed</p>
             </div>
             <button
@@ -1048,6 +1064,7 @@ const CreateEventContent = () => {
               onClick={() => { setCropModalOpen(false); setImageSrc(''); setCurrentFile(null); }}
               className="bg-primary/10 p-2 rounded-full text-primary"
               title="Cancelar"
+              aria-label="Cancelar e fechar o recorte da imagem"
             >
               <X size={20} />
             </button>
@@ -1097,12 +1114,17 @@ const CreateEventContent = () => {
         const tempMinute = selectedTempTime.split(':')[1] || '00';
 
         return (
-          <div className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div
+            className="modal-backdrop fixed inset-0 z-[99999] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-date-title"
+          >
             <div className="bg-background w-full max-w-[440px] rounded-3xl border border-glassBorder shadow-md flex flex-col p-5 sm:p-6 relative overflow-hidden animate-in zoom-in duration-300">
               {/* Header */}
               <div className="flex justify-between items-center mb-5">
                 <div className="text-left">
-                  <h3 className="font-display font-semibold text-xl text-textLight">Escolher data/horário</h3>
+                  <h3 id="create-date-title" className="font-display font-semibold text-xl text-textLight">Escolher data/horário</h3>
                   <p className="text-xs text-textMuted">Defina o dia e a hora do evento</p>
                 </div>
                 <button

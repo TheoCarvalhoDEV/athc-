@@ -5,6 +5,7 @@ import { storage } from '../lib/storage';
 import type { EventItem, AppProfile } from '../lib/storage';
 import { EventCard } from '../components/EventCard';
 import { ProfileCard } from '../components/ProfileCard';
+import { EventCardSkeleton, Skeleton } from '../components/ui/Skeleton';
 import gsap from 'gsap';
 import { Search as SearchIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -21,6 +22,7 @@ export const Search = () => {
   
   const [events, setEvents] = useState<EventItem[]>([]);
   const [profiles, setProfiles] = useState<AppProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,6 +46,8 @@ export const Search = () => {
         setProfiles(allProfiles);
       } catch (error) {
         console.error("Erro ao carregar dados na busca:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadData();
@@ -141,7 +145,11 @@ export const Search = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
-        {activeTab === 'eventos' ? (
+        {isLoading ? (
+          activeTab === 'eventos'
+            ? Array.from({ length: 6 }).map((_, i) => <EventCardSkeleton key={`sk-evt-${i}`} />)
+            : Array.from({ length: 6 }).map((_, i) => <Skeleton key={`sk-prof-${i}`} className="h-28 rounded-3xl" />)
+        ) : activeTab === 'eventos' ? (
           <>
             {filteredEvents.map(event => (
               <div key={`evt-${event.id}`} className="search-result">

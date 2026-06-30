@@ -3,6 +3,7 @@ import { X, Calendar, Clock, MapPin, Download, CheckCircle2, Loader2 } from 'luc
 import { toPng } from 'html-to-image';
 import type { EventItem, Registration } from '../lib/storage';
 import { makeTicketCode } from '../lib/ticketCode';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 
 interface TicketModalProps {
   isOpen: boolean;
@@ -36,6 +37,8 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
   const ticketRef = useRef<HTMLDivElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEscapeToClose(isOpen, onClose);
 
   const shortCode = makeTicketCode(registration.id);
 
@@ -124,7 +127,12 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ticket-modal-title"
+    >
       <div className="relative w-full max-w-md flex flex-col max-h-[92vh]">
         {/* Close */}
         <button
@@ -145,7 +153,7 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
             {/* Cabeçalho de marca */}
             <div className="relative bg-primary px-6 pt-6 pb-8 text-center overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-              <p className="relative text-white/60 text-[10px] font-bold tracking-[0.4em] uppercase mb-1">
+              <p id="ticket-modal-title" className="relative text-white/60 text-[10px] font-bold tracking-[0.4em] uppercase mb-1">
                 Ingresso oficial
               </p>
               <p className="relative text-white font-display font-extrabold text-2xl tracking-[0.25em] uppercase">

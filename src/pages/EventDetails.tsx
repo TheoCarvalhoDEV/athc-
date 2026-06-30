@@ -10,6 +10,7 @@ import { Calendar, Clock, MapPin, ArrowLeft, CheckCircle2, Share2, User, Ticket,
 import toast from 'react-hot-toast';
 
 import { formatCPF, isValidCPF } from '../lib/cpf';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { getFirestore, doc, onSnapshot, collection, query, where, getDocs } from 'firebase/firestore';
 import gsap from 'gsap';
@@ -46,6 +47,12 @@ export const EventDetails = () => {
   const [registrationForTicket, setRegistrationForTicket] = useState<Registration | null>(null);
   // Geração de ingresso de teste (somente admin)
   const [loadingTestTicket, setLoadingTestTicket] = useState(false);
+
+  // Fechar modais com Escape (acessibilidade de diálogo)
+  useEscapeToClose(showModal, () => setShowModal(false));
+  useEscapeToClose(showContactsModal, () => setShowContactsModal(false));
+  useEscapeToClose(showFreeTicketModal, () => setShowFreeTicketModal(false));
+  useEscapeToClose(showPixModal, () => setShowPixModal(false));
   // Mantém a referência da inscrição para o fechamento agendado do modal de sucesso
   const registrationForTicketRef = useRef<Registration | null>(null);
 
@@ -965,7 +972,12 @@ export const EventDetails = () => {
 
       {/* Success Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="event-success-title"
+        >
           <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             {/* Animação premium do Checkmark */}
             <div className="payment-success-icon-wrapper mx-auto mb-6">
@@ -975,7 +987,7 @@ export const EventDetails = () => {
                 <path className="payment-success-checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
               </svg>
             </div>
-            <h3 className="font-display text-2xl font-semibold text-success mb-2">Presença confirmada!</h3>
+            <h3 id="event-success-title" className="font-display text-2xl font-semibold text-success mb-2">Presença confirmada!</h3>
             <p className="text-sm text-textLight/90 mb-8 leading-relaxed max-w-[260px] mx-auto">
               Sua vaga para <strong className="text-primary">{event.title}</strong> foi garantida com sucesso. Aproveite o evento!
             </p>
@@ -991,13 +1003,18 @@ export const EventDetails = () => {
 
       {/* Contacts Modal */}
       {showContactsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-contacts-title"
+        >
           <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center max-h-[80vh] flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             <button onClick={() => setShowContactsModal(false)} className="absolute top-5 right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="font-display text-xl font-semibold text-accent mb-1 mt-2">Comprar ingresso</h3>
+            <h3 id="event-contacts-title" className="font-display text-xl font-semibold text-accent mb-1 mt-2">Comprar ingresso</h3>
             <p className="text-xs text-textMuted mb-6 leading-relaxed max-w-[240px] mx-auto">
               Escolha com qual promoter você deseja falar para garantir sua vaga:
             </p>
@@ -1037,13 +1054,18 @@ export const EventDetails = () => {
 
       {/* Free Ticket Modal */}
       {showFreeTicketModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-freeticket-title"
+        >
           <div className="glass border-none rounded-[2.5rem] p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             <button onClick={() => setShowFreeTicketModal(false)} className="absolute top-5 right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="font-display text-xl font-semibold text-accent mb-1 mt-2">Confirmar presença</h3>
+            <h3 id="event-freeticket-title" className="font-display text-xl font-semibold text-accent mb-1 mt-2">Confirmar presença</h3>
             <p className="text-sm text-textMuted mb-6">Para evitar spam, informe seus dados.</p>
 
             <div className="flex flex-col gap-4 text-left">
@@ -1093,13 +1115,18 @@ export const EventDetails = () => {
 
       {/* Pix Modal */}
       {showPixModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="event-pix-title"
+        >
           <div className="glass border-none rounded-[2.5rem] p-5 md:p-8 max-w-sm md:max-w-lg w-full text-center relative overflow-hidden backdrop-blur-3xl shadow-float bg-surface/98">
             <button onClick={() => setShowPixModal(false)} className="absolute top-4 right-4 md:top-5 md:right-5 bg-white/10 hover:bg-white/20 p-2 rounded-2xl text-textLight transition-all duration-300 cursor-pointer neo-click">
               <span className="sr-only">Fechar</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h3 className="font-display text-xl md:text-2xl font-bold text-accent mb-0.5 md:mb-1 mt-1 md:mt-2">Pagamento via Pix</h3>
+            <h3 id="event-pix-title" className="font-display text-xl md:text-2xl font-bold text-accent mb-0.5 md:mb-1 mt-1 md:mt-2">Pagamento via Pix</h3>
             <p className="text-xs md:text-sm text-textMuted mb-4 md:mb-5">Total: <span className="font-semibold text-textLight tabular-nums">R$ {getSelectedTicketsTotal().toFixed(2).replace('.', ',')}</span></p>
 
             {pixStep === 'select_tickets' && (

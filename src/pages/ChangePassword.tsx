@@ -90,6 +90,7 @@ export const ChangePassword = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-primary hover:text-accent transition-colors duration-300"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}

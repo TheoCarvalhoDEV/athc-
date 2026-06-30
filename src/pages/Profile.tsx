@@ -7,8 +7,10 @@ import { User, LogOut, Calendar, MapPin, Clock, Trash2, Navigation, Ticket, Came
 import { InstagramIcon } from '../components/InstagramIcon';
 import { TicketModal } from '../components/TicketModal';
 import { NotificationToggle } from '../components/NotificationToggle';
+import { Skeleton } from '../components/ui/Skeleton';
 import { useAuth } from '../contexts/AuthContext';
 import { compressImage, dataURLtoBlob } from '../lib/imageUtils';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import toast from 'react-hot-toast';
 
 const formatCPF = (value: string): string => {
@@ -31,6 +33,7 @@ export const Profile = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [myEvents, setMyEvents] = useState<EventItem[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState<boolean>(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const { user, updateUser } = useAuth();
   const userRole = user?.role;
@@ -102,6 +105,12 @@ export const Profile = () => {
   const [hasMoreParticipants, setHasMoreParticipants] = useState<boolean>(true);
   const [isLoadingMoreParticipants, setIsLoadingMoreParticipants] = useState<boolean>(false);
 
+  // Fechar modais com Escape (acessibilidade de diálogo)
+  useEscapeToClose(!!deleteConfirm, () => setDeleteConfirm(null));
+  useEscapeToClose(showEditModal, () => setShowEditModal(false));
+  useEscapeToClose(showParticipantsModal, () => setShowParticipantsModal(false));
+  useEscapeToClose(showManualTicketModal, () => setShowManualTicketModal(false));
+
   const loadEvents = useCallback(async () => {
     try {
       const all = await storage.getEvents();
@@ -125,6 +134,8 @@ export const Profile = () => {
       }
     } catch (error) {
       console.error("Erro ao carregar eventos do perfil:", error);
+    } finally {
+      setIsLoadingEvents(false);
     }
   }, []);
 
@@ -616,6 +627,9 @@ export const Profile = () => {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-5">
+            {isLoadingEvents && Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={`pe-sk-${i}`} className="h-44 rounded-2xl" />
+            ))}
             {filteredEvents.map((event) => (
               <div key={event.id} className="profile-el surface surface-hover rounded-2xl overflow-hidden text-left">
                 <div 
@@ -720,7 +734,7 @@ export const Profile = () => {
                 </div>
               </div>
             ))}
-            {filteredEvents.length === 0 && (
+            {!isLoadingEvents && filteredEvents.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center px-4 col-span-full">
                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                   <Calendar size={24} className="text-primary/40" />
@@ -747,7 +761,13 @@ export const Profile = () => {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6" onClick={() => setDeleteConfirm(null)}>
+        <div
+          className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="profile-delete-title"
+          onClick={() => setDeleteConfirm(null)}
+        >
           <div
             className="glass rounded-[2rem] p-6 max-w-sm w-full relative overflow-hidden backdrop-blur-2xl border border-glassBorder"
             onClick={(e) => e.stopPropagation()}
@@ -756,7 +776,7 @@ export const Profile = () => {
               <div className="w-14 h-14 rounded-2xl bg-danger/10 text-danger border border-danger/20 flex items-center justify-center mb-4 shadow-md">
                 <Trash2 size={22} />
               </div>
-              <h3 className="font-display text-xl font-semibold text-accent mb-2">Excluir Evento?</h3>
+              <h3 id="profile-delete-title" className="font-display text-xl font-semibold text-accent mb-2">Excluir Evento?</h3>
               <p className="font-sans text-sm text-textMuted mb-6 leading-relaxed">
                 Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.
               </p>
@@ -781,7 +801,13 @@ export const Profile = () => {
 
       {/* Modal Editar Perfil Completo */}
       {showEditModal && (
-        <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
+        <div
+          className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-edit-title"
+          onClick={() => setShowEditModal(false)}
+        >
           <div
             className="glass rounded-[2.5rem] p-6 max-w-md w-full relative flex flex-col max-h-[90vh] backdrop-blur-3xl border border-glassBorder"
             onClick={(e) => e.stopPropagation()}
@@ -799,7 +825,7 @@ export const Profile = () => {
               <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-2.5">
                 <Edit2 size={20} />
               </div>
-              <h3 className="font-display text-xl font-semibold text-accent">Editar Perfil</h3>
+              <h3 id="profile-edit-title" className="font-display text-xl font-semibold text-accent">Editar Perfil</h3>
               <p className="text-xs text-textMuted mt-1">Atualize as informações públicas da sua marca</p>
             </div>
 
@@ -904,7 +930,13 @@ export const Profile = () => {
 
       {/* Modal de Participantes Inscritos */}
       {showParticipantsModal && selectedEventForParticipants && (
-        <div className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6" onClick={() => setShowParticipantsModal(false)}>
+        <div
+          className="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-participants-title"
+          onClick={() => setShowParticipantsModal(false)}
+        >
           <div
             className="glass rounded-[2rem] p-5 md:p-8 max-w-lg md:max-w-2xl w-full relative flex flex-col max-h-[85vh] border border-glassBorder backdrop-blur-3xl shadow-float bg-surface/98"
             onClick={(e) => e.stopPropagation()}
@@ -915,6 +947,7 @@ export const Profile = () => {
                 disabled={participantsList.length === 0 || isLoadingParticipants}
                 className="p-2 md:p-2.5 bg-surface/50 border border-glassBorder text-accent rounded-xl hover:bg-surfaceHover hover:border-accent/40 active:scale-95 transition-all duration-300 neo-click cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Exportar CSV"
+                aria-label="Exportar lista de participantes em CSV"
               >
                 <Download className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
               </button>
@@ -922,6 +955,7 @@ export const Profile = () => {
                 onClick={() => setShowManualTicketModal(true)}
                 className="p-2 md:p-2.5 bg-surface/50 border border-glassBorder text-primary rounded-xl hover:bg-surfaceHover hover:border-primary/40 active:scale-95 transition-all duration-300 neo-click cursor-pointer"
                 title="Gerar Ingresso Manual"
+                aria-label="Gerar ingresso manual"
               >
                 <Plus className="w-3.5 h-3.5 md:w-[18px] md:h-[18px]" />
               </button>
@@ -939,7 +973,7 @@ export const Profile = () => {
               <div className="w-11 h-11 md:w-16 md:h-16 bg-primary/20 border border-primary/20 rounded-xl md:rounded-2xl flex items-center justify-center text-primary mx-auto mb-2 md:mb-3">
                 <Users className="w-5 h-5 md:w-7 md:h-7" />
               </div>
-              <h3 className="font-display text-base md:text-xl font-semibold text-accent truncate px-10 md:px-16">{selectedEventForParticipants.title}</h3>
+              <h3 id="profile-participants-title" className="font-display text-base md:text-xl font-semibold text-accent truncate px-10 md:px-16">{selectedEventForParticipants.title}</h3>
               <p className="text-xs text-textMuted mt-0.5 font-sans">Lista de presenças confirmadas</p>
             </div>
 
@@ -1051,12 +1085,18 @@ export const Profile = () => {
 
       {/* Modal Gerar Ingresso Manual */}
       {showManualTicketModal && selectedEventForParticipants && (
-        <div className="fixed inset-0 z-[110] modal-backdrop flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-[110] modal-backdrop flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-manual-title"
+        >
           <div className="glass rounded-[2.5rem] p-6 md:p-8 max-w-md w-full relative border border-glassBorder backdrop-blur-3xl shadow-float bg-surface/98 text-left animate-in zoom-in duration-300">
             <button
               onClick={() => setShowManualTicketModal(false)}
               className="absolute top-6 right-6 p-2 bg-surface/50 border border-glassBorder rounded-xl text-textLight hover:bg-surfaceHover hover:border-primary/40 active:scale-95 transition-all duration-300 cursor-pointer neo-click z-10"
               title="Fechar"
+              aria-label="Fechar"
             >
               <X size={16} />
             </button>
@@ -1065,7 +1105,7 @@ export const Profile = () => {
               <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-3">
                 <Ticket size={24} />
               </div>
-              <h3 className="font-display text-xl font-semibold text-textLight">Gerar ingresso manual</h3>
+              <h3 id="profile-manual-title" className="font-display text-xl font-semibold text-textLight">Gerar ingresso manual</h3>
               <p className="text-sm text-textMuted font-sans mt-1">Crie credenciais ou cortesias para o evento</p>
             </div>
 

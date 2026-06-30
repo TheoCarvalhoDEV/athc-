@@ -7,6 +7,7 @@ import { storage } from '../lib/storage';
 import type { EventItem, Registration } from '../lib/storage';
 import { matchesTicketCode } from '../lib/ticketCode';
 import { useAuth } from '../contexts/AuthContext';
+import { useEscapeToClose } from '../hooks/useEscapeToClose';
 import {
   ArrowLeft, CheckCircle2, XCircle, AlertTriangle, ScanLine,
   Keyboard, RefreshCw, User, Ticket, CalendarCheck, CameraOff, SwitchCamera,
@@ -351,6 +352,9 @@ export const ValidateTickets = () => {
     pausedRef.current = false;
   };
 
+  // Fechar o painel de resultado com Escape (volta a escanear)
+  useEscapeToClose(!!result, resumeScanning);
+
   const submitManual = (e: FormEvent) => {
     e.preventDefault();
     const code = manualCode.trim();
@@ -519,7 +523,14 @@ export const ValidateTickets = () => {
 
       {/* Painel de resultado */}
       {result && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={resumeScanning}>
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="validate-result-title"
+          aria-describedby="validate-result-detail"
+          onClick={resumeScanning}
+        >
           <div
             className={`w-full max-w-sm bg-surface text-textLight rounded-3xl border ${statusStyles[result.status].ring} shadow-float p-6 text-center animate-in slide-in-from-bottom-4 sm:zoom-in duration-300`}
             onClick={(e) => e.stopPropagation()}
@@ -527,8 +538,8 @@ export const ValidateTickets = () => {
             <div className={`w-20 h-20 rounded-2xl ${statusStyles[result.status].chip} flex items-center justify-center mx-auto mb-4`}>
               {statusStyles[result.status].icon}
             </div>
-            <h2 className="font-display font-bold text-2xl mb-1">{result.title}</h2>
-            <p className="text-sm text-textMuted mb-5">{result.detail}</p>
+            <h2 id="validate-result-title" className="font-display font-bold text-2xl mb-1">{result.title}</h2>
+            <p id="validate-result-detail" className="text-sm text-textMuted mb-5">{result.detail}</p>
 
             {result.registration && (
               <div className="surface-cream rounded-2xl p-4 text-left space-y-3 mb-5">

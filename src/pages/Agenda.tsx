@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { storage } from '../lib/storage';
 import type { EventItem, AppProfile } from '../lib/storage';
 import { EventCard } from '../components/EventCard';
+import { EventCardSkeleton, Skeleton } from '../components/ui/Skeleton';
 import gsap from 'gsap';
 import { ArrowLeft, Building2, Users, Mail } from 'lucide-react';
 import { InstagramIcon } from '../components/InstagramIcon';
@@ -16,28 +17,36 @@ export const Agenda = () => {
 
   const [profile, setProfile] = useState<AppProfile | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
-      if (id) {
-        try {
-          const p = await storage.getProfileById(id);
-          if (p) {
-            setProfile(p);
-            const profileEvents = await storage.getAgendaByProfileId(id);
-            const isAdmin = user?.role === 'admin';
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
-            const visibleEvents = profileEvents
-              // Eventos de teste só aparecem para admins.
-              .filter(e => isAdmin || !e.isTestEvent)
-              // Evento expira só no fim do seu dia: visível durante todo o dia da data marcada.
-              .filter(e => new Date(`${e.date}T00:00`) >= startOfToday);
-            setEvents(visibleEvents);
-          }
-        } catch (error) {
-          console.error("Erro ao carregar agenda:", error);
+      if (!id) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        // Carrega perfil e eventos em paralelo e atualiza juntos, evitando o flash
+        // do estado vazio entre uma resposta e outra.
+        const [p, profileEvents] = await Promise.all([
+          storage.getProfileById(id),
+          storage.getAgendaByProfileId(id),
+        ]);
+        if (p) {
+          setProfile(p);
+          // Eventos de teste só aparecem para admins; evento expira só no fim do seu dia.
+          const isAdmin = user?.role === 'admin';
+          const startOfToday = new Date();
+          startOfToday.setHours(0, 0, 0, 0);
+          const visibleEvents = profileEvents
+            .filter(e => isAdmin || !e.isTestEvent)
+            .filter(e => new Date(`${e.date}T00:00`) >= startOfToday);
+          setEvents(visibleEvents);
         }
+      } catch (error) {
+        console.error("Erro ao carregar agenda:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadData();
@@ -54,7 +63,26 @@ export const Agenda = () => {
   }, [profile, events]);
 
   if (!profile) {
-    return <div className="min-h-screen bg-background flex items-center justify-center p-4 text-center text-primary font-sans">Carregando perfil...</div>;
+    // Enquanto carrega: esqueleto consistente. Se terminou e não há perfil: mensagem amigável.
+    return (
+      <div className="min-h-screen bg-background pb-28 pt-6 px-4">
+        {isLoading ? (
+          <div className="max-w-5xl mx-auto">
+            <Skeleton className="w-10 h-10 rounded-xl mb-6" />
+            <div className="surface rounded-2xl p-8 flex flex-col items-center mb-8">
+              <Skeleton className="w-24 h-24 rounded-2xl mb-4" />
+              <Skeleton className="h-6 w-44 rounded-lg mb-2.5" />
+              <Skeleton className="h-4 w-28 rounded-lg" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => <EventCardSkeleton key={`ag-sk-${i}`} />)}
+            </div>
+          </div>
+        ) : (
+          <p className="text-center text-textMuted font-sans mt-20">Perfil não encontrado.</p>
+        )}
+      </div>
+    );
   }
 
   return (
