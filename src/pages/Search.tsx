@@ -26,18 +26,12 @@ export const Search = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        const isAdmin = user?.role === 'admin';
         const [allEvents, allProfiles] = await Promise.all([
-          storage.getEvents(),
+          isAdmin ? storage.getEvents() : storage.getUpcomingEvents(),
           storage.getProfiles()
         ]);
-        const isAdmin = user?.role === 'admin';
-        const now = new Date();
-        const visibleEvents = allEvents
-          .filter(e => isAdmin || !e.isTestEvent)
-          .filter(e => {
-            const eventDateTime = new Date(`${e.date}T${e.time || '00:00'}`);
-            return isAdmin || eventDateTime >= now;
-          });
+        const visibleEvents = isAdmin ? allEvents : allEvents.filter(e => !e.isTestEvent);
         setEvents(visibleEvents);
         setProfiles(allProfiles);
       } catch (error) {
