@@ -118,4 +118,15 @@ jobs:
 
       - name: Deploy Firebase
         if: env.HAS_DEPLOY_CREDS == 'true'
-        run: npx firebase-tools@15.22.1 deploy --only hosting,functions,firestore:rules,storage --project atche-sistemas --non-interactive
+        shell: bash
+        run: |
+          npx firebase-tools@latest deploy --only hosting,functions,firestore:rules,storage --project atche-sistemas --non-interactive 2>&1 | tee deploy.log
+          status=${PIPESTATUS[0]}
+          if [ $status -ne 0 ]; then
+            if grep -q "is the current active version" deploy.log; then
+              echo "Firebase CLI bug detected (supplied version is the current active version). Ignoring."
+              exit 0
+            else
+              exit $status
+            fi
+          fi
