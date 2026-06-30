@@ -27,11 +27,18 @@ export const Search = () => {
     const loadData = async () => {
       try {
         const isAdmin = user?.role === 'admin';
+        // Sempre busca apenas eventos futuros (filtro por data no Firestore), inclusive
+        // para admin — evento que já passou não deve aparecer na busca pública.
         const [allEvents, allProfiles] = await Promise.all([
-          isAdmin ? storage.getEvents() : storage.getUpcomingEvents(),
+          storage.getUpcomingEvents(),
           storage.getProfiles()
         ]);
-        const visibleEvents = isAdmin ? allEvents : allEvents.filter(e => !e.isTestEvent);
+        const now = new Date();
+        const visibleEvents = allEvents
+          // Eventos de teste só aparecem para admins.
+          .filter(e => isAdmin || !e.isTestEvent)
+          // Reforço client-side: exclui eventos que já começaram hoje.
+          .filter(e => new Date(`${e.date}T${e.time || '00:00'}`) >= now);
         setEvents(visibleEvents);
         setProfiles(allProfiles);
       } catch (error) {
