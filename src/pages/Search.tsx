@@ -30,8 +30,14 @@ export const Search = () => {
           storage.getEvents(),
           storage.getProfiles()
         ]);
-        const currentUser = storage.getCurrentUser();
-        const visibleEvents = currentUser?.role === 'admin' ? allEvents : allEvents.filter(e => !e.isTestEvent);
+        const isAdmin = user?.role === 'admin';
+        const now = new Date();
+        const visibleEvents = allEvents
+          .filter(e => isAdmin || !e.isTestEvent)
+          .filter(e => {
+            const eventDateTime = new Date(`${e.date}T${e.time || '00:00'}`);
+            return isAdmin || eventDateTime >= now;
+          });
         setEvents(visibleEvents);
         setProfiles(allProfiles);
       } catch (error) {
@@ -39,7 +45,7 @@ export const Search = () => {
       }
     };
     loadData();
-  }, []);
+  }, [user?.role]);
 
   const filteredEvents = events.filter(e => e.title.toLowerCase().includes(query.toLowerCase()));
   
