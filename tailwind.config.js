@@ -21,6 +21,7 @@ export default {
         glassBorder: "rgba(28, 25, 23, 0.08)",
         danger: "#EF4444",
         success: "#10B981",
+        warning: "#B45309",
       },
       // ─── PONTO ÚNICO DE TROCA DE FONTE ───
       // Família unificada Plus Jakarta Sans para títulos e corpo (hierarquia via peso).

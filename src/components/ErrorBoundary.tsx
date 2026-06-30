@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
               fullWidth
               onClick={() => { window.location.href = '/'; }}
             >
-              Voltar ao Início
+              Voltar ao início
             </Button>
           </div>
         </div>

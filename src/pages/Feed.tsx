@@ -9,6 +9,7 @@ import gsap from 'gsap';
 import { Sparkles, Flame, Calendar, Ticket } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
+import { EventCardSkeleton } from '../components/ui/Skeleton';
 
 const getGreeting = (): string => {
   const hour = new Date().getHours();
@@ -266,7 +267,7 @@ export const Feed = () => {
         ref={pullIndicatorRef}
         className="flex items-center justify-center overflow-hidden transition-all duration-200 pointer-events-none sticky top-0 z-50 w-full"
       >
-        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FCFAF7]/90 backdrop-blur-md border border-primary/10 shadow-lg mt-2">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/90 backdrop-blur-md border border-primary/10 shadow-float mt-2">
           {isRefreshing ? (
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           ) : (
@@ -363,7 +364,7 @@ export const Feed = () => {
         <div className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-2">
           {isLoading ? (
             [1, 2, 3].map(i => (
-              <div key={`hl-skel-${i}`} className="min-w-[280px] h-[160px] rounded-3xl skeleton-dark shrink-0" />
+              <div key={`hl-skel-${i}`} className="min-w-[260px] h-[180px] rounded-2xl skeleton-dark shrink-0" />
             ))
           ) : highlights.length > 0 ? (
             <>
@@ -373,7 +374,7 @@ export const Feed = () => {
               <div className="min-w-[20px] shrink-0" />
             </>
           ) : (
-            <div className="min-w-[280px] h-[160px] rounded-2xl surface-cream flex flex-col items-center justify-center shrink-0 w-full">
+            <div className="min-w-[260px] h-[180px] rounded-2xl surface-cream flex flex-col items-center justify-center shrink-0 w-full">
               <Flame size={24} className="text-primary/30 mb-2" />
               <p className="font-sans text-sm text-textMuted">Nenhum evento em destaque</p>
             </div>
@@ -423,8 +424,8 @@ export const Feed = () => {
       {/* Events List */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-5 relative z-10">
         {isLoading ? (
-          [1, 2, 3].map(i => (
-            <div key={i} className="w-full h-40 skeleton-dark rounded-2xl" />
+          [1, 2, 3, 4, 5, 6].map(i => (
+            <EventCardSkeleton key={i} />
           ))
         ) : (
           <>

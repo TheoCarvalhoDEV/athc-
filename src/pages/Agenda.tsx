@@ -67,7 +67,7 @@ export const Agenda = () => {
     return (
       <div className="min-h-screen bg-background pb-28 pt-6 px-4">
         {isLoading ? (
-          <div className="max-w-5xl mx-auto">
+          <div>
             <Skeleton className="w-10 h-10 rounded-xl mb-6" />
             <div className="surface rounded-2xl p-8 flex flex-col items-center mb-8">
               <Skeleton className="w-24 h-24 rounded-2xl mb-4" />

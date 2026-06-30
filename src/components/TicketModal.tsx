@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { X, Calendar, Clock, MapPin, Download, CheckCircle2, Loader2 } from 'lucide-react';
 import { toPng } from 'html-to-image';
+import toast from 'react-hot-toast';
 import type { EventItem, Registration } from '../lib/storage';
 import { makeTicketCode } from '../lib/ticketCode';
 import { useEscapeToClose } from '../hooks/useEscapeToClose';
@@ -118,7 +119,7 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
       a.click();
     } catch (e) {
       console.error('Erro ao gerar a imagem do ingresso:', e);
-      alert('Não foi possível gerar a imagem. Tente novamente.');
+      toast.error('Não foi possível gerar a imagem do ingresso. Tente novamente.');
     } finally {
       setBusy(false);
     }
@@ -196,7 +197,7 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-stone-100 text-left max-w-[280px] mx-auto">
+              <div className="grid grid-cols-2 gap-4 mt-5 pt-4 border-t border-glassBorder text-left max-w-[280px] mx-auto">
                 <div>
                   <span className="text-[10px] font-semibold text-textMuted uppercase tracking-wider block">Portador</span>
                   <span className="text-sm font-semibold text-textLight truncate block">{registration.userName || '-'}</span>
@@ -213,13 +214,13 @@ export const TicketModal = ({ isOpen, onClose, event, registration }: TicketModa
             {/* Perfuração + recortes laterais */}
             <div className="relative flex items-center py-2">
               <div className="absolute -left-3 w-6 h-6 rounded-full bg-background shadow-inner" />
-              <div className="flex-1 border-t-2 border-dashed border-stone-200 mx-4" />
+              <div className="flex-1 border-t-2 border-dashed border-glassBorder mx-4" />
               <div className="absolute -right-3 w-6 h-6 rounded-full bg-background shadow-inner" />
             </div>
 
             {/* Stub do QR */}
             <div className="px-6 pt-2 pb-7 flex flex-col items-center text-center">
-              <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-sm">
+              <div className="bg-white p-3 rounded-2xl border border-glassBorder shadow-sm">
                 {qrDataUrl ? (
                   <img
                     src={qrDataUrl}

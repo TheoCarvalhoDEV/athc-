@@ -74,8 +74,10 @@ export const Sidebar = () => {
         {user && (
           <div className="surface rounded-2xl p-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div
+              <button
+                type="button"
                 onClick={() => navigate('/profile')}
+                aria-label="Ir para o meu perfil"
                 className="w-10 h-10 rounded-xl bg-primary text-textDark flex items-center justify-center font-sans font-bold text-sm overflow-hidden hover:brightness-110 active:scale-95 transition-all duration-200 cursor-pointer shrink-0"
               >
                 {user.imageUrl ? (
@@ -83,7 +85,7 @@ export const Sidebar = () => {
                 ) : (
                   user.name?.charAt(0).toUpperCase() || 'U'
                 )}
-              </div>
+              </button>
               <div className="min-w-0 flex flex-col text-left">
                 <span className="font-sans font-semibold text-sm text-textLight truncate">{user.name}</span>
                 <span className="text-[11px] font-sans font-medium text-accent mt-0.5">{user.role === 'admin' ? 'Admin' : user.role === 'partner' ? 'Parceiro' : 'Membro'}</span>

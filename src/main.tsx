@@ -37,7 +37,7 @@ if ('serviceWorker' in navigator) {
   registerSW({
     immediate: true,
     onOfflineReady() {
-      console.log('Atchêi pronto para funcionar em modo Offline!');
+      // App pronto para uso offline (PWA). Sem log em produção.
     },
     onRegisteredSW(_swUrl, registration) {
       if (!registration) return;

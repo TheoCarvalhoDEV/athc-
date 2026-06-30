@@ -589,7 +589,7 @@ export const Profile = () => {
                 <div className="flex items-center gap-2.5">
                   <div className="w-1 h-5 bg-primary/40 rounded-full" />
                   <h2 className="font-display font-semibold text-xl text-textLight">
-                    Painel de Eventos
+                    Painel de eventos
                   </h2>
                 </div>
                 
@@ -621,7 +621,7 @@ export const Profile = () => {
             <div className="profile-el flex items-center gap-2.5 px-5 mb-4">
               <div className="w-1 h-5 bg-primary/40 rounded-full" />
               <h2 className="font-display font-semibold text-xl text-textLight">
-                {userRole === 'user' ? 'Minha Agenda' : 'Meus Eventos'}
+                {userRole === 'user' ? 'Minha agenda' : 'Meus eventos'}
               </h2>
             </div>
           )}
@@ -719,7 +719,7 @@ export const Profile = () => {
                         className="flex-1 flex items-center justify-center gap-2 py-3.5 text-success font-sans font-semibold text-xs hover:bg-success/10 transition-colors cursor-pointer"
                       >
                         <Ticket size={14} />
-                        Ver Ingresso
+                        Ver ingresso
                       </button>
                       <div className="w-[1px] bg-glassBorder" />
                       <button
@@ -776,7 +776,7 @@ export const Profile = () => {
               <div className="w-14 h-14 rounded-2xl bg-danger/10 text-danger border border-danger/20 flex items-center justify-center mb-4 shadow-md">
                 <Trash2 size={22} />
               </div>
-              <h3 id="profile-delete-title" className="font-display text-xl font-semibold text-accent mb-2">Excluir Evento?</h3>
+              <h3 id="profile-delete-title" className="font-display text-xl font-semibold text-accent mb-2">Excluir evento?</h3>
               <p className="font-sans text-sm text-textMuted mb-6 leading-relaxed">
                 Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.
               </p>
@@ -825,7 +825,7 @@ export const Profile = () => {
               <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-2.5">
                 <Edit2 size={20} />
               </div>
-              <h3 id="profile-edit-title" className="font-display text-xl font-semibold text-accent">Editar Perfil</h3>
+              <h3 id="profile-edit-title" className="font-display text-xl font-semibold text-accent">Editar perfil</h3>
               <p className="text-xs text-textMuted mt-1">Atualize as informações públicas da sua marca</p>
             </div>
 
@@ -1111,7 +1111,7 @@ export const Profile = () => {
 
             <form onSubmit={handleGenerateManualTicket} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1 scrollbar-hide">
               <div className="space-y-1.5 text-left">
-                <label className="text-xs font-medium text-textMuted ml-1 block">Nome Completo</label>
+                <label className="text-xs font-medium text-textMuted ml-1 block">Nome completo</label>
                 <input
                   type="text"
                   required
@@ -1205,7 +1205,7 @@ export const Profile = () => {
                   disabled={isGeneratingManualTicket}
                   className="flex-1 py-3 rounded-xl bg-primary text-textDark font-sans font-semibold text-xs hover:bg-primaryHover hover:-translate-y-0.5 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
-                  {isGeneratingManualTicket ? 'Gerando...' : 'Gerar Ingresso'}
+                  {isGeneratingManualTicket ? 'Gerando...' : 'Gerar ingresso'}
                 </button>
               </div>
             </form>

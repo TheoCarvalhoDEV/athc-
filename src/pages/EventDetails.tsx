@@ -166,7 +166,6 @@ export const EventDetails = () => {
         try {
           await loadMercadoPago();
           new (window as any).MercadoPago(publicKey, { locale: 'pt-BR' });
-          console.log("Mercado Pago SDK inicializado com sucesso no frontend.");
         } catch (err) {
           console.error("Erro ao inicializar o Mercado Pago SDK:", err);
         }
@@ -205,7 +204,6 @@ export const EventDetails = () => {
       }
 
       script.onload = () => {
-        console.log("Script de segurança do Mercado Pago (security.js) injetado dinamicamente no checkout.");
         try {
           delete (document as any).currentScript;
         } catch (e) { }
@@ -291,8 +289,6 @@ export const EventDetails = () => {
       (document.getElementById('MP_DEVICE_SESSION_ID') as HTMLInputElement)?.value ||
       (document.getElementById('deviceId') as HTMLInputElement)?.value ||
       '';
-
-    console.log("Device ID capturado para o pagamento:", deviceId);
 
     // Mapear os ingressos selecionados
     const itensSelecionados = (event.tickets || [])
@@ -510,8 +506,8 @@ export const EventDetails = () => {
   if (!event) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background flex-col gap-4">
-        <p className="text-primary font-mono">Evento não encontrado.</p>
-        <Button onClick={() => navigate('/')}>Voltar ao Início</Button>
+        <p className="text-primary font-sans font-medium">Evento não encontrado.</p>
+        <Button onClick={() => navigate('/')}>Voltar ao início</Button>
       </div>
     );
   }
@@ -810,9 +806,7 @@ export const EventDetails = () => {
                       })()}
                     </span>
                   </div>
-                  <span className="bg-accent/10 text-accent text-[11px] px-3 py-1.5 rounded-full font-medium border border-accent/20">
-                    1º lote disponível
-                  </span>
+                  {/* Selo de lote removido: era fixo e podia exibir estado incorreto */}
                 </div>
 
                 {/* Ações de Inscrição */}
@@ -1066,12 +1060,12 @@ export const EventDetails = () => {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <h3 id="event-freeticket-title" className="font-display text-xl font-semibold text-accent mb-1 mt-2">Confirmar presença</h3>
-            <p className="text-sm text-textMuted mb-6">Para evitar spam, informe seus dados.</p>
+            <p className="text-sm text-textMuted mb-6">Confirme seus dados para garantir sua presença.</p>
 
             <div className="flex flex-col gap-4 text-left">
               <div className="space-y-4 bg-white/40 p-5 rounded-[1.75rem] shadow-glass-shadow mb-2 border border-glassBorder/30">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-textMuted block ml-1">Nome Completo</label>
+                  <label className="text-xs font-medium text-textMuted block ml-1">Nome completo</label>
                   <div className="relative flex items-center">
                     <span className="absolute left-4 text-textMuted/60 pointer-events-none">
                       <User size={15} />
@@ -1190,14 +1184,14 @@ export const EventDetails = () => {
                   <p className="text-xs font-medium text-accent ml-1 mb-1.5 md:mb-2">Seus Dados de Inscrição</p>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-textMuted block ml-1">Nome Completo</label>
+                    <label className="text-xs font-medium text-textMuted block ml-1">Nome completo</label>
                     <div className="relative flex items-center">
                       <span className="absolute left-3 md:left-4 text-textMuted/60 pointer-events-none">
                         <User className="w-3.5 h-3.5 md:w-[15px] md:h-[15px]" />
                       </span>
                       <input
                         type="text"
-                        placeholder="Nome Completo"
+                        placeholder="Nome completo"
                         value={buyerName}
                         disabled={loadingPix}
                         aria-invalid={!!pixErrors.name || undefined}

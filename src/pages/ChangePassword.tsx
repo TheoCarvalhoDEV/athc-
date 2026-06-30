@@ -15,6 +15,7 @@ export const ChangePassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!user || !user.mustChangePassword) {
@@ -49,12 +50,15 @@ export const ChangePassword = () => {
 
     if (!user) return;
 
+    setIsLoading(true);
     try {
       await storage.updatePartnerPassword(user.id, newPassword);
       navigate('/feed');
     } catch (error) {
       console.error("Erro ao alterar senha:", error);
       setError("Erro ao atualizar senha no servidor.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -120,8 +124,8 @@ export const ChangePassword = () => {
           )}
 
           <div className="stagger-el pt-4 flex justify-center">
-            <Button type="submit" variant="primary" fullWidth className="rounded-xl py-4 font-sans font-semibold text-base">
-              Definir nova senha
+            <Button type="submit" variant="primary" fullWidth loading={isLoading} className="rounded-xl py-4 font-sans font-semibold text-base">
+              {isLoading ? 'Salvando...' : 'Definir nova senha'}
             </Button>
           </div>
         </form>

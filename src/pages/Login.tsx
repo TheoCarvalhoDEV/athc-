@@ -65,13 +65,14 @@ export const Login = () => {
         onClick={() => navigate(-1)}
         className="absolute top-8 left-6 p-2.5 rounded-xl bg-surface border border-glassBorder text-accent hover:border-accent/40 hover:bg-surfaceHover transition-all duration-300 neo-click z-10"
         title="Voltar"
+        aria-label="Voltar"
       >
         <ArrowLeft size={20} />
       </button>
       <div className="w-full max-w-sm flex flex-col items-center relative z-10">
 
         <div className="flex flex-col items-center gap-3 stagger-el mb-8">
-          <img src={`${import.meta.env.BASE_URL}logo.png?v=5`} alt="Atchêi" className="w-24 h-24 object-contain brightness-110 drop-shadow-[0_4px_20px_rgba(255,79,24,0.15)]" />
+          <img src={`${import.meta.env.BASE_URL}logo.png?v=5`} alt="Atchêi" className="w-24 h-24 object-contain brightness-110 drop-shadow-[0_4px_20px_rgba(90,18,46,0.15)]" />
           <h2 className="font-display font-semibold text-2xl text-accent mt-2">Login</h2>
         </div>
 
@@ -111,6 +112,16 @@ export const Login = () => {
             </Button>
           </div>
         </form>
+
+        <div className="stagger-el mt-6 text-center w-full">
+          <button
+            type="button"
+            onClick={() => navigate('/register')}
+            className="text-xs font-medium text-accent hover:text-accentHover underline transition-colors cursor-pointer"
+          >
+            Ainda não tem conta? Criar conta
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -6,9 +6,11 @@ export const ProfileCard = ({ profile }: { profile: AppProfile }) => {
   const navigate = useNavigate();
   
   return (
-    <div
+    <button
+      type="button"
       onClick={() => navigate(`/agenda/${profile.id}`)}
-      className="surface surface-hover rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-accent/40 transition-all duration-200 mb-4"
+      aria-label={`Ver agenda de ${profile.name}`}
+      className="surface surface-hover rounded-2xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-200 text-left w-full"
     >
       <div className="w-14 h-14 rounded-2xl bg-accent/15 flex items-center justify-center shrink-0 border border-accent/20 overflow-hidden">
         {profile.imageUrl ? (
@@ -29,6 +31,6 @@ export const ProfileCard = ({ profile }: { profile: AppProfile }) => {
           <p className="text-xs text-textMuted truncate mt-1.5">{profile.description}</p>
         )}
       </div>
-    </div>
+    </button>
   );
 };

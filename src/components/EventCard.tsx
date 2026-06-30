@@ -47,8 +47,12 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
 
   if (variant === 'highlight') {
     return (
-      <div className="relative min-w-[260px] max-w-[260px] h-[180px] rounded-2xl overflow-hidden border border-glassBorder shadow-sm hover:-translate-y-1 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer shrink-0 group text-left"
-        onClick={() => navigate(`/event/${event.id}`)}>
+      <button
+        type="button"
+        aria-label={`Ver detalhes de ${event.title}`}
+        className="relative min-w-[260px] max-w-[260px] h-[180px] rounded-2xl overflow-hidden border border-glassBorder shadow-sm hover:-translate-y-1 hover:border-primary/30 hover:shadow-md transition-all duration-200 cursor-pointer shrink-0 group text-left block"
+        onClick={() => navigate(`/event/${event.id}`)}
+      >
         {/* Background */}
         {event.mediaUrls && event.mediaUrls.length > 0 ? (
           isVideoUrl(event.mediaUrls[0]) ? (
@@ -66,9 +70,9 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-surface flex items-center justify-center p-6">
             <img 
-              src={`${import.meta.env.BASE_URL}placeholder-logo.png`} 
-              alt={event.title} 
-              className="w-auto h-12 object-contain opacity-40 group-hover:scale-105 transition-transform duration-500" 
+              src={`${import.meta.env.BASE_URL}placeholder-logo.png`}
+              alt=""
+              className="w-auto h-12 object-contain opacity-40 group-hover:scale-105 transition-transform duration-500"
             />
           </div>
         )}
@@ -92,7 +96,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
           </div>
         </div>
 
-      </div>
+      </button>
     );
   }
 
@@ -100,7 +104,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
     <>
       <div className="surface surface-hover rounded-2xl overflow-hidden flex flex-col group text-left">
         {/* Image Section */}
-        <div className="h-44 relative overflow-hidden cursor-pointer" onClick={() => navigate(`/event/${event.id}`)}>
+        <button type="button" aria-label={`Ver detalhes de ${event.title}`} className="h-44 relative overflow-hidden cursor-pointer block w-full" onClick={() => navigate(`/event/${event.id}`)}>
           {event.mediaUrls && event.mediaUrls.length > 0 ? (
             isVideoUrl(event.mediaUrls[0]) ? (
               <video
@@ -117,9 +121,9 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-surface via-surfaceHover to-surface flex items-center justify-center p-6">
               <img 
-                src={`${import.meta.env.BASE_URL}placeholder-logo.png`} 
-                alt={event.title} 
-                className="w-auto h-12 object-contain opacity-50 transition-transform duration-500 group-hover:scale-105" 
+                src={`${import.meta.env.BASE_URL}placeholder-logo.png`}
+                alt=""
+                className="w-auto h-12 object-contain opacity-50 transition-transform duration-500 group-hover:scale-105"
               />
             </div>
           )}
@@ -133,7 +137,7 @@ export const EventCard = ({ event, variant = 'default' }: EventCardProps) => {
               <span className="font-mono text-[10px] font-bold text-textLight">{formatCardDate(event.date)} {event.time}</span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Info Section */}
         <div className="p-4 relative z-10 border-t border-glassBorder bg-surface/30">

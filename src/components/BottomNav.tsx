@@ -12,7 +12,7 @@ export const BottomNav = () => {
 
   const navItems = [
     { icon: Home, path: '/', label: 'Início' },
-    { icon: Search, path: '/search', label: 'Pesquisa' },
+    { icon: Search, path: '/search', label: 'Pesquisar' },
     ...(isPartner ? [{ icon: PlusSquare, path: '/create', label: 'Criar' }] : []),
     ...(isAdmin ? [{ icon: Settings, path: '/admin', label: 'Admin' }] : []),
     { icon: User, path: '/profile', label: 'Perfil' },
@@ -25,6 +25,8 @@ export const BottomNav = () => {
           <NavLink
             key={item.path}
             to={item.path}
+            aria-label={item.label}
+            title={item.label}
             className={({ isActive }) =>
               cn(
                 "relative flex items-center justify-center p-3 rounded-xl transition-all duration-200 neo-click z-10",

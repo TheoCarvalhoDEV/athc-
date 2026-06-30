@@ -48,18 +48,18 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         {/* Notificações Toaster customizadas com visual premium */}
-        <Toaster 
-          position="top-center" 
-          toastOptions={{ 
-            duration: 4000, 
-            style: { 
-              borderRadius: '16px', 
-              background: '#13131A', 
-              color: '#F0EDE8', 
-              border: '1px solid rgba(212,168,75,0.12)', 
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)' 
-            } 
-          }} 
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              borderRadius: '16px',
+              background: '#FFFFFF',
+              color: '#1C1917',
+              border: '1px solid rgba(28,25,23,0.08)',
+              boxShadow: '0 12px 40px -10px rgba(28,25,23,0.12)'
+            }
+          }}
         />
         <Router>
           {/* Suspense envolve todas as rotas para tratar carregamentos lazy de forma assíncrona */}

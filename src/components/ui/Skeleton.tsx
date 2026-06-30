@@ -18,7 +18,7 @@ export const Skeleton = ({ className, ...props }: SkeletonProps) => {
 
 /** Esqueleto pronto no formato de um EventCard (imagem + bloco de informações). */
 export const EventCardSkeleton = () => (
-  <div className="glass border border-glassBorder rounded-3xl overflow-hidden shadow-glass-shadow">
+  <div className="surface rounded-2xl overflow-hidden">
     <Skeleton className="h-44 rounded-none" />
     <div className="p-4 space-y-3 border-t border-glassBorder">
       <Skeleton className="h-5 w-3/4 rounded-lg" />

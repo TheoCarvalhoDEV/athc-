@@ -722,6 +722,8 @@ const CreateEventContent = () => {
                   onClick={() => setValue('hasPresence', !hasPresence, { shouldValidate: true })}
                   title="Habilitar Confirmação de Presença"
                   aria-label="Habilitar Confirmação de Presença"
+                  role="switch"
+                  aria-checked={hasPresence}
                   className={cn(
                     "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
                     hasPresence ? 'bg-primary/20 border-primary/45' : 'bg-surfaceHover/50'
@@ -746,6 +748,8 @@ const CreateEventContent = () => {
                   onClick={() => setValue('hasTickets', !hasTickets, { shouldValidate: true })}
                   title="Possui ingressos"
                   aria-label="Possui ingressos"
+                  role="switch"
+                  aria-checked={hasTickets}
                   className={cn(
                     "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
                     hasTickets ? 'bg-primary/20 border-primary/45' : 'bg-surfaceHover/50'
@@ -794,7 +798,7 @@ const CreateEventContent = () => {
                             }}
                             title="Remover promoter"
                             aria-label="Remover promoter"
-                            className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface hover:bg-surfaceHover rounded-xl transition-all duration-300"
+                            className="text-danger hover:brightness-110 p-2.5 border border-glassBorder bg-surface hover:bg-surfaceHover rounded-xl transition-all duration-300"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -832,6 +836,8 @@ const CreateEventContent = () => {
                     onClick={() => setValue('hasPixTickets', !hasPixTickets, { shouldValidate: true })}
                     title="Venda via PIX"
                     aria-label="Venda via PIX"
+                    role="switch"
+                    aria-checked={hasPixTickets}
                     className={cn(
                       "w-12 h-7 rounded-full transition-all relative border border-glassBorder cursor-pointer",
                       hasPixTickets ? 'bg-success/20 border-success/40' : 'bg-surfaceHover/50'
@@ -910,7 +916,7 @@ const CreateEventContent = () => {
                                 onClick={() => handleRemoveTicketType(idx)}
                                 title="Remover lote"
                                 aria-label="Remover lote"
-                                className="text-danger hover:text-red-400 p-2.5 border border-glassBorder bg-surface hover:bg-surfaceHover rounded-xl transition-all duration-300 cursor-pointer"
+                                className="text-danger hover:brightness-110 p-2.5 border border-glassBorder bg-surface hover:bg-surfaceHover rounded-xl transition-all duration-300 cursor-pointer"
                               >
                                 <Trash2 size={14} />
                               </button>
@@ -1049,7 +1055,7 @@ const CreateEventContent = () => {
       {/* Crop Modal */}
       {cropModalOpen && (
         <div
-          className="fixed inset-0 z-[99999] bg-background/95 backdrop-blur-md flex flex-col pt-12 pb-6 px-4"
+          className="fixed inset-0 z-[99999] bg-background/95 backdrop-blur-md flex flex-col px-4 pt-[max(3rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))]"
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-crop-title"
@@ -1282,7 +1288,7 @@ const CreateEventContent = () => {
                 className="rounded-xl py-4"
                 onClick={handleDatePickerConfirm}
               >
-                Confirmar horário
+                Confirmar data e horário
               </Button>
             </div>
           </div>

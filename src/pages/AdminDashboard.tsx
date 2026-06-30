@@ -104,6 +104,7 @@ export const AdminDashboard = () => {
   const currentUser = storage.getCurrentUser();
   const userId = currentUser?.id;
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingPartner, setIsSavingPartner] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!userId || currentUser?.role !== 'admin') {
@@ -184,6 +185,7 @@ export const AdminDashboard = () => {
     const email = `${newPartner.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '')}@atche.com.br`;
     const password = generateSecurePassword();
 
+    setIsSavingPartner(true);
     try {
       const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp" + Date.now());
       const secondaryAuth = getAuth(secondaryApp);
@@ -214,12 +216,15 @@ export const AdminDashboard = () => {
       } else {
         toast.error("Erro ao criar parceiro. Verifique o console.");
       }
+    } finally {
+      setIsSavingPartner(false);
     }
   };
 
   const handleEditPartner = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPartner) return;
+    setIsSavingPartner(true);
     try {
       const updates: Partial<AppProfile> = {
         name: editingPartner.name,
@@ -256,6 +261,8 @@ export const AdminDashboard = () => {
     } catch (error) {
       console.error("Erro ao atualizar parceiro:", error);
       toast.error("Erro ao atualizar parceiro ou ao redefinir a senha.");
+    } finally {
+      setIsSavingPartner(false);
     }
   };
 
@@ -486,7 +493,7 @@ export const AdminDashboard = () => {
                     value={editingPartner.type}
                     onChange={e => setEditingPartner(prev => prev ? ({ ...prev, type: e.target.value as any }) : null)}
                   >
-                    <option value="user">Usuário Comum</option>
+                    <option value="user">Usuário comum</option>
                     <option value="estabelecimento">Estabelecimento</option>
                     <option value="atletica">Atlética</option>
                     <option value="admin">Administrador</option>
@@ -515,8 +522,8 @@ export const AdminDashboard = () => {
                   </label>
                 </div>
 
-                <Button type="submit" className="w-full rounded-xl py-4 mt-6">
-                  Salvar alterações
+                <Button type="submit" loading={isSavingPartner} className="w-full rounded-xl py-4 mt-6">
+                  {isSavingPartner ? 'Salvando...' : 'Salvar alterações'}
                 </Button>
               </form>
             </div>
@@ -564,7 +571,7 @@ export const AdminDashboard = () => {
                       value={newPartner.type}
                       onChange={e => setNewPartner(prev => ({ ...prev, type: e.target.value as any }))}
                     >
-                      <option value="user">Usuário Comum</option>
+                      <option value="user">Usuário comum</option>
                       <option value="estabelecimento">Estabelecimento</option>
                       <option value="atletica">Atlética</option>
                       <option value="admin">Administrador</option>
@@ -614,8 +621,8 @@ export const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full rounded-xl py-4 mt-6">
-                    Gerar acesso e salvar
+                  <Button type="submit" loading={isSavingPartner} className="w-full rounded-xl py-4 mt-6">
+                    {isSavingPartner ? 'Salvando...' : 'Gerar acesso e salvar'}
                   </Button>
                 </form>
               ) : (

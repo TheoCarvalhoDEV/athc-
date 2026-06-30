@@ -6,6 +6,7 @@ import type { EventItem, AppProfile } from '../lib/storage';
 import { EventCard } from '../components/EventCard';
 import { ProfileCard } from '../components/ProfileCard';
 import { EventCardSkeleton, Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import gsap from 'gsap';
 import { Search as SearchIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -148,7 +149,7 @@ export const Search = () => {
         {isLoading ? (
           activeTab === 'eventos'
             ? Array.from({ length: 6 }).map((_, i) => <EventCardSkeleton key={`sk-evt-${i}`} />)
-            : Array.from({ length: 6 }).map((_, i) => <Skeleton key={`sk-prof-${i}`} className="h-28 rounded-3xl" />)
+            : Array.from({ length: 6 }).map((_, i) => <Skeleton key={`sk-prof-${i}`} className="h-28 rounded-2xl" />)
         ) : activeTab === 'eventos' ? (
           <>
             {filteredEvents.map(event => (
@@ -157,7 +158,12 @@ export const Search = () => {
               </div>
             ))}
             {filteredEvents.length === 0 && (
-              <p className="text-center font-sans text-textMuted mt-10">Nenhum evento encontrado para "{query}"</p>
+              <EmptyState
+                className="col-span-full"
+                icon={<SearchIcon size={26} />}
+                title="Nada encontrado"
+                description={query ? `Nenhum evento para "${query}". Tente outro termo.` : 'Digite o nome de um evento para buscar.'}
+              />
             )}
           </>
         ) : (
@@ -168,7 +174,12 @@ export const Search = () => {
               </div>
             ))}
             {filteredProfiles.length === 0 && (
-              <p className="text-center font-sans text-textMuted mt-10">Nenhum perfil encontrado para "{query}"</p>
+              <EmptyState
+                className="col-span-full"
+                icon={<SearchIcon size={26} />}
+                title="Nada encontrado"
+                description={query ? `Nenhum perfil para "${query}". Tente outro termo.` : 'Digite o nome de um estabelecimento ou atlética.'}
+              />
             )}
           </>
         )}

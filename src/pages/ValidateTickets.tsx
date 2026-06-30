@@ -400,8 +400,8 @@ export const ValidateTickets = () => {
 
   const statusStyles: Record<ResultStatus, { ring: string; chip: string; icon: ReactNode }> = {
     success: { ring: 'border-success/30', chip: 'bg-success text-textDark', icon: <CheckCircle2 size={40} /> },
-    already: { ring: 'border-amber-400/40', chip: 'bg-amber-400 text-stone-900', icon: <AlertTriangle size={40} /> },
-    wrong_event: { ring: 'border-amber-400/40', chip: 'bg-amber-400 text-stone-900', icon: <AlertTriangle size={40} /> },
+    already: { ring: 'border-warning/40', chip: 'bg-warning text-textDark', icon: <AlertTriangle size={40} /> },
+    wrong_event: { ring: 'border-warning/40', chip: 'bg-warning text-textDark', icon: <AlertTriangle size={40} /> },
     invalid: { ring: 'border-danger/30', chip: 'bg-danger text-white', icon: <XCircle size={40} /> },
   };
 
@@ -488,7 +488,7 @@ export const ValidateTickets = () => {
       </div>
 
       {/* Dica + entrada manual */}
-      <div className="relative z-10 px-4 pb-8">
+      <div className="relative z-10 px-4 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))]">
         {!cameraError && (
           <p className="flex items-center justify-center gap-2 text-xs text-white/50 mb-4">
             <ScanLine size={14} /> Aponte a câmera para o QR Code do ingresso
@@ -570,7 +570,7 @@ export const ValidateTickets = () => {
                   </div>
                 </div>
                 {result.status === 'already' && result.when && (
-                  <p className="text-xs text-amber-600 font-medium pt-1 border-t border-glassBorder">
+                  <p className="text-xs text-warning font-medium pt-1 border-t border-glassBorder">
                     Validado em {formatWhen(result.when)}
                     {result.registration.checkedInBy ? ` por ${result.registration.checkedInBy}` : ''}
                   </p>
