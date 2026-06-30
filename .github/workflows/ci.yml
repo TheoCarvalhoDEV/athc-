@@ -118,4 +118,4 @@ jobs:
 
       - name: Deploy Firebase
         if: env.HAS_DEPLOY_CREDS == 'true'
-        run: npx firebase-tools@latest deploy --only hosting,functions,firestore:rules,storage --project atche-sistemas --non-interactive
+        run: npx firebase-tools@13.22.1 deploy --only hosting,functions,firestore:rules,storage --project atche-sistemas --non-interactive
